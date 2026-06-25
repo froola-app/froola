@@ -1,5 +1,5 @@
 // src/engine/input/index.ts
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 
 type InputMode = 'asking' | 'camera' | 'mouse';
@@ -8,7 +8,7 @@ const DEFAULT_SIGNAL: GestureSignal = {
   x: 0.5, y: 0.5, present: false, handId: 'primary',
 };
 
-export function useGestureInput(): { signal: GestureSignal; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
+export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
   const signalRef = useRef<GestureSignal>({ ...DEFAULT_SIGNAL });
   const [mode, setMode] = useState<InputMode>('asking');
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -125,5 +125,5 @@ export function useGestureInput(): { signal: GestureSignal; mode: InputMode; req
     };
   }, [mode]);
 
-  return { signal: signalRef.current, mode, requestCamera, useMouse: switchToMouse };
+  return { signalRef, mode, requestCamera, useMouse: switchToMouse };
 }
