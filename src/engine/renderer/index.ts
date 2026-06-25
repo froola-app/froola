@@ -5,12 +5,13 @@ import type { GestureSignal } from '../types';
 export function useRenderer(
   canvasRef: RefObject<HTMLCanvasElement>,
   gestureRef: RefObject<GestureSignal>,
-  analyser: AnalyserNode | null
+  analyserRef: RefObject<AnalyserNode | null>
 ): void {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
+    const analyser = analyserRef.current;
     const freqData = analyser ? new Uint8Array(analyser.frequencyBinCount) : null;
     let rafId: number;
 
@@ -84,5 +85,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, gestureRef, analyser]);
+  }, [canvasRef, gestureRef, analyserRef]);
 }
