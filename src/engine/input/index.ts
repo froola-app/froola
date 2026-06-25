@@ -101,7 +101,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
           if (result.landmarks.length > 0) {
-            const wrist = result.landmarks[0][0];
+            const wrist = result.landmarks[0][8];
             signalRef.current = {
               x: 1 - wrist.x,
               y: wrist.y,
