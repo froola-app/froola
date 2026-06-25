@@ -14,6 +14,7 @@ body {
   position: fixed;
   inset: 0;
   display: block;
+  z-index: 1;
 }
 
 .permission-screen {

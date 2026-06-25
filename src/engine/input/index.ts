@@ -84,8 +84,15 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
       if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); return; }
 
       video.srcObject = stream;
+      video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;';
+      document.body.appendChild(video);
       await video.play();
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); return; }
+      if (cancelled) {
+        if (video.parentNode) video.parentNode.removeChild(video);
+        stream.getTracks().forEach(t => t.stop());
+        landmarker.close();
+        return;
+      }
 
       function loop() {
         if (cancelled) return;
@@ -113,6 +120,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
         cancelAnimationFrame(animFrameId);
+        if (video.parentNode) video.parentNode.removeChild(video);
       };
     }
 
