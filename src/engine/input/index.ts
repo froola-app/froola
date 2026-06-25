@@ -94,6 +94,11 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         return;
       }
 
+      // EMA state — smooths out landmark noise near edges / face occlusion
+      const SMOOTH = 0.35;
+      let smoothX = 0.5;
+      let smoothY = 0.5;
+
       function loop() {
         if (cancelled) return;
         const now = performance.now();
@@ -113,9 +118,11 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
             const offsetY = (dh - vh * scale) / 2;
             const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
             const ry = (tip.y * vh * scale + offsetY) / dh;
+            smoothX = SMOOTH * rx + (1 - SMOOTH) * smoothX;
+            smoothY = SMOOTH * ry + (1 - SMOOTH) * smoothY;
             signalRef.current = {
-              x: Math.max(0, Math.min(1, rx)),
-              y: Math.max(0, Math.min(1, ry)),
+              x: Math.max(0, Math.min(1, smoothX)),
+              y: Math.max(0, Math.min(1, smoothY)),
               present: true,
               handId: 'primary',
             };
