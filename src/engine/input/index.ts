@@ -84,7 +84,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
       if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); return; }
 
       video.srcObject = stream;
-      video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;';
+      video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transform:scaleX(-1);';
       document.body.appendChild(video);
       await video.play();
       if (cancelled) {
