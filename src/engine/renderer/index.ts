@@ -30,10 +30,6 @@ export function useRenderer(
       // Clear
       ctx.clearRect(0, 0, w, h);
 
-      // Background
-      ctx.fillStyle = '#0A0E1A';
-      ctx.fillRect(0, 0, w, h);
-
       // Warm zone — static amber radial gradient centered (SP2 will drive this from tension)
       const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.min(w, h) * 0.45);
       grad.addColorStop(0, 'rgba(245, 158, 11, 0.18)');   // #F59E0B
