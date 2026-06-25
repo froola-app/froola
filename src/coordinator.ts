@@ -1,45 +1,56 @@
 // src/coordinator.ts
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, MusicalCommand } from './engine/types';
+import type { GestureSignal } from './engine/types';
 import { useGestureInput } from './engine/input';
 import { useRenderer } from './engine/renderer';
-
-// --- Track A stubs — delete when Track A delivers useAudio and mapGesture ---
-const mapGesture = (_s: GestureSignal, _vibe: string): MusicalCommand => ({  // eslint-disable-line @typescript-eslint/no-unused-vars
-  chord: 'C',
-  voicing: [60, 64, 67],
-  register: 0.5,
-  texture: 0.5,
-  tension: 0.2,
-});
-const useAudio = () => ({
-  play: (_cmd: MusicalCommand) => {},  // eslint-disable-line @typescript-eslint/no-unused-vars
-  getAnalyser: (): AnalyserNode | null => null,
-});
-// --- end stubs ---
+import { createMapper } from './engine/music';
+import { AudioEngine } from './engine/audio';
 
 export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
+  const engineRef = useRef<AudioEngine | null>(null);
+  const mapperRef = useRef(createMapper('warm'));
   const gestureRef = useRef<GestureSignal>({
     x: 0.5, y: 0.5, present: false, handId: 'primary',
   });
+  const analyserRef = useRef<AnalyserNode | null>(null);
 
   const { signalRef: inputSignalRef, mode, requestCamera, useMouse } = useGestureInput();
-  const { play, getAnalyser } = useAudio();
-  const analyserRef = useRef<AnalyserNode | null>(getAnalyser());
 
-  // Write latest signal into ref — no re-render
+  // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
-    gestureRef.current = inputSignalRef.current;
-  });
+    const engine = new AudioEngine();
+    engineRef.current = engine;
+    analyserRef.current = engine.getAnalyser();
 
-  // Fire audio on presence
+    const resume = () => engine.resume();
+    window.addEventListener('pointerdown', resume, { once: true });
+
+    return () => {
+      engine.suspend();
+      window.removeEventListener('pointerdown', resume);
+    };
+  }, []);
+
+  // Hot path: rAF loop — reads signal ref, maps, plays
   useEffect(() => {
-    const signal = inputSignalRef.current;
-    if (!signal.present) return;
-    const cmd = mapGesture(signal, 'default');
-    play(cmd);
-  });
+    let rafId: number;
+
+    function tick() {
+      const signal = inputSignalRef.current;
+      gestureRef.current = signal;
+
+      if (signal.present && engineRef.current) {
+        const cmd = mapperRef.current(signal);
+        if (cmd) engineRef.current.play(cmd);
+      }
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [inputSignalRef]);
 
   useRenderer(canvasRef as RefObject<HTMLCanvasElement>, gestureRef, analyserRef);
 
