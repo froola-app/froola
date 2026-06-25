@@ -101,10 +101,21 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
           if (result.landmarks.length > 0) {
-            const wrist = result.landmarks[0][8];
+            const tip = result.landmarks[0][8];
+            // Remap from video-native coords to viewport coords to compensate
+            // for object-fit:cover cropping (landmark 0,0 is not viewport 0,0)
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            const dw = window.innerWidth;
+            const dh = window.innerHeight;
+            const scale = Math.max(dw / vw, dh / vh);
+            const offsetX = (dw - vw * scale) / 2;
+            const offsetY = (dh - vh * scale) / 2;
+            const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
+            const ry = (tip.y * vh * scale + offsetY) / dh;
             signalRef.current = {
-              x: 1 - wrist.x,
-              y: wrist.y,
+              x: Math.max(0, Math.min(1, rx)),
+              y: Math.max(0, Math.min(1, ry)),
               present: true,
               handId: 'primary',
             };
