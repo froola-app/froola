@@ -40,18 +40,22 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
     function tick() {
       const signals = signalRef.current;
-      const left = signals.find(s => s.handId === 'left');
+      const left  = signals.find(s => s.handId === 'left');
+      const right = signals.find(s => s.handId === 'right');
+      const anyPresent = left?.present || right?.present;
 
-      if (left?.present && engineRef.current) {
+      if (anyPresent && engineRef.current) {
         const { noteIdx, qualIdx } = selectedRef.current;
-        const yChanged = Math.abs(left.y - lastY) > REGISTER_THRESHOLD;
+        // Use left hand y for register when available, fall back to right
+        const y = left?.present ? left.y : (right?.y ?? lastY);
+        const yChanged = Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
 
         if (yChanged || selChanged) {
-          engineRef.current.play(buildCommand(noteIdx, qualIdx, left.y));
+          engineRef.current.play(buildCommand(noteIdx, qualIdx, y));
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
-          lastY = left.y;
+          lastY = y;
         }
       }
 
