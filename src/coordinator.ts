@@ -12,7 +12,7 @@ const REGISTER_THRESHOLD = 0.5 / 24;
 export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
+  const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0, leftInDial: false, rightInDial: false });
 
   const { signalRef, mode, requestCamera, useMouse } = useGestureInput();
 
@@ -45,13 +45,14 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
       const anyPresent = left?.present || right?.present;
 
       if (anyPresent && engineRef.current) {
-        const { noteIdx, qualIdx } = selectedRef.current;
+        const { noteIdx, qualIdx, leftInDial, rightInDial } = selectedRef.current;
+        const touchingDial = (left?.present && leftInDial) || (right?.present && rightInDial);
         // Use left hand y for register when available, fall back to right
         const y = left?.present ? left.y : (right?.y ?? lastY);
         const yChanged = Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
 
-        if (yChanged || selChanged) {
+        if (touchingDial && (yChanged || selChanged)) {
           engineRef.current.play(buildCommand(noteIdx, qualIdx, y));
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;

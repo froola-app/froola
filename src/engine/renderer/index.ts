@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal, ChordQuality } from '../types';
 import { NOTES, QUALITIES } from '../types';
 
-export type DialSelection = { noteIdx: number; qualIdx: number };
+export type DialSelection = { noteIdx: number; qualIdx: number; leftInDial: boolean; rightInDial: boolean };
 
 const QUALITY_LABELS: Record<ChordQuality, string> = {
   major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
@@ -192,40 +192,47 @@ export function useRenderer(
       }
 
       const outerR = Math.min(w, h) * 0.24;
+      const innerR = outerR * 0.36;
       const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
       const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
       const wheelCy = h / 2;
       const bgColor = 'rgba(10,14,26,0.88)';
 
-      // Orb positions in pixels for angle calculation
+      // Orb positions in pixels
       const leftOrbX  = left  ? left.x  * w : leftCx;
       const leftOrbY  = left  ? left.y  * h : wheelCy;
       const rightOrbX = right ? right.x * w : rightCx;
       const rightOrbY = right ? right.y * h : wheelCy;
 
-      // Left wheel — note selection by angle from wheel center to orb
+      // Check whether each orb is inside its wheel's annular region
+      const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - wheelCy);
+      const rightDist = Math.hypot(rightOrbX - rightCx, rightOrbY - wheelCy);
+      const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
+      const rightInDial = !!right?.present && rightDist >= innerR && rightDist <= outerR;
+
+      // Left wheel — note selection by angle, active only when orb is touching the dial
       const noteIdx = left?.present ? angleToSlice(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length) : 0;
       drawWheel(
         ctx, leftCx, wheelCy, outerR,
-        NOTES, noteIdx, !!left?.present,
+        NOTES, noteIdx, leftInDial,
         () => 'rgba(245,158,11,0.60)',
-        left?.present ? NOTES[noteIdx] : 'NOTE',
+        leftInDial ? NOTES[noteIdx] : 'NOTE',
         bgColor
       );
 
-      // Right wheel — chord quality selection by angle from wheel center to orb
+      // Right wheel — chord quality selection by angle, active only when orb is touching the dial
       const qualIdx = right?.present ? angleToSlice(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length) : 0;
-
-      // Publish dial selection so the coordinator can drive audio from it
-      selectedRef.current = { noteIdx, qualIdx };
       drawWheel(
         ctx, rightCx, wheelCy, outerR,
         QUALITIES.map(q => QUALITY_LABELS[q]),
-        qualIdx, !!right?.present,
+        qualIdx, rightInDial,
         (i) => qualitySliceColor(QUALITIES[i], 0.60),
-        right?.present ? QUALITY_LABELS[QUALITIES[qualIdx]] : 'CHORD',
+        rightInDial ? QUALITY_LABELS[QUALITIES[qualIdx]] : 'CHORD',
         bgColor
       );
+
+      // Publish dial state so the coordinator gates audio on inDial too
+      selectedRef.current = { noteIdx, qualIdx, leftInDial, rightInDial };
 
       // Orbs
       for (const signal of signals) {
