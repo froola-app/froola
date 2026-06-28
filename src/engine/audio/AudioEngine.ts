@@ -72,6 +72,11 @@ export class AudioEngine {
   play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
 
+    // Wait silently if the sampler is still loading — no oscillator fallback
+    if (mode === 'piano' || mode === 'guitar') {
+      if (!this.samplers[mode]) return
+    }
+
     if ((mode === 'piano' || mode === 'guitar') && this.samplers[mode]) {
       const player = this.samplers[mode]!
 

@@ -110,11 +110,18 @@ export function useCoordinator(
     selectedRef
   );
 
+  function preloadSampler(m: InstrumentMode) {
+    if ((m === 'piano' || m === 'guitar') && engineRef.current) {
+      engineRef.current.startLoadingSampler(m);
+    }
+  }
+
   return {
     mode,
     requestCamera,
     useMouse,
     signalRef,
+    preloadSampler,
     vibe: 'warm' as string,
   };
 }
