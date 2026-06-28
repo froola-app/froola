@@ -5,7 +5,7 @@ import type { GestureSignal } from '../types';
 type InputMode = 'asking' | 'camera' | 'mouse';
 
 const DEFAULT_SIGNAL: GestureSignal = {
-  x: 0.5, y: 0.5, present: false, handId: 'primary',
+  x: 0.5, y: 0.5, present: false, handId: 'left',
 };
 
 export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
@@ -32,7 +32,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
         present: true,
-        handId: 'primary',
+        handId: 'left',
       };
     }
     window.addEventListener('mousemove', onMove);
@@ -124,7 +124,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
               x: Math.max(0, Math.min(1, smoothX)),
               y: Math.max(0, Math.min(1, smoothY)),
               present: true,
-              handId: 'primary',
+              handId: 'left',
             };
           } else {
             signalRef.current = { ...signalRef.current, present: false };
