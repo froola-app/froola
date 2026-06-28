@@ -5,41 +5,107 @@ import type { GestureSignal, NoteName, ChordQuality } from '../types';
 const NOTES: NoteName[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const QUALITIES: ChordQuality[] = ['major', 'minor', 'maj7', 'min7', 'dom7', 'aug', 'dim'];
 
+const QUALITY_LABELS: Record<ChordQuality, string> = {
+  major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
+};
+
 function pickIndex(x: number, count: number): number {
   return Math.min(Math.floor(x * count), count - 1);
 }
 
-function drawDial(
+function qualitySliceColor(q: ChordQuality, alpha: number): string {
+  if (q === 'major' || q === 'maj7') return `rgba(245,158,11,${alpha})`;
+  if (q === 'dom7')                  return `rgba(255,130,50,${alpha})`;
+  if (q === 'minor' || q === 'min7') return `rgba(74,158,255,${alpha})`;
+  return                                    `rgba(184,122,255,${alpha})`;
+}
+
+function drawWheel(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
+  cx: number,
+  cy: number,
+  outerR: number,
   labels: string[],
-  selectedIndex: number,
-  active: boolean
+  selectedIdx: number,
+  active: boolean,
+  getActiveColor: (i: number) => string,
+  centerLabel: string,
+  bgColor: string
 ) {
-  const itemH = height / labels.length;
-  labels.forEach((label, i) => {
-    const isSelected = i === selectedIndex;
-    const cy = y + i * itemH + itemH / 2;
+  const n = labels.length;
+  const innerR = outerR * 0.36;
+  const s = outerR / 180;
 
+  // Dark backing circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR + 6, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fill();
+
+  // Slices
+  for (let i = 0; i < n; i++) {
+    const a0 = ((i - 0.5) / n) * Math.PI * 2 - Math.PI / 2;
+    const a1 = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
+    const isSelected = i === selectedIdx;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outerR, a0, a1);
+    ctx.closePath();
+    ctx.fillStyle = isSelected && active
+      ? getActiveColor(i)
+      : `rgba(255,255,255,${active ? 0.06 : 0.03})`;
     if (isSelected && active) {
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
-      ctx.fillRect(x, y + i * itemH, width, itemH);
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = getActiveColor(i);
     }
+    ctx.fill();
+    ctx.shadowBlur = 0;
 
-    ctx.font = isSelected && active ? 'bold 16px monospace' : '14px monospace';
-    ctx.fillStyle = isSelected && active ? '#F59E0B' : 'rgba(255,255,255,0.25)';
+    // Label
+    const midA = (a0 + a1) / 2;
+    const lr = outerR * 0.71;
+    ctx.font = (isSelected && active ? 'bold ' : '') +
+      Math.round((isSelected && active ? 15 : 12) * s) + 'px monospace';
+    ctx.fillStyle = isSelected && active ? '#fff' : `rgba(255,255,255,${active ? 0.45 : 0.2})`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, x + width / 2, cy);
-  });
+    ctx.fillText(labels[i], cx + Math.cos(midA) * lr, cy + Math.sin(midA) * lr);
+  }
 
-  ctx.font = '11px monospace';
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  // Divider lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < n; i++) {
+    const a = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
+    ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+    ctx.stroke();
+  }
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Inner hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Center label
   ctx.textAlign = 'center';
-  ctx.fillText(x < ctx.canvas.width / 2 ? 'NOTE' : 'CHORD', x + width / 2, y - 14);
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${Math.round(15 * s)}px monospace`;
+  ctx.fillStyle = active ? '#F59E0B' : 'rgba(255,255,255,0.3)';
+  ctx.fillText(centerLabel, cx, cy);
 }
 
 function drawOrb(
@@ -55,10 +121,10 @@ function drawOrb(
   const glowRadius = baseRadius + amplitude * 40;
 
   const isLeft = signal.handId === 'left';
-  const stop0 = isLeft ? 'rgba(200, 230, 255, 0.9)' : 'rgba(255, 240, 200, 0.9)';
-  const stop1 = isLeft ? 'rgba(100, 180, 255, 0.4)' : 'rgba(245, 200, 100, 0.4)';
-  const stop2 = isLeft ? 'rgba(100, 180, 255, 0)'   : 'rgba(245, 158, 11, 0)';
-  const core  = isLeft ? 'rgba(200, 230, 255, 0.95)' : 'rgba(255, 248, 220, 0.95)';
+  const stop0 = isLeft ? 'rgba(200,230,255,0.9)' : 'rgba(255,240,200,0.9)';
+  const stop1 = isLeft ? 'rgba(100,180,255,0.4)' : 'rgba(245,200,100,0.4)';
+  const stop2 = isLeft ? 'rgba(100,180,255,0)'   : 'rgba(245,158,11,0)';
+  const core  = isLeft ? 'rgba(200,230,255,0.95)' : 'rgba(255,248,220,0.95)';
 
   const orbGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 2.5);
   orbGrad.addColorStop(0, stop0);
@@ -102,34 +168,50 @@ export function useRenderer(
       const left  = signals.find(s => s.handId === 'left');
       const right = signals.find(s => s.handId === 'right');
 
-      ctx.clearRect(0, 0, w, h);
+      // Background
+      ctx.fillStyle = '#0A0E1A';
+      ctx.fillRect(0, 0, w, h);
 
-      // Warm zone — static amber radial gradient centered (SP2 will drive this from tension)
+      // Warm zone gradient (SP2 will drive color from tension)
       const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.min(w, h) * 0.45);
-      grad.addColorStop(0, 'rgba(245, 158, 11, 0.18)');
-      grad.addColorStop(0.6, 'rgba(217, 119, 6, 0.08)');
-      grad.addColorStop(1, 'rgba(217, 119, 6, 0)');
+      grad.addColorStop(0, 'rgba(245,158,11,0.18)');
+      grad.addColorStop(0.6, 'rgba(217,119,6,0.08)');
+      grad.addColorStop(1, 'rgba(217,119,6,0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
+      // Audio amplitude
       let amplitude = 0;
       if (analyser && freqData) {
         analyser.getByteFrequencyData(freqData);
-        const sum = freqData.reduce((a, b) => a + b, 0);
-        amplitude = sum / freqData.length / 255;
+        amplitude = freqData.reduce((a, b) => a + b, 0) / freqData.length / 255;
       }
 
-      const DIAL_W = w * 0.15;
+      const outerR = Math.min(w, h) * 0.17;
+      const bgColor = 'rgba(10,14,26,0.92)';
 
-      // Left dial — note selection
+      // Left wheel — note selection
       const noteIdx = left ? pickIndex(left.x, NOTES.length) : 0;
-      drawDial(ctx, 0, 40, DIAL_W, h - 80, NOTES, noteIdx, !!left?.present);
+      drawWheel(
+        ctx, outerR + 18, h / 2, outerR,
+        NOTES, noteIdx, !!left?.present,
+        () => 'rgba(245,158,11,0.60)',
+        left?.present ? NOTES[noteIdx] : 'NOTE',
+        bgColor
+      );
 
-      // Right dial — chord quality selection
+      // Right wheel — chord quality selection
       const qualIdx = right ? pickIndex(right.x, QUALITIES.length) : 0;
-      drawDial(ctx, w - DIAL_W, 40, DIAL_W, h - 80, QUALITIES, qualIdx, !!right?.present);
+      drawWheel(
+        ctx, w - outerR - 18, h / 2, outerR,
+        QUALITIES.map(q => QUALITY_LABELS[q]),
+        qualIdx, !!right?.present,
+        (i) => qualitySliceColor(QUALITIES[i], 0.60),
+        right?.present ? QUALITY_LABELS[QUALITIES[qualIdx]] : 'CHORD',
+        bgColor
+      );
 
-      // Orbs for each present hand
+      // Orbs
       for (const signal of signals) {
         if (!signal.present) continue;
         drawOrb(ctx, signal, w, h, amplitude);
