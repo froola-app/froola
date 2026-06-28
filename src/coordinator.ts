@@ -52,17 +52,17 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
       const outerR  = Math.min(w, h) * 0.24;
       const innerR  = outerR * 0.36;
       const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
-      const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
       const wheelCy = h / 2;
 
       const inRing = (x: number, y: number, cx: number) => {
         const d = Math.hypot(x * w - cx, y * h - wheelCy);
         return d >= innerR && d <= outerR;
       };
-      const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx);
-      const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx);
+      const leftInDial = !!left?.present && inRing(left.x, left.y, leftCx);
 
-      const touching = leftInDial || rightInDial;
+      // Audio follows the left hand only: left orb on left wheel → sound on.
+      // Right hand modifies chord quality but never sustains sound on its own.
+      const touching = leftInDial;
       const justEntered = touching && !wasTouching;
       const justLeft    = !touching && wasTouching;
       wasTouching = touching;
