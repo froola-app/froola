@@ -146,3 +146,55 @@ body {
   background: rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.95);
 }
+
+.record-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+  z-index: 20;
+  border: 1px solid transparent;
+}
+
+.record-btn--idle {
+  color: rgba(255, 100, 100, 0.7);
+  background: rgba(255, 80, 80, 0.08);
+  border-color: rgba(255, 80, 80, 0.2);
+}
+
+.record-btn--idle:hover {
+  background: rgba(255, 80, 80, 0.16);
+  color: rgba(255, 100, 100, 1);
+}
+
+.record-btn--recording {
+  color: #fff;
+  background: rgba(220, 38, 38, 0.85);
+  border-color: #dc2626;
+}
+
+.record-btn--done {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.record-btn--done:hover {
+  background: rgba(245, 158, 11, 0.22);
+  color: #f59e0b;
+}
+
+.record-progress {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: #dc2626;
+  z-index: 30;
+  transition: width 0.1s linear;
+}

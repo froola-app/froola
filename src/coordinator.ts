@@ -52,5 +52,5 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
   useRenderer(canvasRef as RefObject<HTMLCanvasElement>, inputSignalRef, analyserRef);
 
-  return { mode, requestCamera, useMouse };
+  return { mode, requestCamera, useMouse, signalRef: inputSignalRef };
 }
