@@ -203,11 +203,14 @@ export function useRenderer(
       const rightOrbX = right ? right.x * w : rightCx;
       const rightOrbY = right ? right.y * h : wheelCy;
 
-      // Orb is "in" a dial when its centre is inside the outer circle
+      // Orb touches a slice only when it is in the annular ring (innerR..outerR).
+      // Inside innerR (center hub) atan2 is unstable — tiny tremors flip the
+      // selected slice — so we treat that zone as inactive.
+      const innerR    = outerR * 0.36;
       const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - wheelCy);
       const rightDist = Math.hypot(rightOrbX - rightCx, rightOrbY - wheelCy);
-      const leftInDial  = !!left?.present  && leftDist  <= outerR;
-      const rightInDial = !!right?.present && rightDist <= outerR;
+      const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
+      const rightInDial = !!right?.present && rightDist >= innerR && rightDist <= outerR;
 
       // Left wheel — note selection by angle, active only when orb is touching the dial
       const noteIdx = left?.present ? angleToSlice(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length) : 0;
