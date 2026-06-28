@@ -1,0 +1,37 @@
+import type { NoteName, ChordQuality, MusicalCommand } from '../types';
+import { NOTES, QUALITIES } from '../types';
+
+const NOTE_MIDI: Record<NoteName, number> = {
+  C: 60, D: 62, E: 64, F: 65, G: 67, A: 69, B: 71,
+};
+
+const QUALITY_INTERVALS: Record<ChordQuality, [0, number, number]> = {
+  major: [0, 4, 7],
+  minor: [0, 3, 7],
+  maj7:  [0, 4, 11],
+  min7:  [0, 3, 10],
+  dom7:  [0, 4, 10],
+  aug:   [0, 4, 8],
+  dim:   [0, 3, 6],
+};
+
+const QUALITY_TENSION: Record<ChordQuality, number> = {
+  major: 0.0, minor: 0.2, maj7: 0.3, min7: 0.4, dom7: 0.6, aug: 0.8, dim: 1.0,
+};
+
+export function buildCommand(noteIdx: number, qualIdx: number, y: number): MusicalCommand {
+  const note = NOTES[noteIdx % NOTES.length];
+  const quality = QUALITIES[qualIdx % QUALITIES.length];
+  const rootMidi = NOTE_MIDI[note];
+  const intervals = QUALITY_INTERVALS[quality];
+  const offset = Math.round((0.5 - y) * 24);
+  return {
+    chord: `${note}${quality}`,
+    voicing: intervals.map(i => rootMidi + i + offset),
+    register: y,
+    texture: 0.5,
+    tension: QUALITY_TENSION[quality],
+    rootNote: note,
+    chordQuality: quality,
+  };
+}

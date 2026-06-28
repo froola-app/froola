@@ -8,6 +8,9 @@ export type GestureSignal = {
 export type NoteName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 export type ChordQuality = 'major' | 'minor' | 'maj7' | 'min7' | 'dom7' | 'aug' | 'dim';
 
+export const NOTES: NoteName[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+export const QUALITIES: ChordQuality[] = ['major', 'minor', 'maj7', 'min7', 'dom7', 'aug', 'dim'];
+
 export type MusicalCommand = {
   chord: string;      // e.g. "Cmaj7"
   voicing: number[];  // MIDI note numbers
