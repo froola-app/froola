@@ -8,11 +8,23 @@ import OnboardingFlow from './components/onboarding/OnboardingFlow';
 import './App.css';
 
 function AppRoutes() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, firebaseReady } = useAuth();
 
   if (loading) return null;
 
-  // Not signed in → show sign-in page (replay is public)
+  // Firebase not configured yet — skip auth and go straight to the app
+  if (!firebaseReady) {
+    return (
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/play" element={<PlayShell />} />
+        <Route path="/replay" element={<ReplayShell />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  // Not signed in → show sign-in page (replay is always public)
   if (!user) {
     return (
       <Routes>
