@@ -74,6 +74,11 @@ export function useCoordinator(
       const { noteIdx, qualIdx } = selectedRef.current;
       const instrMode = modeRef.current;
 
+      // Kick off sampler loading as soon as user selects piano or guitar
+      if ((instrMode === 'piano' || instrMode === 'guitar') && engineRef.current) {
+        engineRef.current.startLoadingSampler(instrMode);
+      }
+
       if (justLeft && engineRef.current) {
         engineRef.current.silence(instrMode);
       }
