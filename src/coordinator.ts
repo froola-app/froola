@@ -10,9 +10,7 @@ import { AudioEngine } from './engine/audio';
 export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const engineRef = useRef<AudioEngine | null>(null);
   const mapperRef = useRef(createMapper('warm'));
-  const gestureRef = useRef<GestureSignal>({
-    x: 0.5, y: 0.5, present: false, handId: 'primary',
-  });
+  const signalsRef = useRef<GestureSignal[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
   const { signalRef: inputSignalRef, mode, requestCamera, useMouse } = useGestureInput();
@@ -38,7 +36,7 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
     function tick() {
       const signal = inputSignalRef.current;
-      gestureRef.current = signal;
+      signalsRef.current = signal.present ? [signal] : [];
 
       if (signal.present && engineRef.current) {
         const cmd = mapperRef.current(signal);
@@ -52,7 +50,7 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
     return () => cancelAnimationFrame(rafId);
   }, [inputSignalRef]);
 
-  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, gestureRef, analyserRef);
+  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, signalsRef, analyserRef);
 
   return { mode, requestCamera, useMouse };
 }
