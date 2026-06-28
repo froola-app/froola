@@ -12,7 +12,9 @@ const QUALITY_LABELS: Record<ChordQuality, string> = {
 function angleToSlice(orbX: number, orbY: number, cx: number, cy: number, n: number): number {
   const angle = Math.atan2(orbY - cy, orbX - cx);
   const normalized = ((angle + Math.PI / 2) + Math.PI * 2) % (Math.PI * 2);
-  return Math.min(Math.floor((normalized / (Math.PI * 2)) * n), n - 1);
+  // Math.round centres the hit-region on each visual slice rather than
+  // starting at its left edge (which would shift selection half a slice clockwise).
+  return Math.round(normalized / (Math.PI * 2) * n) % n;
 }
 
 function qualitySliceColor(q: ChordQuality, alpha: number): string {
