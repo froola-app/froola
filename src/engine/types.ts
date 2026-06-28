@@ -21,3 +21,16 @@ export type MusicalCommand = {
   rootNote: NoteName;
   chordQuality: ChordQuality;
 };
+
+/** One recorded gesture sample. 5 bytes when packed by codec. */
+export type RecordingSample = {
+  dt: number;         // ms since previous sample (uint16)
+  noteIdx: number;    // 0–6, index into NOTES array
+  qualityIdx: number; // 0–6, index into QUALITIES array
+  vibe: number;       // 0–3, index into VIBES array
+};
+
+export type Recording = {
+  samples: RecordingSample[];
+  totalMs: number;    // sum of all dt values
+};
