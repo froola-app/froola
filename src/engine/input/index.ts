@@ -107,8 +107,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
           for (let i = 0; i < result.landmarks.length; i++) {
             const tip = result.landmarks[i][8]; // index fingertip
             const rawHandedness = result.handednesses[i][0].categoryName;
-            // MediaPipe handedness is mirrored; flip to match the mirrored video feed
-            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'right' : 'left';
+            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
 
             // Remap from video-native coords to viewport coords (object-fit:cover compensation)
             const vw = video.videoWidth;
