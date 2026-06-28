@@ -57,13 +57,16 @@ export function useCoordinator(
       const leftCx  = outerR * 1.5;
       const wheelCy = h * 0.65;
 
+      const rightCx = w - outerR * 1.5;
       const inRing = (x: number, y: number, cx: number) => {
         const d = Math.hypot(x * w - cx, y * h - wheelCy);
         return d >= innerR && d <= outerR;
       };
-      const leftInDial = !!left?.present && inRing(left.x, left.y, leftCx);
+      const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx);
+      const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx);
 
-      const touching = leftInDial;
+      // Both hands on their wheels = chord plays (left=note, right=quality)
+      const touching = leftInDial && rightInDial;
       const justEntered = touching && !wasTouching;
       const justLeft    = !touching && wasTouching;
       wasTouching = touching;
@@ -72,10 +75,7 @@ export function useCoordinator(
       const instrMode = modeRef.current;
 
       if (justLeft && engineRef.current) {
-        // Piano/guitar notes decay naturally — no need to cut them
-        if (instrMode !== 'piano' && instrMode !== 'guitar') {
-          engineRef.current.silence();
-        }
+        engineRef.current.silence(instrMode);
       }
 
       if (touching && engineRef.current) {

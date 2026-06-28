@@ -220,18 +220,24 @@ export function useRenderer(
       const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
       const rightInDial = !!right?.present && rightDist >= innerR && rightDist <= outerR;
 
-      // Left wheel — note selection by angle, active only when orb is touching the dial
+      // Slice selections (compute both before drawing so left wheel can show full chord name)
       const noteIdx = left?.present ? angleToSlice(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length) : 0;
+      const qualIdx = right?.present ? angleToSlice(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length) : 0;
+      const bothActive = leftInDial && rightInDial;
+
+      // Left wheel — note selection
+      const leftCenterLabel = bothActive
+        ? `${NOTES[noteIdx]}${QUALITY_LABELS[QUALITIES[qualIdx]]}`
+        : leftInDial ? NOTES[noteIdx] : 'NOTE';
       drawWheel(
         ctx, leftCx, wheelCy, outerR,
         NOTES, noteIdx, leftInDial,
         () => 'rgba(245,158,11,0.60)',
-        leftInDial ? NOTES[noteIdx] : 'NOTE',
+        leftCenterLabel,
         bgColor
       );
 
-      // Right wheel — chord quality selection by angle, active only when orb is touching the dial
-      const qualIdx = right?.present ? angleToSlice(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length) : 0;
+      // Right wheel — chord quality selection
       drawWheel(
         ctx, rightCx, wheelCy, outerR,
         QUALITIES.map(q => QUALITY_LABELS[q]),
