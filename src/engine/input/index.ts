@@ -4,12 +4,8 @@ import type { GestureSignal } from '../types';
 
 type InputMode = 'asking' | 'camera' | 'mouse';
 
-const DEFAULT_SIGNAL: GestureSignal = {
-  x: 0.5, y: 0.5, present: false, handId: 'left',
-};
-
-export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
-  const signalRef = useRef<GestureSignal>({ ...DEFAULT_SIGNAL });
+export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
+  const signalRef = useRef<GestureSignal[]>([]);
   const [mode, setMode] = useState<InputMode>('asking');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -25,15 +21,15 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
   // Mouse mode
   useEffect(() => {
     if (mode !== 'mouse') return;
-    signalRef.current = { ...DEFAULT_SIGNAL, present: true };
+    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
 
     function onMove(e: MouseEvent) {
-      signalRef.current = {
+      signalRef.current = [{
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
         present: true,
         handId: 'left',
-      };
+      }];
     }
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
@@ -61,7 +57,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
           delegate: 'GPU',
         },
         runningMode: 'VIDEO',
-        numHands: 1,
+        numHands: 2,
       });
 
       if (cancelled) { landmarker.close(); return; }
@@ -93,17 +89,14 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         if (now - lastInferenceTime >= INFERENCE_INTERVAL) {
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
-          if (result.landmarks.length > 0) {
-            const wrist = result.landmarks[0][0];
-            signalRef.current = {
-              x: 1 - wrist.x,
-              y: wrist.y,
-              present: true,
-              handId: 'left',
-            };
-          } else {
-            signalRef.current = { ...signalRef.current, present: false };
+          const signals: GestureSignal[] = [];
+          for (let i = 0; i < result.landmarks.length; i++) {
+            const wrist = result.landmarks[i][0];
+            const rawHandedness = result.handednesses[i][0].categoryName;
+            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'right' : 'left';
+            signals.push({ x: 1 - wrist.x, y: wrist.y, present: true, handId });
           }
+          signalRef.current = signals;
         }
         animFrameId = requestAnimationFrame(loop);
       }

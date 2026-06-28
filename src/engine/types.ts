@@ -18,4 +18,6 @@ export type MusicalCommand = {
   register: number;   // 0–1, high to low
   texture: number;    // 0–1, sparse to dense
   tension: number;    // 0–1, tonal to dissonant (drives warm-zone color)
+  rootNote: NoteName;
+  chordQuality: ChordQuality;
 };
