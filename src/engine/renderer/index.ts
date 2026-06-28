@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, NoteName, ChordQuality } from '../types';
+import type { GestureSignal, ChordQuality } from '../types';
+import { NOTES, QUALITIES } from '../types';
 
-const NOTES: NoteName[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
-const QUALITIES: ChordQuality[] = ['major', 'minor', 'maj7', 'min7', 'dom7', 'aug', 'dim'];
+export type DialSelection = { noteIdx: number; qualIdx: number };
 
 const QUALITY_LABELS: Record<ChordQuality, string> = {
   major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
@@ -146,7 +146,8 @@ function drawOrb(
 export function useRenderer(
   canvasRef: RefObject<HTMLCanvasElement>,
   signalsRef: RefObject<GestureSignal[]>,
-  analyserRef: RefObject<AnalyserNode | null>
+  analyserRef: RefObject<AnalyserNode | null>,
+  selectedRef: RefObject<DialSelection>
 ): void {
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -214,6 +215,9 @@ export function useRenderer(
 
       // Right wheel — chord quality selection by angle from wheel center to orb
       const qualIdx = right?.present ? angleToSlice(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length) : 0;
+
+      // Publish dial selection so the coordinator can drive audio from it
+      selectedRef.current = { noteIdx, qualIdx };
       drawWheel(
         ctx, rightCx, wheelCy, outerR,
         QUALITIES.map(q => QUALITY_LABELS[q]),
