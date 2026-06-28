@@ -196,7 +196,9 @@ export function useRenderer(
         amplitude = freqData.reduce((a, b) => a + b, 0) / freqData.length / 255;
       }
 
-      const outerR = Math.min(w, h) * 0.24;
+      // Cap so the two wheels (centered at outerR*1.5 from each edge) never overlap.
+      // Gap between edges = w - 5*outerR; keep at least 8px.
+      const outerR = Math.min(Math.min(w, h) * 0.24, (w - 8) / 5);
       const leftCx  = outerR * 1.5;
       const rightCx = w - outerR * 1.5;
       const wheelCy = h * 0.65;

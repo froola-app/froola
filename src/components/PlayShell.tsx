@@ -10,7 +10,10 @@ const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'guitar', label: 'guitar' },
 ];
 
+const isTouchDevice = () => navigator.maxTouchPoints > 0;
+
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
+  const touch = isTouchDevice();
   return (
     <div className="permission-screen">
       <h1>Froola</h1>
@@ -18,16 +21,19 @@ function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: ()
       <p>MediaPipe runs entirely on your device — no video is transmitted.</p>
       <div className="permission-buttons">
         <button onClick={onCamera} className="btn-primary">Enable camera</button>
-        <button onClick={onMouse} className="btn-secondary">Use mouse instead</button>
+        <button onClick={onMouse} className="btn-secondary">
+          {touch ? 'Use touch instead' : 'Use mouse instead'}
+        </button>
       </div>
     </div>
   );
 }
 
 function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
+  const touch = isTouchDevice();
   return (
     <div className="mode-badge">
-      Mouse mode —{' '}
+      {touch ? 'Touch mode' : 'Mouse mode'} —{' '}
       <button onClick={onSwitch} className="link-btn">try camera mode</button>
     </div>
   );

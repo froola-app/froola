@@ -18,7 +18,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
     setMode('camera');
   }
 
-  // Mouse mode
+  // Mouse / touch mode
   useEffect(() => {
     if (mode !== 'mouse') return;
     signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
@@ -31,8 +31,44 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
         handId: 'left',
       }];
     }
+
+    function onTouch(e: TouchEvent) {
+      e.preventDefault();
+      const touches = Array.from(e.touches);
+      if (touches.length === 0) {
+        signalRef.current = [];
+        return;
+      }
+      // Sort touches by x so the leftmost maps to 'left' hand and rightmost to 'right'
+      touches.sort((a, b) => a.clientX - b.clientX);
+      signalRef.current = touches.slice(0, 2).map((t, i) => ({
+        x: t.clientX / window.innerWidth,
+        y: t.clientY / window.innerHeight,
+        present: true,
+        handId: (i === 0 ? 'left' : 'right') as 'left' | 'right',
+      }));
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      e.preventDefault();
+      const touches = Array.from(e.touches);
+      if (touches.length === 0) {
+        signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
+        return;
+      }
+      onTouch(e);
+    }
+
     window.addEventListener('mousemove', onMove);
-    return () => window.removeEventListener('mousemove', onMove);
+    window.addEventListener('touchstart', onTouch, { passive: false });
+    window.addEventListener('touchmove', onTouch, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: false });
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchstart', onTouch);
+      window.removeEventListener('touchmove', onTouch);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
   }, [mode]);
 
   // Camera mode
