@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, ChordQuality } from '../types';
+import type { GestureSignal, ChordQuality, MusicalCommand } from '../types';
 import { NOTES, QUALITIES } from '../types';
+import { ParticleSystem } from './particles';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
 
@@ -149,8 +150,11 @@ export function useRenderer(
   canvasRef: RefObject<HTMLCanvasElement>,
   signalsRef: RefObject<GestureSignal[]>,
   analyserRef: RefObject<AnalyserNode | null>,
-  selectedRef: RefObject<DialSelection>
+  selectedRef: RefObject<DialSelection>,
+  commandRef?: RefObject<MusicalCommand | null>
 ): void {
+  const particlesRef = useRef(new ParticleSystem());
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -198,6 +202,18 @@ export function useRenderer(
       const rightCx = w - outerR * 1.5;
       const wheelCy = h * 0.65;
       const bgColor = 'rgba(10,14,26,0.88)';
+
+      // Particles — between warm zone and dials
+      const presentSignals = signals.filter(s => s.present);
+      const spawnX = presentSignals.length > 0
+        ? presentSignals.reduce((sum, s) => sum + s.x * w, 0) / presentSignals.length
+        : w / 2;
+      const spawnY = presentSignals.length > 0
+        ? presentSignals.reduce((sum, s) => sum + s.y * h, 0) / presentSignals.length
+        : h / 2;
+      const tension = commandRef?.current?.tension ?? 0;
+      particlesRef.current.spawn(spawnX, spawnY, amplitude, tension);
+      particlesRef.current.tick(ctx);
 
       // Orb positions in pixels
       const leftOrbX  = left  ? left.x  * w : leftCx;
@@ -253,5 +269,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, signalsRef, analyserRef]);
+  }, [canvasRef, signalsRef, analyserRef, commandRef]);
 }

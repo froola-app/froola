@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['src/test-utils/webAudioMock.ts'],
+    setupFiles: ['src/test-utils/webAudioMock.ts', 'src/test-setup.ts'],
   },
 })
