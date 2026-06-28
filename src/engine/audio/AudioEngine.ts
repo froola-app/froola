@@ -44,42 +44,46 @@ export class AudioEngine {
     }
   }
 
-  silence(): void {
-    const now = this.ctx.currentTime
-    const rampEnd = now + 0.08
-    this.voiceGains.forEach(g => {
-      g.gain.setValueAtTime(g.gain.value, now)
-      g.gain.linearRampToValueAtTime(0, rampEnd)
-    })
-  }
-
+  // Attack only — gains ramp up and stay. Call silence() to release.
   play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
+    const peakGain = 0.7 / 3
 
     cmd.voicing.forEach((midi, i) => {
       const hz = midiToHz(midi)
+      this.oscillators[i].frequency.cancelScheduledValues(now)
+      this.oscillators[i].frequency.setValueAtTime(hz, now)
+      this.voiceGains[i].gain.cancelScheduledValues(now)
+      this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
 
-      if (mode === 'piano' || mode === 'guitar') {
-        const attack = mode === 'piano' ? 0.008 : 0.005
-        const decay  = mode === 'piano' ? 0.7   : 0.35
-        this.oscillators[i].frequency.cancelScheduledValues(now)
-        this.oscillators[i].frequency.setValueAtTime(hz, now)
-        this.voiceGains[i].gain.cancelScheduledValues(now)
-        this.voiceGains[i].gain.setValueAtTime(0, now)
-        this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, now + attack)
-        this.voiceGains[i].gain.exponentialRampToValueAtTime(0.001, now + attack + decay)
-        this.voiceGains[i].gain.linearRampToValueAtTime(0, now + attack + decay + 0.02)
+      if (mode === 'piano') {
+        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.008)
+      } else if (mode === 'guitar') {
+        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.005)
       } else if (mode === 'pad') {
-        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
-        this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + 0.1)
-        this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
-        this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, now + 0.4)
+        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.4)
       } else {
-        const rampEnd = now + 0.012
-        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
-        this.oscillators[i].frequency.linearRampToValueAtTime(hz, rampEnd)
-        this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
-        this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, rampEnd)
+        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.012)
+      }
+    })
+  }
+
+  // Release — mode-specific decay shape when hand leaves wheel
+  silence(mode: InstrumentMode = 'synth'): void {
+    const now = this.ctx.currentTime
+    this.voiceGains.forEach(g => {
+      g.gain.cancelScheduledValues(now)
+      g.gain.setValueAtTime(g.gain.value, now)
+      if (mode === 'piano') {
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
+        g.gain.linearRampToValueAtTime(0, now + 0.72)
+      } else if (mode === 'guitar') {
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
+        g.gain.linearRampToValueAtTime(0, now + 0.37)
+      } else if (mode === 'pad') {
+        g.gain.linearRampToValueAtTime(0, now + 0.5)
+      } else {
+        g.gain.linearRampToValueAtTime(0, now + 0.08)
       }
     })
   }

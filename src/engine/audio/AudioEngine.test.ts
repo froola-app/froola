@@ -47,21 +47,19 @@ describe('AudioEngine — construction', () => {
 })
 
 describe('AudioEngine — play()', () => {
-  it('ramps frequency for all 3 oscillators', () => {
+  it('sets frequency for all 3 oscillators', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     mockAudioContext.createOscillator.mock.results.forEach(r => {
-      expect(r.value.frequency.linearRampToValueAtTime).toHaveBeenCalledTimes(1)
+      expect(r.value.frequency.setValueAtTime).toHaveBeenCalled()
     })
   })
 
   it('ramps gain for all 3 voice gain nodes', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
-    // Voice gain nodes (not the master gain) each get a ramp
     const gainRampCalls = mockAudioContext.createGain.mock.results
       .map(r => r.value.gain.linearRampToValueAtTime.mock.calls.length)
-    // At least 3 of the gain nodes (the voice gains) must have been ramped
     const ramped = gainRampCalls.filter(n => n > 0)
     expect(ramped.length).toBeGreaterThanOrEqual(3)
   })
@@ -70,7 +68,8 @@ describe('AudioEngine — play()', () => {
     const engine = new AudioEngine()
     engine.play({ ...CMD, voicing: [69, 73, 76] })
     const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const [targetHz] = firstOsc.frequency.linearRampToValueAtTime.mock.calls[0]
+    const calls = firstOsc.frequency.setValueAtTime.mock.calls
+    const targetHz = calls[calls.length - 1][0]
     expect(targetHz).toBeCloseTo(440, 1)
   })
 
@@ -78,15 +77,18 @@ describe('AudioEngine — play()', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const [targetHz] = firstOsc.frequency.linearRampToValueAtTime.mock.calls[0]
+    const calls = firstOsc.frequency.setValueAtTime.mock.calls
+    const targetHz = calls[calls.length - 1][0]
     expect(targetHz).toBeCloseTo(261.63, 1)
   })
 
-  it('ramp end time is currentTime + 0.012s', () => {
+  it('gain ramp end time is currentTime + 0.012s for synth mode', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
-    const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const [, endTime] = firstOsc.frequency.linearRampToValueAtTime.mock.calls[0]
+    const allGainRamps = mockAudioContext.createGain.mock.results.flatMap(r =>
+      r.value.gain.linearRampToValueAtTime.mock.calls
+    )
+    const endTime = allGainRamps.find(([val]: [number]) => Math.abs(val - 0.7 / 3) < 0.001)?.[1]
     expect(endTime).toBeCloseTo(mockAudioContext.currentTime + 0.012, 5)
   })
 
