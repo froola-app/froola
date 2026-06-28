@@ -9,8 +9,10 @@ const QUALITY_LABELS: Record<ChordQuality, string> = {
   major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
 };
 
-function pickIndex(x: number, count: number): number {
-  return Math.min(Math.floor(x * count), count - 1);
+function angleToSlice(orbX: number, orbY: number, cx: number, cy: number, n: number): number {
+  const angle = Math.atan2(orbY - cy, orbX - cx);
+  const normalized = ((angle + Math.PI / 2) + Math.PI * 2) % (Math.PI * 2);
+  return Math.min(Math.floor((normalized / (Math.PI * 2)) * n), n - 1);
 }
 
 function qualitySliceColor(q: ChordQuality, alpha: number): string {
@@ -168,8 +170,9 @@ export function useRenderer(
       const left  = signals.find(s => s.handId === 'left');
       const right = signals.find(s => s.handId === 'right');
 
-      // Background
-      ctx.fillStyle = '#0A0E1A';
+      // Transparent background — let the camera feed show through
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = 'rgba(10,14,26,0.50)';
       ctx.fillRect(0, 0, w, h);
 
       // Warm zone gradient (SP2 will drive color from tension)
@@ -187,23 +190,32 @@ export function useRenderer(
         amplitude = freqData.reduce((a, b) => a + b, 0) / freqData.length / 255;
       }
 
-      const outerR = Math.min(w, h) * 0.17;
-      const bgColor = 'rgba(10,14,26,0.92)';
+      const outerR = Math.min(w, h) * 0.24;
+      const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
+      const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
+      const wheelCy = h / 2;
+      const bgColor = 'rgba(10,14,26,0.88)';
 
-      // Left wheel — note selection
-      const noteIdx = left ? pickIndex(left.x, NOTES.length) : 0;
+      // Orb positions in pixels for angle calculation
+      const leftOrbX  = left  ? left.x  * w : leftCx;
+      const leftOrbY  = left  ? left.y  * h : wheelCy;
+      const rightOrbX = right ? right.x * w : rightCx;
+      const rightOrbY = right ? right.y * h : wheelCy;
+
+      // Left wheel — note selection by angle from wheel center to orb
+      const noteIdx = left?.present ? angleToSlice(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length) : 0;
       drawWheel(
-        ctx, outerR + 18, h / 2, outerR,
+        ctx, leftCx, wheelCy, outerR,
         NOTES, noteIdx, !!left?.present,
         () => 'rgba(245,158,11,0.60)',
         left?.present ? NOTES[noteIdx] : 'NOTE',
         bgColor
       );
 
-      // Right wheel — chord quality selection
-      const qualIdx = right ? pickIndex(right.x, QUALITIES.length) : 0;
+      // Right wheel — chord quality selection by angle from wheel center to orb
+      const qualIdx = right?.present ? angleToSlice(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length) : 0;
       drawWheel(
-        ctx, w - outerR - 18, h / 2, outerR,
+        ctx, rightCx, wheelCy, outerR,
         QUALITIES.map(q => QUALITY_LABELS[q]),
         qualIdx, !!right?.present,
         (i) => qualitySliceColor(QUALITIES[i], 0.60),
