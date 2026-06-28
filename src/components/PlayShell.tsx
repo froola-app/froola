@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { InstrumentMode } from '../engine/types';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
+import RecordButton from './RecordButton';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -39,7 +40,7 @@ export default function PlayShell() {
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   modeRef.current = instrumentMode;
 
-  const { mode, requestCamera, useMouse } = useCoordinator(canvasRef, modeRef);
+  const { mode, requestCamera, useMouse, signalRef, vibe } = useCoordinator(canvasRef, modeRef);
 
   return (
     <>
@@ -51,6 +52,7 @@ export default function PlayShell() {
         <MouseModeBadge onSwitch={requestCamera} />
       )}
       <ShareButton />
+      <RecordButton signalsRef={signalRef} vibe={vibe} />
       <select
         className="instrument-select"
         value={instrumentMode}

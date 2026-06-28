@@ -105,5 +105,11 @@ export function useCoordinator(
     selectedRef
   );
 
-  return { mode, requestCamera, useMouse };
+  return {
+    mode,
+    requestCamera,
+    useMouse,
+    signalRef,
+    vibe: 'warm' as string,
+  };
 }
