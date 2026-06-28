@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
+import RecordButton from './RecordButton';
 
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
   return (
@@ -27,7 +28,9 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
 
 export default function PlayShell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { mode, requestCamera, useMouse } = useCoordinator(canvasRef);
+  const coordinator = useCoordinator(canvasRef);
+  const { mode, requestCamera, useMouse, signalRef } = coordinator;
+  const vibe = (coordinator as Record<string, unknown>).vibe as string ?? 'warm';
 
   return (
     <>
@@ -39,6 +42,7 @@ export default function PlayShell() {
         <MouseModeBadge onSwitch={requestCamera} />
       )}
       <ShareButton />
+      <RecordButton signalsRef={signalRef} vibe={vibe} />
     </>
   );
 }
