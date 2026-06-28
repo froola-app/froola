@@ -21,6 +21,7 @@ const PRO_FEATURES = [
 export default function PricingStep({ onContinue }: Props) {
   return (
     <div className="onboarding-step">
+      <p className="onboarding-eyebrow">Pricing</p>
       <h2 className="onboarding-title">Free forever, upgrade when you're ready</h2>
       <div className="pricing-cards">
         <div className="pricing-card pricing-card--free">
@@ -40,7 +41,7 @@ export default function PricingStep({ onContinue }: Props) {
           </ul>
         </div>
       </div>
-      <button className="btn-primary" onClick={onContinue}>
+      <button className="onboarding-btn" onClick={onContinue}>
         Start playing →
       </button>
     </div>
