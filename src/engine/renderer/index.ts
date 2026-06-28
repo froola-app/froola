@@ -194,8 +194,8 @@ export function useRenderer(
       }
 
       const outerR = Math.min(w, h) * 0.24;
-      const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
-      const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
+      const leftCx  = outerR + 20;
+      const rightCx = w - outerR - 20;
       const wheelCy = h / 2;
       const bgColor = 'rgba(10,14,26,0.88)';
 
