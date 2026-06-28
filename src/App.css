@@ -8,6 +8,9 @@
 body {
   background: #0A0E1A;
   overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .main-canvas {
