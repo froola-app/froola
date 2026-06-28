@@ -20,28 +20,33 @@ const useAudio = () => ({
 // --- end stubs ---
 
 export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
-  const gestureRef = useRef<GestureSignal>({
-    x: 0.5, y: 0.5, present: false, handId: 'primary',
-  });
+  const signalsRef = useRef<GestureSignal[]>([]);
 
   const { signalRef: inputSignalRef, mode, requestCamera, useMouse } = useGestureInput();
   const { play, getAnalyser } = useAudio();
   const analyserRef = useRef<AnalyserNode | null>(getAnalyser());
 
-  // Write latest signal into ref — no re-render
+  // Hot path: rAF loop — reads signal ref, maps, plays
   useEffect(() => {
-    gestureRef.current = inputSignalRef.current;
-  });
+    let rafId: number;
 
-  // Fire audio on presence
-  useEffect(() => {
-    const signal = inputSignalRef.current;
-    if (!signal.present) return;
-    const cmd = mapGesture(signal, 'default');
-    play(cmd);
-  });
+    function tick() {
+      const signal = inputSignalRef.current;
+      signalsRef.current = signal.present ? [signal] : [];
 
-  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, gestureRef, analyserRef);
+      if (signal.present) {
+        const cmd = mapGesture(signal, 'default');
+        play(cmd);
+      }
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [inputSignalRef]);
+
+  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, signalsRef, analyserRef);
 
   return { mode, requestCamera, useMouse };
 }
