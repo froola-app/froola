@@ -3,6 +3,7 @@ import type { InstrumentMode } from '../engine/types';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
+import FroolaLogo from './FroolaLogo';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -16,7 +17,7 @@ function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: ()
   const touch = isTouchDevice();
   return (
     <div className="permission-screen">
-      <h1>Froola</h1>
+      <FroolaLogo size={64} color="#FAFAF8" />
       <p className="privacy-note">Your camera never leaves your device.</p>
       <p>MediaPipe runs entirely on your device — no video is transmitted.</p>
       <div className="permission-buttons">
