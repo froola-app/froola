@@ -42,15 +42,21 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const { play, getAnalyser } = useAudio();
   const analyserRef = useRef<AnalyserNode | null>(getAnalyser());
 
-  // Fire audio on any hand present
+  // Fire audio on any hand present — reads from refs so [] is correct
   useEffect(() => {
     const signals = inputSignalRef.current;
     if (!signals.some(s => s.present)) return;
     const cmd = mapGesture(signals, 'default');
     play(cmd);
-  });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useRenderer(canvasRef as RefObject<HTMLCanvasElement>, inputSignalRef, analyserRef);
 
-  return { mode, requestCamera, useMouse, signalRef: inputSignalRef };
+  return {
+    mode,
+    requestCamera,
+    useMouse,
+    signalRef: inputSignalRef,
+    vibe: 'warm' as string, // SP2 will replace with reactive vibe state
+  };
 }

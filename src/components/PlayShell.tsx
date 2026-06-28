@@ -28,9 +28,7 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
 
 export default function PlayShell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const coordinator = useCoordinator(canvasRef);
-  const { mode, requestCamera, useMouse, signalRef } = coordinator;
-  const vibe = (coordinator as Record<string, unknown>).vibe as string ?? 'warm';
+  const { mode, requestCamera, useMouse, signalRef, vibe } = useCoordinator(canvasRef);
 
   return (
     <>
