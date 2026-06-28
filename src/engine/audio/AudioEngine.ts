@@ -1,5 +1,8 @@
 import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
+import type Soundfont from 'soundfont-player'
+
+type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
 
 export class AudioEngine {
   private ctx: AudioContext
@@ -7,6 +10,11 @@ export class AudioEngine {
   private voiceGains: GainNode[]
   private masterGain: GainNode
   private analyser: AnalyserNode
+  // Sampler output sits between soundfont-player and masterGain so we can
+  // fade it independently of the oscillator voices.
+  private samplerGain: GainNode
+  private samplers: Partial<Record<'piano' | 'guitar', Player>> = {}
+  private samplerLoading = new Set<'piano' | 'guitar'>()
 
   constructor() {
     this.ctx = new AudioContext()
@@ -28,6 +36,10 @@ export class AudioEngine {
     compressor.connect(this.analyser)
     this.analyser.connect(this.ctx.destination)
 
+    this.samplerGain = this.ctx.createGain()
+    this.samplerGain.gain.value = 1
+    this.samplerGain.connect(this.masterGain)
+
     this.oscillators = []
     this.voiceGains = []
 
@@ -44,11 +56,34 @@ export class AudioEngine {
     }
   }
 
-  // Attack only — gains ramp up and stay. Call silence() to release.
+  // Fire-and-forget async load. Idempotent — safe to call every rAF frame.
+  startLoadingSampler(mode: 'piano' | 'guitar'): void {
+    if (this.samplers[mode] || this.samplerLoading.has(mode)) return
+    this.samplerLoading.add(mode)
+    const name = mode === 'piano' ? 'acoustic_grand_piano' : 'acoustic_guitar_nylon'
+    import('soundfont-player')
+      .then(({ default: SF }) => SF.instrument(this.ctx, name, { destination: this.samplerGain }))
+      .then(player => {
+        this.samplers[mode] = player
+        this.samplerLoading.delete(mode)
+      })
+  }
+
+  // Attack only — stays at peak gain. Call silence() to release.
   play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
-    const peakGain = 0.7 / 3
 
+    if ((mode === 'piano' || mode === 'guitar') && this.samplers[mode]) {
+      const player = this.samplers[mode]!
+      // Snap samplerGain back in case a release fade is in progress
+      this.samplerGain.gain.cancelScheduledValues(now)
+      this.samplerGain.gain.setValueAtTime(1, now)
+      cmd.voicing.forEach(midi => player.play(midi.toString()))
+      return
+    }
+
+    // Oscillator path: synth / pad / fallback for piano+guitar while loading
+    const peakGain = 0.7 / 3
     cmd.voicing.forEach((midi, i) => {
       const hz = midiToHz(midi)
       this.oscillators[i].frequency.cancelScheduledValues(now)
@@ -68,24 +103,28 @@ export class AudioEngine {
     })
   }
 
-  // Release — mode-specific decay shape when hand leaves wheel
+  // Mode-aware release triggered when hand leaves wheel.
   silence(mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
+
+    // Always silence oscillators (covers synth/pad and piano/guitar fallback)
     this.voiceGains.forEach(g => {
       g.gain.cancelScheduledValues(now)
       g.gain.setValueAtTime(g.gain.value, now)
-      if (mode === 'piano') {
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.7)
-        g.gain.linearRampToValueAtTime(0, now + 0.72)
-      } else if (mode === 'guitar') {
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
-        g.gain.linearRampToValueAtTime(0, now + 0.37)
-      } else if (mode === 'pad') {
+      if (mode === 'pad') {
         g.gain.linearRampToValueAtTime(0, now + 0.5)
       } else {
         g.gain.linearRampToValueAtTime(0, now + 0.08)
       }
     })
+
+    if (mode === 'piano' || mode === 'guitar') {
+      // Fade samplerGain — piano rings longer, guitar is shorter
+      this.samplerGain.gain.cancelScheduledValues(now)
+      this.samplerGain.gain.setValueAtTime(this.samplerGain.gain.value, now)
+      const release = mode === 'piano' ? 2.0 : 0.6
+      this.samplerGain.gain.linearRampToValueAtTime(0, now + release)
+    }
   }
 
   getAnalyser(): AnalyserNode {
