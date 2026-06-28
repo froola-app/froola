@@ -1,3 +1,5 @@
+export type InstrumentMode = 'synth' | 'piano' | 'guitar' | 'pad';
+
 export type GestureSignal = {
   x: number;        // 0–1, horizontal position (left = 0, right = 1)
   y: number;        // 0–1, vertical position (top = 0, bottom = 1)

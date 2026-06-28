@@ -1,6 +1,14 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import type { InstrumentMode } from '../engine/types';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
+
+const MODES: { value: InstrumentMode; label: string }[] = [
+  { value: 'synth',  label: 'synth'  },
+  { value: 'piano',  label: 'piano'  },
+  { value: 'guitar', label: 'guitar' },
+  { value: 'pad',    label: 'pad'    },
+];
 
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
   return (
@@ -27,7 +35,11 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
 
 export default function PlayShell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { mode, requestCamera, useMouse } = useCoordinator(canvasRef);
+  const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
+  const modeRef = useRef<InstrumentMode>(instrumentMode);
+  modeRef.current = instrumentMode;
+
+  const { mode, requestCamera, useMouse } = useCoordinator(canvasRef, modeRef);
 
   return (
     <>
@@ -39,6 +51,15 @@ export default function PlayShell() {
         <MouseModeBadge onSwitch={requestCamera} />
       )}
       <ShareButton />
+      <select
+        className="instrument-select"
+        value={instrumentMode}
+        onChange={e => setInstrumentMode(e.target.value as InstrumentMode)}
+      >
+        {MODES.map(m => (
+          <option key={m.value} value={m.value}>{m.label}</option>
+        ))}
+      </select>
     </>
   );
 }

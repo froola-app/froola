@@ -177,18 +177,8 @@ export function useRenderer(
       const left  = signals.find(s => s.handId === 'left');
       const right = signals.find(s => s.handId === 'right');
 
-      // Transparent background — let the camera feed show through
+      // Clear only — let the raw camera feed show through with no tint
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = 'rgba(10,14,26,0.50)';
-      ctx.fillRect(0, 0, w, h);
-
-      // Warm zone gradient (SP2 will drive color from tension)
-      const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.min(w, h) * 0.45);
-      grad.addColorStop(0, 'rgba(245,158,11,0.18)');
-      grad.addColorStop(0.6, 'rgba(217,119,6,0.08)');
-      grad.addColorStop(1, 'rgba(217,119,6,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
 
       // Audio amplitude
       let amplitude = 0;

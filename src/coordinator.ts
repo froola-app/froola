@@ -1,7 +1,7 @@
 // src/coordinator.ts
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal } from './engine/types';
+import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { buildCommand } from './engine/music';
@@ -9,7 +9,10 @@ import { AudioEngine } from './engine/audio';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
 
-export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
+export function useCoordinator(
+  canvasRef: RefObject<HTMLCanvasElement | null>,
+  modeRef: RefObject<InstrumentMode>
+) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
@@ -60,26 +63,28 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
       };
       const leftInDial = !!left?.present && inRing(left.x, left.y, leftCx);
 
-      // Audio follows the left hand only: left orb on left wheel → sound on.
-      // Right hand modifies chord quality but never sustains sound on its own.
       const touching = leftInDial;
       const justEntered = touching && !wasTouching;
       const justLeft    = !touching && wasTouching;
       wasTouching = touching;
 
       const { noteIdx, qualIdx } = selectedRef.current;
+      const instrMode = modeRef.current;
 
       if (justLeft && engineRef.current) {
-        engineRef.current.silence();
+        // Piano/guitar notes decay naturally — no need to cut them
+        if (instrMode !== 'piano' && instrMode !== 'guitar') {
+          engineRef.current.silence();
+        }
       }
 
       if (touching && engineRef.current) {
         const y = left?.present ? left.y : (right?.y ?? lastY);
-        const yChanged = Math.abs(y - lastY) > REGISTER_THRESHOLD;
+        const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
 
-        if (justEntered || yChanged || selChanged) {
-          engineRef.current.play(buildCommand(noteIdx, qualIdx, y));
+        if (justEntered || selChanged || yChanged) {
+          engineRef.current.play(buildCommand(noteIdx, qualIdx, y), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
@@ -91,7 +96,7 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [signalRef]);
+  }, [signalRef, modeRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,
