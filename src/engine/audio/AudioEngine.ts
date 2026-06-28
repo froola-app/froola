@@ -1,4 +1,4 @@
-import type { MusicalCommand } from '../types'
+import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
 
 export class AudioEngine {
@@ -53,19 +53,34 @@ export class AudioEngine {
     })
   }
 
-  play(cmd: MusicalCommand): void {
+  play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
-    const rampEnd = now + 0.012
 
     cmd.voicing.forEach((midi, i) => {
       const hz = midiToHz(midi)
-      this.oscillators[i].frequency.setValueAtTime(
-        this.oscillators[i].frequency.value,
-        now
-      )
-      this.oscillators[i].frequency.linearRampToValueAtTime(hz, rampEnd)
-      this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
-      this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, rampEnd)
+
+      if (mode === 'piano' || mode === 'guitar') {
+        const attack = mode === 'piano' ? 0.008 : 0.005
+        const decay  = mode === 'piano' ? 0.7   : 0.35
+        this.oscillators[i].frequency.cancelScheduledValues(now)
+        this.oscillators[i].frequency.setValueAtTime(hz, now)
+        this.voiceGains[i].gain.cancelScheduledValues(now)
+        this.voiceGains[i].gain.setValueAtTime(0, now)
+        this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, now + attack)
+        this.voiceGains[i].gain.exponentialRampToValueAtTime(0.001, now + attack + decay)
+        this.voiceGains[i].gain.linearRampToValueAtTime(0, now + attack + decay + 0.02)
+      } else if (mode === 'pad') {
+        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
+        this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + 0.1)
+        this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
+        this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, now + 0.4)
+      } else {
+        const rampEnd = now + 0.012
+        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
+        this.oscillators[i].frequency.linearRampToValueAtTime(hz, rampEnd)
+        this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
+        this.voiceGains[i].gain.linearRampToValueAtTime(0.7 / 3, rampEnd)
+      }
     })
   }
 
