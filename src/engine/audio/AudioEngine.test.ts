@@ -9,6 +9,8 @@ const CMD: MusicalCommand = {
   register: 0.5,
   texture: 0.5,
   tension: 0.0,
+  rootNote: 'C',
+  chordQuality: 'major',
 }
 
 beforeEach(() => {
