@@ -25,7 +25,10 @@ export function buildCommand(noteIdx: number, qualIdx: number, y: number): Music
   const quality = QUALITIES[qualIdx % QUALITIES.length];
   const rootMidi = NOTE_MIDI[note];
   const intervals = QUALITY_INTERVALS[quality];
-  const offset = Math.round((0.5 - y) * 24);
+  // Shift only in whole octaves so the note class always matches the dial label.
+  // Top third of screen → +1 oct, bottom third → -1 oct, middle → exact.
+  const octave = y < 0.33 ? 1 : y > 0.67 ? -1 : 0;
+  const offset = octave * 12;
   return {
     chord: `${note}${quality}`,
     voicing: intervals.map(i => rootMidi + i + offset),
