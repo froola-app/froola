@@ -39,7 +39,7 @@ export default function PlayShell() {
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   modeRef.current = instrumentMode;
 
-  const { mode, requestCamera, useMouse, signalRef, vibe } = useCoordinator(canvasRef, modeRef);
+  const { mode, requestCamera, useMouse, signalRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef);
 
   return (
     <>
@@ -55,7 +55,11 @@ export default function PlayShell() {
       <select
         className="instrument-select"
         value={instrumentMode}
-        onChange={e => setInstrumentMode(e.target.value as InstrumentMode)}
+        onChange={e => {
+          const m = e.target.value as InstrumentMode;
+          setInstrumentMode(m);
+          preloadSampler(m);
+        }}
       >
         {MODES.map(m => (
           <option key={m.value} value={m.value}>{m.label}</option>
