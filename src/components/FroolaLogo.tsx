@@ -5,9 +5,13 @@ const BLACK  = '#111111';
 
 interface Props {
   size?: number;
+  /** Wordmark color. Defaults to near-black for light backgrounds;
+   *  pass a light color (e.g. '#FAFAF8') over dark surfaces. The smile
+   *  stays brand orange regardless. */
+  color?: string;
 }
 
-export default function FroolaLogo({ size = 72 }: Props) {
+export default function FroolaLogo({ size = 72, color = BLACK }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -58,7 +62,7 @@ export default function FroolaLogo({ size = 72 }: Props) {
       ctx.font          = FONT;
       ctx.textBaseline  = 'alphabetic';
 
-      ctx.fillStyle = BLACK;
+      ctx.fillStyle = color;
       ctx.fillText('fr', padX, base);
       ctx.fillText('o',  padX + frW,      base);
       ctx.fillText('o',  padX + frW + oW, base);
@@ -72,7 +76,7 @@ export default function FroolaLogo({ size = 72 }: Props) {
       ctx.quadraticCurveTo(smCX, smY + smileD, smCX + smileHW, smY);
       ctx.stroke();
     });
-  }, [size]);
+  }, [size, color]);
 
   return <canvas ref={canvasRef} style={{ display: 'block' }} />;
 }
