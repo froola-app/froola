@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useCoordinator } from './coordinator';
+import LandingPage from './components/LandingPage';
 import './App.css';
 
 // ---------- existing play-screen pieces (unchanged) ----------
@@ -43,12 +44,6 @@ function PlayShell() {
       )}
     </>
   );
-}
-
-// ---------- landing page placeholder ----------
-
-function LandingPage() {
-  return <div className="landing-screen"><p>landing — coming in Task 3</p></div>;
 }
 
 // ---------- router ----------

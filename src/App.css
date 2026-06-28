@@ -94,3 +94,29 @@ body {
   font-size: inherit;
   text-decoration: underline;
 }
+
+.landing-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #0A0E1A;
+  gap: 1.5rem;
+}
+
+.landing-title {
+  font-family: monospace;
+  font-size: 4rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.landing-tagline {
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
