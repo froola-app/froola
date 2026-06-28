@@ -69,7 +69,9 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
 
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
+        });
       } catch {
         setMode('mouse');
         landmarker.close();
