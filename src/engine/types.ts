@@ -2,8 +2,11 @@ export type GestureSignal = {
   x: number;        // 0–1, horizontal position (left = 0, right = 1)
   y: number;        // 0–1, vertical position (top = 0, bottom = 1)
   present: boolean; // is a hand/cursor actively tracked?
-  handId: 'primary' | 'secondary';
+  handId: 'left' | 'right';
 };
+
+export type NoteName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type ChordQuality = 'major' | 'minor' | 'maj7' | 'min7' | 'dom7' | 'aug' | 'dim';
 
 export type MusicalCommand = {
   chord: string;      // e.g. "Cmaj7"
