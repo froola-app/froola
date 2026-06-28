@@ -13,8 +13,9 @@ const OPTIONS: { type: UserType; emoji: string; label: string; description: stri
 export default function UserTypeStep({ onSelect }: Props) {
   return (
     <div className="onboarding-step">
+      <p className="onboarding-eyebrow">Welcome</p>
       <h2 className="onboarding-title">How will you use Froola?</h2>
-      <p className="onboarding-subtitle">We'll personalize your experience.</p>
+      <p className="onboarding-subtitle">We'll tune the experience to fit.</p>
       <div className="user-type-grid">
         {OPTIONS.map(({ type, emoji, label, description }) => (
           <button
@@ -23,8 +24,11 @@ export default function UserTypeStep({ onSelect }: Props) {
             onClick={() => onSelect(type)}
           >
             <span className="user-type-emoji">{emoji}</span>
-            <span className="user-type-label">{label}</span>
-            <span className="user-type-description">{description}</span>
+            <span className="user-type-text">
+              <span className="user-type-label">{label}</span>
+              <span className="user-type-description">{description}</span>
+            </span>
+            <span className="user-type-arrow" aria-hidden>→</span>
           </button>
         ))}
       </div>
