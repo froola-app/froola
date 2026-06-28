@@ -91,12 +91,26 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
         return;
       }
 
-      // Per-hand EMA state
+      // Per-hand EMA + fist-lock state
       const SMOOTH = 0.35;
-      const smooth: Record<'left' | 'right', { x: number; y: number }> = {
-        left:  { x: 0.5, y: 0.5 },
-        right: { x: 0.5, y: 0.5 },
+      type HandState = { x: number; y: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
+      const smooth: Record<'left' | 'right', HandState> = {
+        left:  { x: 0.5, y: 0.5, wasFist: false, frozenX: null, frozenY: null },
+        right: { x: 0.5, y: 0.5, wasFist: false, frozenX: null, frozenY: null },
       };
+
+      function isFist(lm: { x: number; y: number; z: number }[]): boolean {
+        const wrist = lm[0];
+        const tipIdx = [8, 12, 16, 20];
+        const mcpIdx = [5,  9, 13, 17];
+        const d = (a: typeof wrist, b: typeof wrist) =>
+          Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+        let curled = 0;
+        for (let k = 0; k < 4; k++) {
+          if (d(lm[tipIdx[k]], wrist) < d(lm[mcpIdx[k]], wrist) * 0.95) curled++;
+        }
+        return curled >= 3;
+      }
 
       function loop() {
         if (cancelled) return;
@@ -107,7 +121,8 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
 
           const signals: GestureSignal[] = [];
           for (let i = 0; i < result.landmarks.length; i++) {
-            const tip = result.landmarks[i][8]; // index fingertip
+            const lm = result.landmarks[i];
+            const tip = lm[8]; // index fingertip
             const rawHandedness = result.handednesses[i][0].categoryName;
             const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
 
@@ -122,14 +137,34 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>
             const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
             const ry = (tip.y * vh * scale + offsetY) / dh;
 
-            smooth[handId].x = SMOOTH * rx + (1 - SMOOTH) * smooth[handId].x;
-            smooth[handId].y = SMOOTH * ry + (1 - SMOOTH) * smooth[handId].y;
+            const fist = isFist(lm);
+            const s = smooth[handId];
+
+            // Only update EMA when hand is open — curled fingertip coords are invalid
+            if (!fist) {
+              s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
+              s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+            }
+
+            // Freeze reported position on fist-close; unfreeze on fist-open
+            if (fist && !s.wasFist) {
+              s.frozenX = s.x;
+              s.frozenY = s.y;
+            } else if (!fist && s.wasFist) {
+              s.frozenX = null;
+              s.frozenY = null;
+            }
+            s.wasFist = fist;
+
+            const reportX = s.frozenX ?? s.x;
+            const reportY = s.frozenY ?? s.y;
 
             signals.push({
-              x: Math.max(0, Math.min(1, smooth[handId].x)),
-              y: Math.max(0, Math.min(1, smooth[handId].y)),
+              x: Math.max(0, Math.min(1, reportX)),
+              y: Math.max(0, Math.min(1, reportY)),
               present: true,
               handId,
+              fist,
             });
           }
           signalRef.current = signals;
