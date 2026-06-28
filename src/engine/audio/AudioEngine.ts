@@ -44,6 +44,15 @@ export class AudioEngine {
     }
   }
 
+  silence(): void {
+    const now = this.ctx.currentTime
+    const rampEnd = now + 0.08
+    this.voiceGains.forEach(g => {
+      g.gain.setValueAtTime(g.gain.value, now)
+      g.gain.linearRampToValueAtTime(0, rampEnd)
+    })
+  }
+
   play(cmd: MusicalCommand): void {
     const now = this.ctx.currentTime
     const rampEnd = now + 0.012
