@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useCoordinator } from '../coordinator';
+import ShareButton from './ShareButton';
 
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
   return (
@@ -37,6 +38,7 @@ export default function PlayShell() {
       {mode === 'mouse' && (
         <MouseModeBadge onSwitch={requestCamera} />
       )}
+      <ShareButton />
     </>
   );
 }
