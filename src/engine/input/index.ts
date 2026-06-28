@@ -4,12 +4,8 @@ import type { GestureSignal } from '../types';
 
 type InputMode = 'asking' | 'camera' | 'mouse';
 
-const DEFAULT_SIGNAL: GestureSignal = {
-  x: 0.5, y: 0.5, present: false, handId: 'primary',
-};
-
-export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
-  const signalRef = useRef<GestureSignal>({ ...DEFAULT_SIGNAL });
+export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
+  const signalRef = useRef<GestureSignal[]>([]);
   const [mode, setMode] = useState<InputMode>('asking');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -25,15 +21,15 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
   // Mouse mode
   useEffect(() => {
     if (mode !== 'mouse') return;
-    signalRef.current = { ...DEFAULT_SIGNAL, present: true };
+    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
 
     function onMove(e: MouseEvent) {
-      signalRef.current = {
+      signalRef.current = [{
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
         present: true,
-        handId: 'primary',
-      };
+        handId: 'left',
+      }];
     }
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
@@ -61,7 +57,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
           delegate: 'GPU',
         },
         runningMode: 'VIDEO',
-        numHands: 1,
+        numHands: 2,
       });
 
       if (cancelled) { landmarker.close(); return; }
@@ -73,9 +69,10 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
 
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
+        });
       } catch {
-        // camera denied — silently fall back to mouse
         setMode('mouse');
         landmarker.close();
         return;
@@ -84,8 +81,22 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
       if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); return; }
 
       video.srcObject = stream;
+      video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transform:scaleX(-1);';
+      document.body.appendChild(video);
       await video.play();
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); return; }
+      if (cancelled) {
+        if (video.parentNode) video.parentNode.removeChild(video);
+        stream.getTracks().forEach(t => t.stop());
+        landmarker.close();
+        return;
+      }
+
+      // Per-hand EMA state
+      const SMOOTH = 0.35;
+      const smooth: Record<'left' | 'right', { x: number; y: number }> = {
+        left:  { x: 0.5, y: 0.5 },
+        right: { x: 0.5, y: 0.5 },
+      };
 
       function loop() {
         if (cancelled) return;
@@ -93,17 +104,35 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         if (now - lastInferenceTime >= INFERENCE_INTERVAL) {
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
-          if (result.landmarks.length > 0) {
-            const wrist = result.landmarks[0][0];
-            signalRef.current = {
-              x: 1 - wrist.x,
-              y: wrist.y,
+
+          const signals: GestureSignal[] = [];
+          for (let i = 0; i < result.landmarks.length; i++) {
+            const tip = result.landmarks[i][8]; // index fingertip
+            const rawHandedness = result.handednesses[i][0].categoryName;
+            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
+
+            // Remap from video-native coords to viewport coords (object-fit:cover compensation)
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            const dw = window.innerWidth;
+            const dh = window.innerHeight;
+            const scale = Math.max(dw / vw, dh / vh);
+            const offsetX = (dw - vw * scale) / 2;
+            const offsetY = (dh - vh * scale) / 2;
+            const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
+            const ry = (tip.y * vh * scale + offsetY) / dh;
+
+            smooth[handId].x = SMOOTH * rx + (1 - SMOOTH) * smooth[handId].x;
+            smooth[handId].y = SMOOTH * ry + (1 - SMOOTH) * smooth[handId].y;
+
+            signals.push({
+              x: Math.max(0, Math.min(1, smooth[handId].x)),
+              y: Math.max(0, Math.min(1, smooth[handId].y)),
               present: true,
-              handId: 'primary',
-            };
-          } else {
-            signalRef.current = { ...signalRef.current, present: false };
+              handId,
+            });
           }
+          signalRef.current = signals;
         }
         animFrameId = requestAnimationFrame(loop);
       }
@@ -113,6 +142,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
         cancelAnimationFrame(animFrameId);
+        if (video.parentNode) video.parentNode.removeChild(video);
       };
     }
 

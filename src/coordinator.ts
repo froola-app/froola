@@ -1,47 +1,109 @@
 // src/coordinator.ts
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, MusicalCommand } from './engine/types';
+import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput } from './engine/input';
-import { useRenderer } from './engine/renderer';
+import { useRenderer, type DialSelection } from './engine/renderer';
+import { buildCommand } from './engine/music';
+import { AudioEngine } from './engine/audio';
 
-// --- Track A stubs — delete when Track A delivers useAudio and mapGesture ---
-const mapGesture = (_s: GestureSignal, _vibe: string): MusicalCommand => ({  // eslint-disable-line @typescript-eslint/no-unused-vars
-  chord: 'C',
-  voicing: [60, 64, 67],
-  register: 0.5,
-  texture: 0.5,
-  tension: 0.2,
-});
-const useAudio = () => ({
-  play: (_cmd: MusicalCommand) => {},  // eslint-disable-line @typescript-eslint/no-unused-vars
-  getAnalyser: (): AnalyserNode | null => null,
-});
-// --- end stubs ---
+const REGISTER_THRESHOLD = 0.5 / 24;
 
-export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
-  const gestureRef = useRef<GestureSignal>({
-    x: 0.5, y: 0.5, present: false, handId: 'primary',
-  });
+export function useCoordinator(
+  canvasRef: RefObject<HTMLCanvasElement | null>,
+  modeRef: RefObject<InstrumentMode>
+) {
+  const engineRef = useRef<AudioEngine | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
 
-  const { signalRef: inputSignalRef, mode, requestCamera, useMouse } = useGestureInput();
-  const { play, getAnalyser } = useAudio();
-  const analyserRef = useRef<AnalyserNode | null>(getAnalyser());
+  const { signalRef, mode, requestCamera, useMouse } = useGestureInput();
 
-  // Write latest signal into ref — no re-render
+  // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
-    gestureRef.current = inputSignalRef.current;
-  });
+    const engine = new AudioEngine();
+    engineRef.current = engine;
+    analyserRef.current = engine.getAnalyser();
 
-  // Fire audio on presence
+    const resume = () => engine.resume();
+    window.addEventListener('pointerdown', resume, { once: true });
+
+    return () => {
+      engine.suspend();
+      window.removeEventListener('pointerdown', resume);
+    };
+  }, []);
+
+  // Hot path: rAF loop — reads dial selection + y-register, drives audio
   useEffect(() => {
-    const signal = inputSignalRef.current;
-    if (!signal.present) return;
-    const cmd = mapGesture(signal, 'default');
-    play(cmd);
-  });
+    let rafId: number;
+    let lastNoteIdx = -1;
+    let lastQualIdx = -1;
+    let lastY = -1;
+    let wasTouching = false;
 
-  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, gestureRef, analyserRef);
+    function tick() {
+      const signals = signalRef.current;
+      const left  = signals.find(s => s.handId === 'left');
+      const right = signals.find(s => s.handId === 'right');
+
+      // Replicate wheel geometry from renderer so we can do the hit-test here
+      // without depending on the renderer's rAF writing to a shared ref first.
+      const canvas = canvasRef.current;
+      const w = canvas?.width  ?? window.innerWidth;
+      const h = canvas?.height ?? window.innerHeight;
+      const outerR  = Math.min(w, h) * 0.24;
+      const innerR  = outerR * 0.36;
+      const leftCx  = outerR * 1.5;
+      const wheelCy = h * 0.65;
+
+      const inRing = (x: number, y: number, cx: number) => {
+        const d = Math.hypot(x * w - cx, y * h - wheelCy);
+        return d >= innerR && d <= outerR;
+      };
+      const leftInDial = !!left?.present && inRing(left.x, left.y, leftCx);
+
+      const touching = leftInDial;
+      const justEntered = touching && !wasTouching;
+      const justLeft    = !touching && wasTouching;
+      wasTouching = touching;
+
+      const { noteIdx, qualIdx } = selectedRef.current;
+      const instrMode = modeRef.current;
+
+      if (justLeft && engineRef.current) {
+        // Piano/guitar notes decay naturally — no need to cut them
+        if (instrMode !== 'piano' && instrMode !== 'guitar') {
+          engineRef.current.silence();
+        }
+      }
+
+      if (touching && engineRef.current) {
+        const y = left?.present ? left.y : (right?.y ?? lastY);
+        const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
+        const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
+
+        if (justEntered || selChanged || yChanged) {
+          engineRef.current.play(buildCommand(noteIdx, qualIdx, y), instrMode);
+          lastNoteIdx = noteIdx;
+          lastQualIdx = qualIdx;
+          lastY = y;
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    }
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [signalRef, modeRef]);
+
+  useRenderer(
+    canvasRef as RefObject<HTMLCanvasElement>,
+    signalRef as RefObject<GestureSignal[]>,
+    analyserRef,
+    selectedRef
+  );
 
   return { mode, requestCamera, useMouse };
 }

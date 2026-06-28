@@ -1,0 +1,65 @@
+import { useRef, useState } from 'react';
+import type { InstrumentMode } from '../engine/types';
+import { useCoordinator } from '../coordinator';
+import ShareButton from './ShareButton';
+
+const MODES: { value: InstrumentMode; label: string }[] = [
+  { value: 'synth',  label: 'synth'  },
+  { value: 'piano',  label: 'piano'  },
+  { value: 'guitar', label: 'guitar' },
+  { value: 'pad',    label: 'pad'    },
+];
+
+function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
+  return (
+    <div className="permission-screen">
+      <h1>Froola</h1>
+      <p className="privacy-note">Your camera never leaves your device.</p>
+      <p>MediaPipe runs entirely on your device — no video is transmitted.</p>
+      <div className="permission-buttons">
+        <button onClick={onCamera} className="btn-primary">Enable camera</button>
+        <button onClick={onMouse} className="btn-secondary">Use mouse instead</button>
+      </div>
+    </div>
+  );
+}
+
+function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
+  return (
+    <div className="mode-badge">
+      Mouse mode —{' '}
+      <button onClick={onSwitch} className="link-btn">try camera mode</button>
+    </div>
+  );
+}
+
+export default function PlayShell() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
+  const modeRef = useRef<InstrumentMode>(instrumentMode);
+  modeRef.current = instrumentMode;
+
+  const { mode, requestCamera, useMouse } = useCoordinator(canvasRef, modeRef);
+
+  return (
+    <>
+      <canvas ref={canvasRef} className="main-canvas" />
+      {mode === 'asking' && (
+        <CameraPrompt onCamera={requestCamera} onMouse={useMouse} />
+      )}
+      {mode === 'mouse' && (
+        <MouseModeBadge onSwitch={requestCamera} />
+      )}
+      <ShareButton />
+      <select
+        className="instrument-select"
+        value={instrumentMode}
+        onChange={e => setInstrumentMode(e.target.value as InstrumentMode)}
+      >
+        {MODES.map(m => (
+          <option key={m.value} value={m.value}>{m.label}</option>
+        ))}
+      </select>
+    </>
+  );
+}
