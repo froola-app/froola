@@ -12,6 +12,7 @@ const TIPS = [
 export default function LearningCurveStep({ onContinue }: Props) {
   return (
     <div className="onboarding-step">
+      <p className="onboarding-eyebrow">The basics</p>
       <h2 className="onboarding-title">A quick heads-up</h2>
       <p className="onboarding-subtitle">
         Froola takes about 2 minutes to click. Here's what to know before you start.
@@ -24,7 +25,7 @@ export default function LearningCurveStep({ onContinue }: Props) {
           </li>
         ))}
       </ul>
-      <button className="btn-primary" onClick={onContinue}>
+      <button className="onboarding-btn" onClick={onContinue}>
         Got it →
       </button>
     </div>
