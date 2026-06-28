@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal, ChordQuality } from '../types';
 import { NOTES, QUALITIES } from '../types';
 
-export type DialSelection = { noteIdx: number; qualIdx: number; leftInDial: boolean; rightInDial: boolean };
+export type DialSelection = { noteIdx: number; qualIdx: number };
 
 const QUALITY_LABELS: Record<ChordQuality, string> = {
   major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
@@ -230,8 +230,8 @@ export function useRenderer(
         bgColor
       );
 
-      // Publish dial state so the coordinator gates audio on inDial too
-      selectedRef.current = { noteIdx, qualIdx, leftInDial, rightInDial };
+      // Publish slice selection so the coordinator can drive audio
+      selectedRef.current = { noteIdx, qualIdx };
 
       // Orbs
       for (const signal of signals) {

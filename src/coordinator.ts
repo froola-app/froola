@@ -12,7 +12,7 @@ const REGISTER_THRESHOLD = 0.5 / 24;
 export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0, leftInDial: false, rightInDial: false });
+  const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
 
   const { signalRef, mode, requestCamera, useMouse } = useGestureInput();
 
@@ -44,13 +44,28 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
       const left  = signals.find(s => s.handId === 'left');
       const right = signals.find(s => s.handId === 'right');
 
-      const { noteIdx, qualIdx, leftInDial, rightInDial } = selectedRef.current;
+      // Replicate wheel geometry from renderer so we can do the hit-test here
+      // without depending on the renderer's rAF writing to a shared ref first.
+      const canvas = canvasRef.current;
+      const w = canvas?.width  ?? window.innerWidth;
+      const h = canvas?.height ?? window.innerHeight;
+      const outerR  = Math.min(w, h) * 0.24;
+      const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
+      const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
+      const wheelCy = h / 2;
+
+      const leftInDial  = !!left?.present  &&
+        Math.hypot(left.x  * w - leftCx,  left.y  * h - wheelCy) <= outerR;
+      const rightInDial = !!right?.present &&
+        Math.hypot(right.x * w - rightCx, right.y * h - wheelCy) <= outerR;
+
       const touching = leftInDial || rightInDial;
       const justEntered = touching && !wasTouching;
       wasTouching = touching;
 
+      const { noteIdx, qualIdx } = selectedRef.current;
+
       if (touching && engineRef.current) {
-        // Use left hand y for register when available, fall back to right
         const y = left?.present ? left.y : (right?.y ?? lastY);
         const yChanged = Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
