@@ -4,12 +4,8 @@ import type { GestureSignal } from '../types';
 
 type InputMode = 'asking' | 'camera' | 'mouse';
 
-const DEFAULT_SIGNAL: GestureSignal = {
-  x: 0.5, y: 0.5, present: false, handId: 'left',
-};
-
-export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
-  const signalRef = useRef<GestureSignal>({ ...DEFAULT_SIGNAL });
+export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
+  const signalRef = useRef<GestureSignal[]>([]);
   const [mode, setMode] = useState<InputMode>('asking');
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -25,15 +21,15 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
   // Mouse mode
   useEffect(() => {
     if (mode !== 'mouse') return;
-    signalRef.current = { ...DEFAULT_SIGNAL, present: true };
+    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
 
     function onMove(e: MouseEvent) {
-      signalRef.current = {
+      signalRef.current = [{
         x: e.clientX / window.innerWidth,
         y: e.clientY / window.innerHeight,
         present: true,
         handId: 'left',
-      };
+      }];
     }
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
@@ -61,7 +57,7 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
           delegate: 'GPU',
         },
         runningMode: 'VIDEO',
-        numHands: 1,
+        numHands: 2,
       });
 
       if (cancelled) { landmarker.close(); return; }
@@ -75,7 +71,6 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
       } catch {
-        // camera denied — silently fall back to mouse
         setMode('mouse');
         landmarker.close();
         return;
@@ -94,10 +89,12 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         return;
       }
 
-      // EMA state — smooths out landmark noise near edges / face occlusion
+      // Per-hand EMA state
       const SMOOTH = 0.35;
-      let smoothX = 0.5;
-      let smoothY = 0.5;
+      const smooth: Record<'left' | 'right', { x: number; y: number }> = {
+        left:  { x: 0.5, y: 0.5 },
+        right: { x: 0.5, y: 0.5 },
+      };
 
       function loop() {
         if (cancelled) return;
@@ -105,10 +102,15 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
         if (now - lastInferenceTime >= INFERENCE_INTERVAL) {
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
-          if (result.landmarks.length > 0) {
-            const tip = result.landmarks[0][8];
-            // Remap from video-native coords to viewport coords to compensate
-            // for object-fit:cover cropping (landmark 0,0 is not viewport 0,0)
+
+          const signals: GestureSignal[] = [];
+          for (let i = 0; i < result.landmarks.length; i++) {
+            const tip = result.landmarks[i][8]; // index fingertip
+            const rawHandedness = result.handednesses[i][0].categoryName;
+            // MediaPipe handedness is mirrored; flip to match the mirrored video feed
+            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'right' : 'left';
+
+            // Remap from video-native coords to viewport coords (object-fit:cover compensation)
             const vw = video.videoWidth;
             const vh = video.videoHeight;
             const dw = window.innerWidth;
@@ -118,17 +120,18 @@ export function useGestureInput(): { signalRef: React.RefObject<GestureSignal>; 
             const offsetY = (dh - vh * scale) / 2;
             const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
             const ry = (tip.y * vh * scale + offsetY) / dh;
-            smoothX = SMOOTH * rx + (1 - SMOOTH) * smoothX;
-            smoothY = SMOOTH * ry + (1 - SMOOTH) * smoothY;
-            signalRef.current = {
-              x: Math.max(0, Math.min(1, smoothX)),
-              y: Math.max(0, Math.min(1, smoothY)),
+
+            smooth[handId].x = SMOOTH * rx + (1 - SMOOTH) * smooth[handId].x;
+            smooth[handId].y = SMOOTH * ry + (1 - SMOOTH) * smooth[handId].y;
+
+            signals.push({
+              x: Math.max(0, Math.min(1, smooth[handId].x)),
+              y: Math.max(0, Math.min(1, smooth[handId].y)),
               present: true,
-              handId: 'left',
-            };
-          } else {
-            signalRef.current = { ...signalRef.current, present: false };
+              handId,
+            });
           }
+          signalRef.current = signals;
         }
         animFrameId = requestAnimationFrame(loop);
       }

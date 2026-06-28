@@ -10,10 +10,9 @@ import { AudioEngine } from './engine/audio';
 export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
   const engineRef = useRef<AudioEngine | null>(null);
   const mapperRef = useRef(createMapper('warm'));
-  const signalsRef = useRef<GestureSignal[]>([]);
   const analyserRef = useRef<AnalyserNode | null>(null);
 
-  const { signalRef: inputSignalRef, mode, requestCamera, useMouse } = useGestureInput();
+  const { signalRef, mode, requestCamera, useMouse } = useGestureInput();
 
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
@@ -30,16 +29,16 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
     };
   }, []);
 
-  // Hot path: rAF loop — reads signal ref, maps, plays
+  // Hot path: rAF loop — reads signals, maps left hand to audio
   useEffect(() => {
     let rafId: number;
 
     function tick() {
-      const signal = inputSignalRef.current;
-      signalsRef.current = signal.present ? [signal] : [];
+      const signals = signalRef.current;
+      const left = signals.find(s => s.handId === 'left');
 
-      if (signal.present && engineRef.current) {
-        const cmd = mapperRef.current(signal);
+      if (left?.present && engineRef.current) {
+        const cmd = mapperRef.current(left);
         if (cmd) engineRef.current.play(cmd);
       }
 
@@ -48,9 +47,9 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [inputSignalRef]);
+  }, [signalRef]);
 
-  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, signalsRef, analyserRef);
+  useRenderer(canvasRef as RefObject<HTMLCanvasElement>, signalRef as RefObject<GestureSignal[]>, analyserRef);
 
   return { mode, requestCamera, useMouse };
 }

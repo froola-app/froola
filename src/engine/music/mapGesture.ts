@@ -39,6 +39,8 @@ export function createMapper(
       register: signal.y,
       texture: 0.5,
       tension: slot.tension,
+      rootNote: slot.rootNote,
+      chordQuality: slot.chordQuality,
     }
   }
 }
