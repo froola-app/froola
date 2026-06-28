@@ -3,7 +3,7 @@ import { createMapper } from './mapGesture'
 import type { GestureSignal } from '../types'
 
 function sig(x: number, y: number): GestureSignal {
-  return { x, y, present: true, handId: 'primary' }
+  return { x, y, present: true, handId: 'left' }
 }
 
 describe('createMapper — snap zones', () => {

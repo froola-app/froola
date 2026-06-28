@@ -15,8 +15,8 @@ describe('Track A pipeline: gesture → audio', () => {
 
     const playspy = vi.spyOn(engine, 'play')
 
-    const zone0: GestureSignal = { x: 0.1, y: 0.5, present: true, handId: 'primary' }
-    const zone1: GestureSignal = { x: 0.4, y: 0.5, present: true, handId: 'primary' }
+    const zone0: GestureSignal = { x: 0.1, y: 0.5, present: true, handId: 'left' }
+    const zone1: GestureSignal = { x: 0.4, y: 0.5, present: true, handId: 'left' }
 
     const cmd0 = map(zone0)
     if (cmd0) engine.play(cmd0)
@@ -32,8 +32,8 @@ describe('Track A pipeline: gesture → audio', () => {
     const map = createMapper('warm')
     const playspy = vi.spyOn(engine, 'play')
 
-    const zone0a: GestureSignal = { x: 0.1, y: 0.5, present: true, handId: 'primary' }
-    const zone0b: GestureSignal = { x: 0.12, y: 0.5, present: true, handId: 'primary' }
+    const zone0a: GestureSignal = { x: 0.1, y: 0.5, present: true, handId: 'left' }
+    const zone0b: GestureSignal = { x: 0.12, y: 0.5, present: true, handId: 'left' }
 
     const cmd0 = map(zone0a)
     if (cmd0) engine.play(cmd0)
@@ -50,7 +50,7 @@ describe('Track A pipeline: gesture → audio', () => {
 
     const xs = [0.1, 0.375, 0.625, 0.9]
     xs.forEach(x => {
-      const cmd = map({ x, y: 0.5, present: true, handId: 'primary' })
+      const cmd = map({ x, y: 0.5, present: true, handId: 'left' })
       if (cmd) {
         engine.play(cmd)
         chords.push(cmd.chord)
@@ -66,7 +66,7 @@ describe('Track A pipeline: gesture → audio', () => {
 
     const xs = [0.1, 0.375, 0.625, 0.9]
     xs.forEach(x => {
-      const cmd = map({ x, y: 0.5, present: true, handId: 'primary' })
+      const cmd = map({ x, y: 0.5, present: true, handId: 'left' })
       if (cmd) engine.play(cmd)
     })
 
