@@ -1,7 +1,9 @@
-// src/App.tsx
 import { useRef } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { useCoordinator } from './coordinator';
 import './App.css';
+
+// ---------- existing play-screen pieces (unchanged) ----------
 
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
   return (
@@ -26,7 +28,7 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
   );
 }
 
-function AppCanvas() {
+function PlayShell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { mode, requestCamera, useMouse } = useCoordinator(canvasRef);
 
@@ -43,6 +45,19 @@ function AppCanvas() {
   );
 }
 
+// ---------- landing page placeholder ----------
+
+function LandingPage() {
+  return <div className="landing-screen"><p>landing — coming in Task 3</p></div>;
+}
+
+// ---------- router ----------
+
 export default function App() {
-  return <AppCanvas />;
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/play" element={<PlayShell />} />
+    </Routes>
+  );
 }
