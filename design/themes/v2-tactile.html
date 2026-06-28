@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Froola — Tactile</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F8F6F2; overflow: hidden; font-family: 'Space Grotesk', system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; display: block; }
+
+  .ui {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    pointer-events: none;
+  }
+  .ui * { pointer-events: auto; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+  }
+
+  .wordmark {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #111;
+  }
+  .wordmark span { color: #D4500A; }
+
+  .header-right {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .mode-pill {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: #111;
+    color: #F8F6F2;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.9rem;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+  }
+  .mode-pill:hover { background: #D4500A; }
+
+  .dot-live {
+    width: 6px; height: 6px;
+    background: #D4500A;
+    border-radius: 50%;
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .btn-ghost-sm {
+    background: none; border: none;
+    color: #aaa; font-size: 0.8rem;
+    cursor: pointer; font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .btn-ghost-sm:hover { color: #D4500A; }
+
+  .center {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+
+  footer {
+    padding: 1.25rem 2rem;
+    border-top: 1px solid rgba(0,0,0,0.07);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .privacy {
+    font-size: 0.75rem;
+    color: #D4500A;
+    font-weight: 500;
+  }
+
+  .hint {
+    font-size: 0.75rem;
+    color: #bbb;
+  }
+
+  .tagline {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .tagline h1 {
+    font-size: 6rem;
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    color: rgba(0,0,0,0.06);
+    line-height: 1;
+    user-select: none;
+  }
+
+  .theme-tag {
+    position: fixed; bottom: 4rem; left: 50%; transform: translateX(-50%);
+    font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #ccc;
+    font-family: inherit; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <header>
+    <div class="wordmark">froo<span>la</span></div>
+    <div class="header-right">
+      <button class="btn-ghost-sm">use mouse</button>
+      <button class="mode-pill">
+        <span class="dot-live"></span>
+        Enable camera
+      </button>
+    </div>
+  </header>
+  <div class="center">
+    <div class="tagline"><h1>froola</h1></div>
+  </div>
+  <footer>
+    <span class="privacy">Your camera never leaves your device.</span>
+    <span class="hint">Move to play</span>
+  </footer>
+</div>
+<div class="theme-tag">V2-C — Tactile</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let mouse = { x: 0.5, y: 0.5 };
+let t = 0;
+let present = false;
+let rings = [];
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+let lastX = -1, lastY = -1;
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX / window.innerWidth;
+  mouse.y = e.clientY / window.innerHeight;
+  present = true;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  const speed = Math.sqrt(dx*dx + dy*dy);
+  if (speed > 8 && lastX > 0) {
+    rings.push({ x: e.clientX, y: e.clientY, r: 0, maxR: 40 + speed, alpha: 0.35 });
+  }
+  lastX = e.clientX; lastY = e.clientY;
+});
+
+function draw() {
+  t += 0.01;
+  const w = canvas.width, h = canvas.height;
+
+  ctx.fillStyle = '#F8F6F2';
+  ctx.fillRect(0, 0, w, h);
+
+  // Very faint warm breath
+  const b = Math.sin(t * 0.3) * 0.02 + 0.04;
+  const warm = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.min(w,h)*0.55);
+  warm.addColorStop(0, `rgba(212,80,10,${b})`);
+  warm.addColorStop(1, 'rgba(212,80,10,0)');
+  ctx.fillStyle = warm;
+  ctx.fillRect(0, 0, w, h);
+
+  if (!present) { requestAnimationFrame(draw); return; }
+
+  // Ripple rings on fast movement
+  rings.forEach(ring => {
+    ring.r += 2.5;
+    ring.alpha -= 0.01;
+    if (ring.alpha <= 0) return;
+    ctx.strokeStyle = `rgba(212, 80, 10, ${ring.alpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  rings = rings.filter(r => r.alpha > 0 && r.r < r.maxR);
+
+  const cx = mouse.x * w;
+  const cy = mouse.y * h;
+  const r = 13 + Math.sin(t * 2.2) * 1.5;
+
+  // Shadow
+  const shadow = ctx.createRadialGradient(cx, cy + 3, 0, cx, cy, r * 3.5);
+  shadow.addColorStop(0, 'rgba(0,0,0,0.1)');
+  shadow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Core — rich burnt orange
+  ctx.fillStyle = '#D4500A';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Inner darker ring
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath();
+  ctx.arc(cx - r*0.3, cy - r*0.35, r*0.25, 0, Math.PI * 2);
+  ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

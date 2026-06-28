@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Froola — Editorial</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F5F1EA; overflow: hidden; font-family: 'DM Sans', system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; display: block; }
+
+  .ui {
+    position: fixed; inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    pointer-events: none;
+  }
+
+  .ui * { pointer-events: auto; }
+
+  .left-panel {
+    display: flex; flex-direction: column;
+    justify-content: flex-end;
+    padding: 3rem;
+    border-right: 1px solid rgba(0,0,0,0.08);
+  }
+
+  .kicker {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #D4500A;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 4.5rem;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: #1A1A1A;
+    line-height: 0.95;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: #D4500A;
+  }
+
+  .desc {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.65;
+    max-width: 280px;
+    margin-bottom: 2rem;
+  }
+
+  .privacy {
+    font-size: 0.75rem;
+    color: #D4500A;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .actions { display: flex; gap: 0.75rem; align-items: center; }
+
+  .btn-primary {
+    padding: 0.7rem 1.5rem;
+    border-radius: 3px;
+    border: none;
+    background: #D4500A;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-primary:hover { background: #b84008; }
+
+  .btn-ghost {
+    background: none; border: none;
+    color: #999; font-size: 0.85rem;
+    cursor: pointer; font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .btn-ghost:hover { color: #D4500A; }
+
+  .right-panel {
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+
+  .instrument-hint {
+    font-size: 0.75rem;
+    color: rgba(0,0,0,0.25);
+    letter-spacing: 0.05em;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    position: absolute;
+    right: 2rem;
+    bottom: 3rem;
+    font-family: inherit;
+  }
+
+  .theme-tag {
+    position: fixed; top: 1.25rem; left: 1.25rem;
+    font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #bbb;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <div class="left-panel">
+    <p class="kicker">A new instrument</p>
+    <h1>Froo<em>la</em></h1>
+    <p class="desc">Move your hand. Make music. MediaPipe runs entirely on your device — no video is transmitted.</p>
+    <p class="privacy">Your camera never leaves your device.</p>
+    <div class="actions">
+      <button class="btn-primary">Enable camera</button>
+      <button class="btn-ghost">Use mouse instead</button>
+    </div>
+  </div>
+  <div class="right-panel"></div>
+</div>
+<span class="instrument-hint">Move your cursor to play</span>
+<div class="theme-tag">V2-B — Editorial</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let mouse = { x: 0.75, y: 0.5 };
+let t = 0;
+let present = false;
+let trail = [];
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX / window.innerWidth;
+  mouse.y = e.clientY / window.innerHeight;
+  present = true;
+  trail.push({ x: e.clientX, y: e.clientY, age: 0 });
+  if (trail.length > 24) trail.shift();
+});
+
+function draw() {
+  t += 0.01;
+  const w = canvas.width, h = canvas.height;
+
+  ctx.fillStyle = '#F5F1EA';
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle warm breath in right half
+  const breath = Math.sin(t * 0.4) * 0.03 + 0.05;
+  const warm = ctx.createRadialGradient(w*0.75, h*0.5, 0, w*0.75, h*0.5, h*0.6);
+  warm.addColorStop(0, `rgba(212, 80, 10, ${breath})`);
+  warm.addColorStop(1, 'rgba(212, 80, 10, 0)');
+  ctx.fillStyle = warm;
+  ctx.fillRect(0, 0, w, h);
+
+  // Dividing line (mirrors CSS border)
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w/2, 0);
+  ctx.lineTo(w/2, h);
+  ctx.stroke();
+
+  if (!present) { requestAnimationFrame(draw); return; }
+
+  // Trail
+  trail.forEach((pt, i) => {
+    pt.age++;
+    const alpha = Math.max(0, 0.12 - pt.age * 0.006);
+    const size = 6 + i * 0.3;
+    ctx.fillStyle = `rgba(212, 80, 10, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  trail = trail.filter(pt => pt.age < 20);
+
+  const cx = mouse.x * w;
+  const cy = mouse.y * h;
+  const r = 16 + Math.sin(t * 1.8) * 2;
+
+  // Glow ring
+  const glow = ctx.createRadialGradient(cx, cy, r*0.6, cx, cy, r*3);
+  glow.addColorStop(0, 'rgba(212, 80, 10, 0.15)');
+  glow.addColorStop(1, 'rgba(212, 80, 10, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r*3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Core — burnt orange
+  ctx.fillStyle = '#D4500A';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.beginPath();
+  ctx.arc(cx - r*0.28, cy - r*0.28, r*0.25, 0, Math.PI * 2);
+  ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
