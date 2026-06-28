@@ -8,7 +8,6 @@ const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
   { value: 'piano',  label: 'piano'  },
   { value: 'guitar', label: 'guitar' },
-  { value: 'pad',    label: 'pad'    },
 ];
 
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {

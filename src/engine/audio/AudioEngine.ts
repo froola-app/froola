@@ -3,6 +3,7 @@ import { midiToHz } from '../music/scales'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
+type SampleNode = { stop(when?: number): void }
 
 export class AudioEngine {
   private ctx: AudioContext
@@ -15,6 +16,7 @@ export class AudioEngine {
   private samplerGain: GainNode
   private samplers: Partial<Record<'piano' | 'guitar', Player>> = {}
   private samplerLoading = new Set<'piano' | 'guitar'>()
+  private activeSampleNodes: SampleNode[] = []
 
   constructor() {
     this.ctx = new AudioContext()
@@ -69,20 +71,27 @@ export class AudioEngine {
       })
   }
 
-  // Attack only — stays at peak gain. Call silence() to release.
+  // Attack only — sustains until silence() is called.
   play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
 
     if ((mode === 'piano' || mode === 'guitar') && this.samplers[mode]) {
       const player = this.samplers[mode]!
-      // Snap samplerGain back in case a release fade is in progress
+      // Stop any previous looped nodes (chord change / re-entry)
+      const prev = this.activeSampleNodes
+      this.activeSampleNodes = []
+      prev.forEach(n => { try { n.stop() } catch { /* already stopped */ } })
+      // Restore samplerGain in case a release fade is in progress
       this.samplerGain.gain.cancelScheduledValues(now)
       this.samplerGain.gain.setValueAtTime(1, now)
-      cmd.voicing.forEach(midi => player.play(midi.toString()))
+      // Loop each voice so the note sustains until silence() is called
+      this.activeSampleNodes = cmd.voicing.map(midi =>
+        player.play(midi.toString(), undefined, { loop: true })
+      )
       return
     }
 
-    // Oscillator path: synth / pad / fallback for piano+guitar while loading
+    // Oscillator path: synth / fallback for piano+guitar while sampler loads
     const peakGain = 0.7 / 3
     cmd.voicing.forEach((midi, i) => {
       const hz = midiToHz(midi)
@@ -90,16 +99,8 @@ export class AudioEngine {
       this.oscillators[i].frequency.setValueAtTime(hz, now)
       this.voiceGains[i].gain.cancelScheduledValues(now)
       this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
-
-      if (mode === 'piano') {
-        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.008)
-      } else if (mode === 'guitar') {
-        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.005)
-      } else if (mode === 'pad') {
-        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.4)
-      } else {
-        this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + 0.012)
-      }
+      const attack = mode === 'piano' ? 0.008 : mode === 'guitar' ? 0.005 : 0.012
+      this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + attack)
     })
   }
 
@@ -107,23 +108,24 @@ export class AudioEngine {
   silence(mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
 
-    // Always silence oscillators (covers synth/pad and piano/guitar fallback)
+    // Always silence oscillators (synth and piano/guitar fallback)
     this.voiceGains.forEach(g => {
       g.gain.cancelScheduledValues(now)
       g.gain.setValueAtTime(g.gain.value, now)
-      if (mode === 'pad') {
-        g.gain.linearRampToValueAtTime(0, now + 0.5)
-      } else {
-        g.gain.linearRampToValueAtTime(0, now + 0.08)
-      }
+      g.gain.linearRampToValueAtTime(0, now + 0.08)
     })
 
     if (mode === 'piano' || mode === 'guitar') {
-      // Fade samplerGain — piano rings longer, guitar is shorter
+      // Fade samplerGain — piano rings longer, guitar shorter
+      const release = mode === 'piano' ? 2.0 : 0.6
       this.samplerGain.gain.cancelScheduledValues(now)
       this.samplerGain.gain.setValueAtTime(this.samplerGain.gain.value, now)
-      const release = mode === 'piano' ? 2.0 : 0.6
       this.samplerGain.gain.linearRampToValueAtTime(0, now + release)
+      // Stop looped nodes at end of fade so they don't run forever
+      const stopAt = now + release + 0.05
+      const nodes = this.activeSampleNodes
+      this.activeSampleNodes = []
+      nodes.forEach(n => { try { n.stop(stopAt) } catch { /* already stopped */ } })
     }
   }
 
