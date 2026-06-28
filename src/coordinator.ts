@@ -50,14 +50,17 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
       const w = canvas?.width  ?? window.innerWidth;
       const h = canvas?.height ?? window.innerHeight;
       const outerR  = Math.min(w, h) * 0.24;
+      const innerR  = outerR * 0.36;
       const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
       const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
       const wheelCy = h / 2;
 
-      const leftInDial  = !!left?.present  &&
-        Math.hypot(left.x  * w - leftCx,  left.y  * h - wheelCy) <= outerR;
-      const rightInDial = !!right?.present &&
-        Math.hypot(right.x * w - rightCx, right.y * h - wheelCy) <= outerR;
+      const inRing = (x: number, y: number, cx: number) => {
+        const d = Math.hypot(x * w - cx, y * h - wheelCy);
+        return d >= innerR && d <= outerR;
+      };
+      const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx);
+      const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx);
 
       const touching = leftInDial || rightInDial;
       const justEntered = touching && !wasTouching;
