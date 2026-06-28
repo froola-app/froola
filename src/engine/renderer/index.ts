@@ -192,7 +192,6 @@ export function useRenderer(
       }
 
       const outerR = Math.min(w, h) * 0.24;
-      const innerR = outerR * 0.36;
       const leftCx  = Math.max(outerR + 15, w / 2 - outerR * 1.25);
       const rightCx = Math.min(w - outerR - 15, w / 2 + outerR * 1.25);
       const wheelCy = h / 2;
@@ -204,11 +203,11 @@ export function useRenderer(
       const rightOrbX = right ? right.x * w : rightCx;
       const rightOrbY = right ? right.y * h : wheelCy;
 
-      // Check whether each orb is inside its wheel's annular region
+      // Orb is "in" a dial when its centre is inside the outer circle
       const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - wheelCy);
       const rightDist = Math.hypot(rightOrbX - rightCx, rightOrbY - wheelCy);
-      const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
-      const rightInDial = !!right?.present && rightDist >= innerR && rightDist <= outerR;
+      const leftInDial  = !!left?.present  && leftDist  <= outerR;
+      const rightInDial = !!right?.present && rightDist <= outerR;
 
       // Left wheel — note selection by angle, active only when orb is touching the dial
       const noteIdx = left?.present ? angleToSlice(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length) : 0;
