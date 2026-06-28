@@ -4,6 +4,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   return (
     <div className="landing-screen">
+      <img src="/favicon.svg" alt="Froola" className="landing-logo" />
       <h1 className="landing-title">froola</h1>
       <p className="landing-tagline">play music with your hands</p>
       <button className="btn-primary" onClick={() => navigate('/play')}>
