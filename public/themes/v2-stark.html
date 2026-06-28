@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Froola — Stark</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #FAFAF8; overflow: hidden; font-family: 'DM Sans', system-ui, sans-serif; }
+  canvas { position: fixed; inset: 0; display: block; }
+
+  .ui {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2rem; padding: 2rem;
+    pointer-events: none;
+  }
+
+  .ui * { pointer-events: auto; }
+
+  h1 {
+    font-size: 5rem;
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    color: #111111;
+    line-height: 1;
+  }
+
+  h1 span { color: #D4500A; }
+
+  .sub {
+    font-size: 0.95rem;
+    color: #888;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    max-width: 320px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .privacy {
+    font-size: 0.8rem;
+    color: #D4500A;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .actions { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+
+  .btn-primary {
+    padding: 0.8rem 2.5rem;
+    border-radius: 2px;
+    border: none;
+    background: #111111;
+    color: #FAFAF8;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: #D4500A; }
+
+  .btn-ghost {
+    background: none; border: none;
+    color: #999;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .btn-ghost:hover { color: #D4500A; }
+
+  .theme-tag {
+    position: fixed; top: 1.25rem; left: 1.25rem;
+    font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #ccc;
+    font-family: inherit;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="ui">
+  <h1>froo<span>.</span>la</h1>
+  <div class="actions">
+    <button class="btn-primary">Enable camera</button>
+    <button class="btn-ghost">Use mouse instead</button>
+  </div>
+  <p class="privacy">Your camera never leaves your device.</p>
+  <p class="sub">MediaPipe runs entirely on your device — no video is transmitted.</p>
+</div>
+<div class="theme-tag">V2-A — Stark</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let mouse = { x: 0.5, y: 0.5 };
+let t = 0;
+let present = false;
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX / window.innerWidth;
+  mouse.y = e.clientY / window.innerHeight;
+  present = true;
+});
+
+function draw() {
+  t += 0.012;
+  const w = canvas.width, h = canvas.height;
+
+  // Warm white background
+  ctx.fillStyle = '#FAFAF8';
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle warm center breath
+  const breath = Math.sin(t * 0.5) * 0.03 + 0.06;
+  const center = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.min(w,h) * 0.5);
+  center.addColorStop(0, `rgba(212, 80, 10, ${breath})`);
+  center.addColorStop(1, 'rgba(212, 80, 10, 0)');
+  ctx.fillStyle = center;
+  ctx.fillRect(0, 0, w, h);
+
+  if (!present) { requestAnimationFrame(draw); return; }
+
+  const cx = mouse.x * w;
+  const cy = mouse.y * h;
+  const r = 14 + Math.sin(t * 2) * 2;
+
+  // Soft shadow
+  const shadow = ctx.createRadialGradient(cx, cy + 4, 0, cx, cy, r * 4);
+  shadow.addColorStop(0, 'rgba(0,0,0,0.08)');
+  shadow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Core — dark ink dot
+  ctx.fillStyle = '#111111';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Specular highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.arc(cx - r*0.3, cy - r*0.3, r*0.28, 0, Math.PI * 2);
+  ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>

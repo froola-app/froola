@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Froola — Logo Refinements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #FAFAF8;
+    padding: 4rem 2rem;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+  h2 {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #bbb;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .section-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ddd;
+    text-align: center;
+    margin: 3rem 0 1.5rem;
+    font-weight: 500;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.06);
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #FAFAF8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 2.5rem 2rem 1.75rem;
+    min-height: 190px;
+  }
+  .card-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #ccc;
+  }
+  .card-desc {
+    font-size: 0.75rem;
+    color: #bbb;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h2>DM Sans 900 — Smile &amp; oo refinements</h2>
+
+<!-- SMILE VARIATIONS -->
+<p class="section-label">Smile shape</p>
+<div class="grid">
+  <div class="card"><canvas id="s1"></canvas><span class="card-label">A — Current</span><span class="card-desc">Medium width, medium depth</span></div>
+  <div class="card"><canvas id="s2"></canvas><span class="card-label">B — Narrow &amp; deep</span><span class="card-desc">More of a pout</span></div>
+  <div class="card"><canvas id="s3"></canvas><span class="card-label">C — Wide &amp; shallow</span><span class="card-desc">Relaxed, open smile</span></div>
+  <div class="card"><canvas id="s4"></canvas><span class="card-label">D — Thin stroke</span><span class="card-desc">Delicate, subtle</span></div>
+  <div class="card"><canvas id="s5"></canvas><span class="card-label">E — Thick stroke</span><span class="card-desc">Bold, confident</span></div>
+  <div class="card"><canvas id="s6"></canvas><span class="card-label">F — Closer to oo</span><span class="card-desc">Tucked right under</span></div>
+</div>
+
+<!-- OO VARIATIONS -->
+<p class="section-label">oo treatment</p>
+<div class="grid">
+  <div class="card"><canvas id="o1"></canvas><span class="card-label">G — oo in orange</span><span class="card-desc">Eyes pop, smile matches text</span></div>
+  <div class="card"><canvas id="o2"></canvas><span class="card-label">H — Wider letter-spacing on oo</span><span class="card-desc">Eyes further apart</span></div>
+  <div class="card"><canvas id="o3"></canvas><span class="card-label">I — Tighter oo</span><span class="card-desc">Eyes closer together</span></div>
+  <div class="card"><canvas id="o4"></canvas><span class="card-label">J — oo slightly larger</span><span class="card-desc">Eyes feel more prominent</span></div>
+  <div class="card"><canvas id="o5"></canvas><span class="card-label">K — Smile under left o only</span><span class="card-desc">Asymmetric, quirky</span></div>
+  <div class="card"><canvas id="o6"></canvas><span class="card-label">L — All lowercase, looser</span><span class="card-desc">More tracking across full word</span></div>
+</div>
+
+<script>
+const ORANGE = '#D4500A';
+const BLACK  = '#111111';
+const DPR    = window.devicePixelRatio || 1;
+const FS     = 72;
+const FONT   = `900 ${FS}px 'DM Sans', system-ui`;
+
+function getMetrics(ctx, fontStr) {
+  ctx.font = fontStr;
+  return {
+    frW:  ctx.measureText('fr').width,
+    oW:   ctx.measureText('o').width,
+    laW:  ctx.measureText('la').width,
+    mAsc: ctx.measureText('M').actualBoundingBoxAscent,
+    oAsc: ctx.measureText('o').actualBoundingBoxAscent,
+    oDes: Math.abs(ctx.measureText('o').actualBoundingBoxDescent || 0),
+  };
+}
+
+function initCanvas(canvas, totalW, totalH) {
+  canvas.width  = Math.ceil(totalW * DPR);
+  canvas.height = Math.ceil(totalH * DPR);
+  canvas.style.width  = Math.ceil(totalW) + 'px';
+  canvas.style.height = Math.ceil(totalH) + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(DPR, DPR);
+  return ctx;
+}
+
+// Base draw — all params explicit
+function base(canvas, {
+  smileHW,       // half-width of smile
+  smileDepth,    // how far it curves down
+  smileStroke,   // line width multiplier (1 = default)
+  smileGap,      // vertical gap between oo bottom and smile top
+  ooColor = BLACK,
+  smileColor = ORANGE,
+  ooSpacing = 0, // extra px between the two o's
+  ooScale   = 1, // scale factor applied to oo font size
+  wordTracking = 0, // letter-spacing across whole word
+  smileCXOffset = 0, // shift smile center left/right
+}) {
+  const ctx  = canvas.getContext('2d');
+  const m    = getMetrics(ctx, FONT);
+  const xH   = m.oAsc + m.oDes;
+  const padX = FS * 0.08;
+  const padT = FS * 0.15;
+  const base = padT + m.mAsc;
+  const sw   = FS * 0.135;
+
+  const oCY    = base - xH * 0.5;
+  const oR     = xH * 0.5;
+  const o1CX   = padX + m.frW + wordTracking * 2 + (m.oW * ooScale) * 0.5;
+  const o2CX   = o1CX + (m.oW * ooScale) + ooSpacing;
+  const smCX   = (o1CX + o2CX) / 2 + smileCXOffset;
+  const smY    = oCY + oR + smileGap;
+  const totalW = padX * 2 + m.frW + (m.oW * ooScale * 2) + ooSpacing + m.laW + wordTracking * 5;
+  const totalH = smY + smileDepth + sw + FS * 0.18;
+
+  const c = initCanvas(canvas, totalW, totalH);
+
+  // "fr"
+  c.font = FONT;
+  c.fillStyle = BLACK;
+  c.textBaseline = 'alphabetic';
+  c.fillText('fr', padX, base);
+
+  // "oo" (with optional color/scale)
+  if (ooScale !== 1) {
+    c.font = `900 ${FS * ooScale}px 'DM Sans', system-ui`;
+  }
+  c.fillStyle = ooColor;
+  const ooBase = ooScale !== 1 ? base + (xH - xH * ooScale) * 0.5 : base;
+  c.fillText('o', padX + m.frW + wordTracking * 2, ooBase);
+  c.fillText('o', padX + m.frW + wordTracking * 2 + m.oW * ooScale + ooSpacing, ooBase);
+
+  // "la"
+  c.font = FONT;
+  c.fillStyle = BLACK;
+  c.fillText('la', padX + m.frW + m.oW * ooScale * 2 + ooSpacing + wordTracking * 3, base);
+
+  // Smile
+  c.strokeStyle = smileColor;
+  c.lineWidth   = sw * smileStroke;
+  c.lineCap     = 'round';
+  c.beginPath();
+  c.moveTo(smCX - smileHW, smY);
+  c.quadraticCurveTo(smCX, smY + smileDepth, smCX + smileHW, smY);
+  c.stroke();
+}
+
+document.fonts.ready.then(() => {
+  const m = (() => {
+    const tmp = document.createElement('canvas').getContext('2d');
+    return getMetrics(tmp, FONT);
+  })();
+  const oW = m.oW;
+  const xH = m.oAsc + m.oDes;
+  const oR = xH * 0.5;
+  const sw = FS * 0.135;
+  const defaultGap = sw * 0.9;
+
+  // ── Smile shape ────────────────────────────────────────
+  // A: current
+  base(document.getElementById('s1'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap });
+  // B: narrow & deep
+  base(document.getElementById('s2'), { smileHW: oW*0.22, smileDepth: oW*0.26, smileStroke: 0.72, smileGap: defaultGap });
+  // C: wide & shallow
+  base(document.getElementById('s3'), { smileHW: oW*0.58, smileDepth: oW*0.09, smileStroke: 0.72, smileGap: defaultGap });
+  // D: thin stroke
+  base(document.getElementById('s4'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 0.38, smileGap: defaultGap });
+  // E: thick stroke
+  base(document.getElementById('s5'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 1.1,  smileGap: defaultGap });
+  // F: closer to oo
+  base(document.getElementById('s6'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 0.72, smileGap: sw * 0.3 });
+
+  // ── oo treatment ───────────────────────────────────────
+  // G: oo in orange, smile black
+  base(document.getElementById('o1'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap, ooColor: ORANGE, smileColor: BLACK });
+  // H: wider spacing between oo
+  base(document.getElementById('o2'), { smileHW: oW*0.5,  smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap, ooSpacing: oW*0.18 });
+  // I: tighter oo
+  base(document.getElementById('o3'), { smileHW: oW*0.3,  smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap, ooSpacing: -oW*0.12 });
+  // J: oo slightly larger
+  base(document.getElementById('o4'), { smileHW: oW*0.42, smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap, ooScale: 1.18 });
+  // K: smile under left o only (quirky)
+  base(document.getElementById('o5'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap, smileCXOffset: -oW*0.5 });
+  // L: loose tracking across whole word
+  base(document.getElementById('o6'), { smileHW: oW*0.38, smileDepth: oW*0.17, smileStroke: 0.72, smileGap: defaultGap, wordTracking: 4 });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Froola — Sunset Rave</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { background: #0D0814; overflow: hidden; font-family: system-ui, sans-serif; }
+
+  canvas { position: fixed; inset: 0; display: block; }
+
+  .permission-screen {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem; text-align: center; padding: 2rem;
+    background: rgba(13, 8, 20, 0.80);
+    backdrop-filter: blur(8px);
+    color: #f0eaf8;
+  }
+
+  .label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #FF3CAC;
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, #FF3CAC 0%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .privacy-note {
+    font-size: 0.95rem;
+    color: #FF3CAC;
+    font-weight: 500;
+  }
+
+  p { color: rgba(240, 234, 248, 0.55); font-size: 0.9rem; }
+
+  .permission-buttons { display: flex; gap: 1rem; margin-top: 0.5rem; }
+
+  .btn-primary {
+    padding: 0.75rem 1.75rem;
+    border-radius: 9999px; border: none;
+    background: linear-gradient(135deg, #FF3CAC, #F59E0B);
+    color: #fff;
+    font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    box-shadow: 0 0 28px rgba(255, 60, 172, 0.4);
+  }
+  .btn-primary:hover { opacity: 0.85; }
+
+  .btn-secondary {
+    padding: 0.75rem 1.75rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 60, 172, 0.35);
+    background: transparent; color: #f0eaf8;
+    font-size: 0.95rem; cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: #FF3CAC; color: #FF3CAC; }
+
+  .theme-tag {
+    position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
+    background: rgba(255, 60, 172, 0.1);
+    border: 1px solid rgba(255, 60, 172, 0.25);
+    color: #FF3CAC; font-size: 0.75rem; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.3rem 0.8rem; border-radius: 9999px;
+    font-family: system-ui, sans-serif;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="permission-screen">
+  <span class="label">A new instrument</span>
+  <h1>Froola</h1>
+  <p class="privacy-note">Your camera never leaves your device.</p>
+  <p>MediaPipe runs entirely on your device — no video is transmitted.</p>
+  <div class="permission-buttons">
+    <button class="btn-primary">Enable camera</button>
+    <button class="btn-secondary">Use mouse instead</button>
+  </div>
+</div>
+<div class="theme-tag">Option C — Sunset Rave</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let mouse = { x: 0.5, y: 0.5 };
+let t = 0;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('mousemove', e => {
+  mouse.x = e.clientX / window.innerWidth;
+  mouse.y = e.clientY / window.innerHeight;
+});
+
+function draw() {
+  t += 0.01;
+  const w = canvas.width, h = canvas.height;
+
+  ctx.fillStyle = '#0D0814';
+  ctx.fillRect(0, 0, w, h);
+
+  // Dual warm zone — pink left, amber right, blending in center
+  const pinkHaze = ctx.createRadialGradient(w * 0.35, h * 0.5, 0, w * 0.35, h * 0.5, Math.min(w,h) * 0.5);
+  pinkHaze.addColorStop(0, 'rgba(255, 60, 172, 0.16)');
+  pinkHaze.addColorStop(1, 'rgba(255, 60, 172, 0)');
+  ctx.fillStyle = pinkHaze;
+  ctx.fillRect(0, 0, w, h);
+
+  const amberHaze = ctx.createRadialGradient(w * 0.65, h * 0.5, 0, w * 0.65, h * 0.5, Math.min(w,h) * 0.5);
+  amberHaze.addColorStop(0, 'rgba(245, 158, 11, 0.14)');
+  amberHaze.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = amberHaze;
+  ctx.fillRect(0, 0, w, h);
+
+  // Orb
+  const cx = mouse.x * w;
+  const cy = mouse.y * h;
+  const pulse = 20 + Math.sin(t * 2) * 5;
+
+  // Blend color based on x position
+  const pinkAmt = 1 - mouse.x;
+  const amberAmt = mouse.x;
+  const r = Math.round(255 * pinkAmt + 245 * amberAmt);
+  const g = Math.round(60 * pinkAmt + 158 * amberAmt);
+  const b = Math.round(172 * pinkAmt + 11 * amberAmt);
+
+  // Outer glow
+  const outerGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulse * 5);
+  outerGlow.addColorStop(0, `rgba(${r},${g},${b},0.3)`);
+  outerGlow.addColorStop(0.5, `rgba(${r},${g},${b},0.08)`);
+  outerGlow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = outerGlow;
+  ctx.beginPath();
+  ctx.arc(cx, cy, pulse * 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Core orb
+  const core = ctx.createRadialGradient(cx - pulse*0.2, cy - pulse*0.2, 0, cx, cy, pulse);
+  core.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+  core.addColorStop(0.5, `rgba(${r+30},${g+60},${b+40},0.9)`);
+  core.addColorStop(1, `rgba(${r},${g},${b},0.7)`);
+  ctx.fillStyle = core;
+  ctx.beginPath();
+  ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
+  ctx.fill();
+
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
