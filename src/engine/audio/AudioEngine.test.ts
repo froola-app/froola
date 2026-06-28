@@ -111,6 +111,18 @@ describe('AudioEngine — getAnalyser()', () => {
   })
 })
 
+describe('AudioEngine — silence()', () => {
+  it('ramps all voice gains to 0', () => {
+    const engine = new AudioEngine()
+    engine.play(CMD)
+    engine.silence()
+    const zeroRamps = mockAudioContext.createGain.mock.results.flatMap(r =>
+      r.value.gain.linearRampToValueAtTime.mock.calls
+    ).filter(([val]: [number]) => val === 0)
+    expect(zeroRamps.length).toBeGreaterThanOrEqual(3)
+  })
+})
+
 describe('AudioEngine — resume() / suspend()', () => {
   it('calls ctx.resume() when state is suspended', () => {
     const engine = new AudioEngine()

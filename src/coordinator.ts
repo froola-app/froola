@@ -64,9 +64,14 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
 
       const touching = leftInDial || rightInDial;
       const justEntered = touching && !wasTouching;
+      const justLeft    = !touching && wasTouching;
       wasTouching = touching;
 
       const { noteIdx, qualIdx } = selectedRef.current;
+
+      if (justLeft && engineRef.current) {
+        engineRef.current.silence();
+      }
 
       if (touching && engineRef.current) {
         const y = left?.present ? left.y : (right?.y ?? lastY);
