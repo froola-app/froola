@@ -144,6 +144,15 @@ function drawOrb(
   ctx.beginPath();
   ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
   ctx.fill();
+
+  // Fist = chord locked: draw a bright ring around the orb
+  if (signal.fist) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowRadius * 1.5, 0, Math.PI * 2);
+    ctx.strokeStyle = isLeft ? 'rgba(180,220,255,0.85)' : 'rgba(255,220,140,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
 }
 
 export function useRenderer(
