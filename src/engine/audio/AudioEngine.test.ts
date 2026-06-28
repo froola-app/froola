@@ -28,10 +28,10 @@ describe('AudioEngine — construction', () => {
       expect(r.value.start).toHaveBeenCalledTimes(1)
     })
   })
-  it('sets all oscillators to sine type', () => {
+  it('sets all oscillators to triangle type', () => {
     new AudioEngine()
     mockAudioContext.createOscillator.mock.results.forEach(r => {
-      expect(r.value.type).toBe('sine')
+      expect(r.value.type).toBe('triangle')
     })
   })
   it('creates an analyser with fftSize 256', () => {
