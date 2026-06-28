@@ -194,9 +194,9 @@ export function useRenderer(
       }
 
       const outerR = Math.min(w, h) * 0.24;
-      const leftCx  = outerR + 20;
-      const rightCx = w - outerR - 20;
-      const wheelCy = h / 2;
+      const leftCx  = outerR * 1.5;
+      const rightCx = w - outerR * 1.5;
+      const wheelCy = h * 0.65;
       const bgColor = 'rgba(10,14,26,0.88)';
 
       // Orb positions in pixels

@@ -51,8 +51,8 @@ export function useCoordinator(canvasRef: RefObject<HTMLCanvasElement | null>) {
       const h = canvas?.height ?? window.innerHeight;
       const outerR  = Math.min(w, h) * 0.24;
       const innerR  = outerR * 0.36;
-      const leftCx  = outerR + 20;
-      const wheelCy = h / 2;
+      const leftCx  = outerR * 1.5;
+      const wheelCy = h * 0.65;
 
       const inRing = (x: number, y: number, cx: number) => {
         const d = Math.hypot(x * w - cx, y * h - wheelCy);
