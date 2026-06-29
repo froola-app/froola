@@ -1,2 +1,2 @@
 export { createMapper } from './mapGesture';
-export { buildCommand } from './buildCommand';
+export { buildCommand, melodyMidi } from './buildCommand';

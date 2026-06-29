@@ -1,9 +1,9 @@
 import type { NoteName, ChordQuality, MusicalCommand } from '../types';
 import { NOTES, QUALITIES } from '../types';
 
-// A4–B4 then C5–G5 so the wheel ascends in pitch without a large drop at C.
+// C-major scale ascending from C5 so the wheel rises in pitch from the top (C) clockwise.
 const NOTE_MIDI: Record<NoteName, number> = {
-  A: 69, B: 71, C: 72, D: 74, E: 76, F: 77, G: 79,
+  C: 72, D: 74, E: 76, F: 77, G: 79, A: 81, B: 83,
 };
 
 const QUALITY_INTERVALS: Record<ChordQuality, [0, number, number]> = {
@@ -19,6 +19,13 @@ const QUALITY_INTERVALS: Record<ChordQuality, [0, number, number]> = {
 const QUALITY_TENSION: Record<ChordQuality, number> = {
   major: 0.0, minor: 0.2, maj7: 0.3, min7: 0.4, dom7: 0.6, aug: 0.8, dim: 1.0,
 };
+
+// MIDI note for a melody line played from the note wheel — one octave above the
+// chord register so it sits clearly over the held pad.
+export function melodyMidi(noteIdx: number): number {
+  const note = NOTES[noteIdx % NOTES.length];
+  return NOTE_MIDI[note] + 12;
+}
 
 export function buildCommand(
   noteIdx: number,
