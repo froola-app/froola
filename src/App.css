@@ -162,7 +162,7 @@ body {
   gap: 1.5rem;
 }
 
-/* legacy button — still used by the dark ReplayShell "coming soon" page */
+/* used by the dark ReplayShell invalid-link page and the replay Play control */
 .btn-primary {
   padding: 0.75rem 1.75rem;
   border-radius: 9999px;
@@ -405,6 +405,34 @@ body {
   height: 3px;
   background: #dc2626;
   z-index: 30;
+  transition: width 0.1s linear;
+}
+
+/* ── Replay playback controls ──────────────────────────────── */
+
+.replay-controls {
+  position: fixed;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 30;
+}
+
+.replay-progress {
+  width: min(60vw, 360px);
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.replay-progress-fill {
+  height: 100%;
+  background: #f59e0b;
   transition: width 0.1s linear;
 }
 

@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal } from '../engine/types';
+import type { DialSelection } from '../engine/renderer';
 import { useRecorder } from '../engine/recording/useRecorder';
 import { copyToClipboard } from '../utils/clipboard';
 
 type Props = {
-  signalsRef: RefObject<GestureSignal[]>;
+  selectedRef: RefObject<DialSelection>;
   vibe: string;
 };
 
-export default function RecordButton({ signalsRef, vibe }: Props) {
-  const { state, elapsed, shareUrl, start, stop } = useRecorder(signalsRef, vibe);
+export default function RecordButton({ selectedRef, vibe }: Props) {
+  const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe);
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {

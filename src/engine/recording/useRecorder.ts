@@ -1,22 +1,20 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, RecordingSample, Recording } from '../types';
+import type { RecordingSample, Recording } from '../types';
+import type { DialSelection } from '../renderer';
 import { encode } from './codec';
 
-const NOTES_LEN = 7;
-const QUALITIES_LEN = 7;
 const VIBES = ['warm', 'bright', 'dark', 'electric'];
 const MAX_DURATION_MS = 30_000;
 const INTERVAL_MS = 100;
 
-function pickIndex(x: number, count: number): number {
-  return Math.min(Math.floor(x * count), count - 1);
-}
-
 export type RecorderState = 'idle' | 'recording' | 'done';
 
+// Records the angle-derived note/quality selection the audio path actually
+// plays (selectedRef, published by the renderer) — not the raw hand x — so a
+// replay reproduces exactly what was heard.
 export function useRecorder(
-  signalsRef: RefObject<GestureSignal[]>,
+  selectedRef: RefObject<DialSelection>,
   vibe: string
 ) {
   const [state, setState] = useState<RecorderState>('idle');
@@ -67,21 +65,19 @@ export function useRecorder(
       const dt = Math.round(tick - lastSampleTimeRef.current);
       lastSampleTimeRef.current = tick;
 
-      const signals = signalsRef.current ?? [];
-      const left = signals.find(s => s.handId === 'left');
-      const right = signals.find(s => s.handId === 'right');
+      const sel = selectedRef.current ?? { noteIdx: 0, qualIdx: 0 };
       const vibeIdx = Math.max(0, VIBES.indexOf(vibeRef.current));
 
       samplesRef.current.push({
         dt,
-        noteIdx: left ? pickIndex(left.x, NOTES_LEN) : 0,
-        qualityIdx: right ? pickIndex(right.x, QUALITIES_LEN) : 0,
+        noteIdx: sel.noteIdx,
+        qualityIdx: sel.qualIdx,
         vibe: vibeIdx,
       });
 
       if (totalElapsed >= MAX_DURATION_MS) stop();
     }, INTERVAL_MS);
-  }, [signalsRef, stop]);
+  }, [selectedRef, stop]);
 
   useEffect(() => () => {
     if (intervalRef.current) clearInterval(intervalRef.current);

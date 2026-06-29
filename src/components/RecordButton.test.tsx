@@ -4,8 +4,8 @@ import { useRef } from 'react';
 import RecordButton from './RecordButton';
 
 function Harness() {
-  const signalsRef = useRef([]);
-  return <RecordButton signalsRef={signalsRef} vibe="warm" />;
+  const selectedRef = useRef({ noteIdx: 0, qualIdx: 0 });
+  return <RecordButton selectedRef={selectedRef} vibe="warm" />;
 }
 
 describe('RecordButton', () => {
