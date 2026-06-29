@@ -17,19 +17,20 @@ describe('LandingPage', () => {
   it('renders the tagline and both input choices', () => {
     render(<LandingPage />);
     expect(screen.getByText('play music with your hands')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /enable camera/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /use (mouse|touch) instead/i })).toBeInTheDocument();
+    // Hero and the closing CTA each render the choices, so there are two of each.
+    expect(screen.getAllByRole('button', { name: /enable camera/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i }).length).toBeGreaterThan(0);
   });
 
   it('starts playing in camera mode inline when enabling the camera', async () => {
     render(<LandingPage />);
-    await userEvent.click(screen.getByRole('button', { name: /enable camera/i }));
+    await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
     expect(screen.getByText('play shell: camera')).toBeInTheDocument();
   });
 
   it('starts playing in pointer mode inline when choosing pointer input', async () => {
     render(<LandingPage />);
-    await userEvent.click(screen.getByRole('button', { name: /use (mouse|touch) instead/i }));
+    await userEvent.click(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i })[0]);
     expect(screen.getByText('play shell: mouse')).toBeInTheDocument();
   });
 
