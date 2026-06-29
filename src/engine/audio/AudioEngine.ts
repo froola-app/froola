@@ -16,6 +16,16 @@ const CHORD_GAIN_RAMP = 0.06     // soundgo chordGain.gain.rampTo(_, 0.06)
 const SYNTH_TOTAL_GAIN = 0.2     // soundgo targetChordGain cap
 const SYNTH_VOICE_GAIN = SYNTH_TOTAL_GAIN / VOICES
 
+// Subtle per-voice detune (cents) + stereo spread give the pad analog warmth and
+// width instead of a flat, dead-center, perfectly-tuned image.
+const VOICE_DETUNE = [-7, 7, -4, 4]
+const VOICE_PAN = [-0.6, 0.6, -0.25, 0.25]
+
+// A short, soft room reverb mixed in lightly for a sense of space (soundgo is dry).
+const REVERB_SECONDS = 1.8
+const REVERB_DECAY = 2.6
+const REVERB_SEND = 0.18
+
 export class AudioEngine {
   private ctx: AudioContext
   private oscillators: OscillatorNode[]
@@ -54,12 +64,22 @@ export class AudioEngine {
     this.samplerGain.gain.value = 0.7
     this.samplerGain.connect(this.masterGain)
 
+    // Reverb send → convolver → master, blended under the dry signal for space.
+    const reverbSend = this.ctx.createGain()
+    reverbSend.gain.value = REVERB_SEND
+    const convolver = this.ctx.createConvolver()
+    convolver.buffer = this.buildImpulse(REVERB_SECONDS, REVERB_DECAY)
+    reverbSend.connect(convolver)
+    convolver.connect(this.masterGain)
+    this.samplerGain.connect(reverbSend)
+
     // soundgo routes the chord oscillators through a lowpass filter — this is
     // what gives it its warm, mellow tone instead of a raw buzzy triangle.
     this.synthFilter = this.ctx.createBiquadFilter()
     this.synthFilter.type = 'lowpass'
     this.synthFilter.frequency.value = SYNTH_LOWPASS_HZ
     this.synthFilter.connect(this.masterGain)
+    this.synthFilter.connect(reverbSend)
 
     this.oscillators = []
     this.voiceGains = []
@@ -68,14 +88,32 @@ export class AudioEngine {
       const osc = this.ctx.createOscillator()
       // Triangle gives a rounder, more instrument-like tone than sine
       osc.type = 'triangle'
+      osc.detune.value = VOICE_DETUNE[i]
       const gain = this.ctx.createGain()
       gain.gain.value = 0
+      const panner = this.ctx.createStereoPanner()
+      panner.pan.value = VOICE_PAN[i]
       osc.connect(gain)
-      gain.connect(this.synthFilter)
+      gain.connect(panner)
+      panner.connect(this.synthFilter)
       osc.start()
       this.oscillators.push(osc)
       this.voiceGains.push(gain)
     }
+  }
+
+  /** Decaying-noise impulse response for a short, soft room reverb. */
+  private buildImpulse(seconds: number, decay: number): AudioBuffer {
+    const rate = this.ctx.sampleRate
+    const length = Math.max(1, Math.floor(rate * seconds))
+    const buffer = this.ctx.createBuffer(2, length, rate)
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buffer.getChannelData(ch)
+      for (let i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay)
+      }
+    }
+    return buffer
   }
 
   // soundgo pads a 3-note triad to 4 voices by adding the root an octave up.
