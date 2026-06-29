@@ -94,12 +94,14 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
         },
         runningMode: 'VIDEO',
         numHands: 2,
-        // Lower than the 0.5 defaults so a hand held close to the camera (large,
-        // blurry, partially out of frame) — where confidence dips — keeps being
-        // tracked instead of dropping out entirely.
-        minHandDetectionConfidence: 0.3,
-        minHandPresenceConfidence: 0.3,
-        minTrackingConfidence: 0.3,
+        // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
+        // held close to the camera) made it accept low-confidence/blurry hands:
+        // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
+        // registered as a fist, freezing the reported position at center
+        // ("stuck in the middle"). 0.5 restores stable tracking.
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       });
 
       if (cancelled) { landmarker.close(); return; }
