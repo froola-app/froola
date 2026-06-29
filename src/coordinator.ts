@@ -8,6 +8,9 @@ import { buildCommand } from './engine/music';
 import { AudioEngine } from './engine/audio';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
+// How long a chord keeps ringing after both hands briefly leave the wheels, so
+// crossing the centre hub or a dropped tracking frame doesn't cut the note.
+const SILENCE_GRACE_MS = 140;
 
 export function useCoordinator(
   canvasRef: RefObject<HTMLCanvasElement | null>,
@@ -41,7 +44,8 @@ export function useCoordinator(
     let lastNoteIdx = -1;
     let lastQualIdx = -1;
     let lastY = -1;
-    let wasTouching = false;
+    let sounding = false;
+    let lastTouchMs = -Infinity;
 
     function tick() {
       const signals = signalRef.current;
@@ -66,11 +70,14 @@ export function useCoordinator(
       const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx);
       const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx);
 
-      // Both hands on their wheels = chord plays (left=note, right=quality)
+      // Both hands on their wheels = chord plays (left=note, right=quality).
       const touching = leftInDial && rightInDial;
-      const justEntered = touching && !wasTouching;
-      const justLeft    = !touching && wasTouching;
-      wasTouching = touching;
+      const nowMs = performance.now();
+      if (touching) lastTouchMs = nowMs;
+      // A brief loss of contact (crossing the centre hub between slices, a dropped
+      // tracking frame) holds the note instead of cutting it — avoids glitchy
+      // silence/retrigger as you move around the wheels.
+      const inGrace = !touching && (nowMs - lastTouchMs) < SILENCE_GRACE_MS;
 
       const { noteIdx, qualIdx } = selectedRef.current;
       const instrMode = modeRef.current;
@@ -80,21 +87,22 @@ export function useCoordinator(
         engineRef.current.startLoadingSampler(instrMode);
       }
 
-      if (justLeft && engineRef.current) {
-        engineRef.current.silence(instrMode);
-      }
-
       if (touching && engineRef.current) {
         const y = left?.present ? left.y : (right?.y ?? lastY);
         const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
 
-        if (justEntered || selChanged || yChanged) {
+        if (!sounding || selChanged || yChanged) {
           engineRef.current.play(buildCommand(noteIdx, qualIdx, y), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
         }
+        sounding = true;
+      } else if (!inGrace && sounding && engineRef.current) {
+        // Grace expired (or hand fully gone) — release the held note.
+        engineRef.current.silence(instrMode);
+        sounding = false;
       }
 
       rafId = requestAnimationFrame(tick);

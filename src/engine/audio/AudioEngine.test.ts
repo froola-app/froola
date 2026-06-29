@@ -55,6 +55,20 @@ describe('AudioEngine — construction', () => {
     new AudioEngine()
     expect(mockAudioContext.createDynamicsCompressor).toHaveBeenCalledTimes(1)
   })
+  it('gives each voice a distinct detune and stereo pan for width', () => {
+    new AudioEngine()
+    expect(mockAudioContext.createStereoPanner).toHaveBeenCalledTimes(4)
+    const detunes = mockAudioContext.createOscillator.mock.results.map(r => r.value.detune.value)
+    const pans = mockAudioContext.createStereoPanner.mock.results.map(r => r.value.pan.value)
+    expect(new Set(detunes).size).toBe(4)
+    expect(new Set(pans).size).toBe(4)
+  })
+  it('creates a convolver reverb with an impulse buffer', () => {
+    new AudioEngine()
+    expect(mockAudioContext.createConvolver).toHaveBeenCalledTimes(1)
+    const convolver = mockAudioContext.createConvolver.mock.results[0].value
+    expect(convolver.buffer).not.toBeNull()
+  })
 })
 
 describe('AudioEngine — play()', () => {
