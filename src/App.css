@@ -225,12 +225,19 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
-.instrument-select {
+/* bottom-center HUD row — holds the instrument picker + octave stepper */
+.hud-bottom {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.instrument-select {
   font-family: monospace;
   font-size: 0.85rem;
   color: #ffffff;
@@ -261,6 +268,54 @@ body {
   color: #ffffff;
 }
 
+/* octave stepper — frosted pill matching the other HUD controls */
+.octave-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #ffffff;
+  background: rgba(17, 17, 17, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.25rem 0.45rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.octave-value {
+  min-width: 4.2em;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.octave-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.octave-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.26); }
+
+.octave-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .record-btn {
   position: fixed;
   top: 1rem;
@@ -285,59 +340,50 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
-/* small status dot inside the record control */
+/* status dot inside the record control — white & static when idle */
 .rec-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 999px;
-  background: #ef4444;
+  background: #ffffff;
+  border: 1px solid rgba(17, 17, 17, 0.4);
   flex-shrink: 0;
 }
 
-/* idle = neutral pill so it never reads as "currently recording" */
+/* idle = frosted clear glass with a white dot; no red so it never reads
+   as "currently recording" */
 .record-btn--idle {
   color: #ffffff;
-  background: rgba(17, 17, 17, 0.72);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.38);
 }
 
 .record-btn--idle:hover {
-  background: rgba(17, 17, 17, 0.9);
-  border-color: rgba(255, 80, 80, 0.6);
+  background: rgba(255, 255, 255, 0.24);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
-/* recording = unmistakably live: the pill blinks red with a pulsing glow */
+/* recording = the whole button shifts to a red shade (static); the dot
+   blinks red on top of it */
 .record-btn--recording {
-  color: #fff;
-  background: rgba(220, 38, 38, 0.95);
-  border-color: #dc2626;
-  animation: record-pulse 1s ease-in-out infinite;
+  color: #ffffff;
+  background: rgba(190, 28, 28, 0.7);
+  border-color: rgba(255, 90, 90, 0.65);
 }
 
 .record-btn--recording .rec-dot--live {
-  background: #ffffff;
+  background: #ff3b3b;
+  border-color: rgba(255, 255, 255, 0.85);
   animation: record-dot-blink 1s ease-in-out infinite;
-}
-
-@keyframes record-pulse {
-  0%, 100% {
-    background: rgba(220, 38, 38, 0.95);
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55), 0 2px 10px rgba(0, 0, 0, 0.35);
-  }
-  50% {
-    background: rgba(140, 20, 20, 0.95);
-    box-shadow: 0 0 0 7px rgba(220, 38, 38, 0), 0 2px 10px rgba(0, 0, 0, 0.35);
-  }
 }
 
 @keyframes record-dot-blink {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
+  50% { opacity: 0.15; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .record-btn--recording,
   .record-btn--recording .rec-dot--live { animation: none; }
 }
 
