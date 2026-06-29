@@ -3,14 +3,22 @@ import type { InputMode } from '../engine/input';
 import FroolaLogo from './FroolaLogo';
 import { useLandingCanvas } from '../hooks/useLandingCanvas';
 import PlayShell from './PlayShell';
+import { getRememberedInput, rememberInput, type RememberedInput } from '../lib/inputPreference';
 
 const isTouchDevice = () => navigator.maxTouchPoints > 0;
 
 export default function LandingPage() {
-  const [input, setInput] = useState<InputMode | null>(null);
+  // If the player chose camera or mouse in the last 10 minutes, skip the prompt
+  // and start straight away with that choice.
+  const [input, setInput] = useState<InputMode | null>(() => getRememberedInput());
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   useLandingCanvas(canvasRef);
   const touch = isTouchDevice();
+
+  const choose = (mode: RememberedInput) => {
+    rememberInput(mode);
+    setInput(mode);
+  };
 
   // Start playing inline — no URL change, same screen.
   if (input) return <PlayShell initialInput={input} />;
@@ -24,13 +32,13 @@ export default function LandingPage() {
         <div className="landing-v2__actions">
           <button
             className="landing-v2__btn-primary"
-            onClick={() => setInput('camera')}
+            onClick={() => choose('camera')}
           >
             Enable camera
           </button>
           <button
             className="landing-v2__btn-secondary"
-            onClick={() => setInput('mouse')}
+            onClick={() => choose('mouse')}
           >
             {touch ? 'Use touch instead' : 'Use mouse instead'}
           </button>
