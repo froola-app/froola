@@ -1,36 +1,33 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { vi } from 'vitest';
 import LandingPage from './LandingPage';
 
-function Harness() {
-  return (
-    <MemoryRouter initialEntries={['/']}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/play" element={<div>play shell</div>} />
-      </Routes>
-    </MemoryRouter>
-  );
-}
+// PlayShell pulls in the audio/canvas coordinator, so stub it: we only care that
+// the landing page swaps to it inline (same URL) with the chosen input mode.
+vi.mock('./PlayShell', () => ({
+  default: ({ initialInput }: { initialInput?: string }) => (
+    <div>play shell: {initialInput}</div>
+  ),
+}));
 
 describe('LandingPage', () => {
   it('renders the tagline and both input choices', () => {
-    render(<Harness />);
+    render(<LandingPage />);
     expect(screen.getByText('play music with your hands')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /enable camera/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /use (mouse|touch) instead/i })).toBeInTheDocument();
   });
 
-  it('navigates to /play when enabling the camera', async () => {
-    render(<Harness />);
+  it('starts playing in camera mode inline when enabling the camera', async () => {
+    render(<LandingPage />);
     await userEvent.click(screen.getByRole('button', { name: /enable camera/i }));
-    expect(screen.getByText('play shell')).toBeInTheDocument();
+    expect(screen.getByText('play shell: camera')).toBeInTheDocument();
   });
 
-  it('navigates to /play when choosing pointer input', async () => {
-    render(<Harness />);
+  it('starts playing in pointer mode inline when choosing pointer input', async () => {
+    render(<LandingPage />);
     await userEvent.click(screen.getByRole('button', { name: /use (mouse|touch) instead/i }));
-    expect(screen.getByText('play shell')).toBeInTheDocument();
+    expect(screen.getByText('play shell: mouse')).toBeInTheDocument();
   });
 });
