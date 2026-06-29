@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { GestureSignal, ChordQuality, MusicalCommand } from '../types';
 import { NOTES, QUALITIES } from '../types';
+import { scaleNotes, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
 
@@ -175,7 +176,9 @@ export function useRenderer(
   signalsRef: RefObject<GestureSignal[]>,
   analyserRef: RefObject<AnalyserNode | null>,
   selectedRef: RefObject<DialSelection>,
-  commandRef?: RefObject<MusicalCommand | null>
+  commandRef?: RefObject<MusicalCommand | null>,
+  // Current key + scale, so the note wheel labels match what's playing.
+  musicRef?: RefObject<MusicConfig>
 ): void {
   const particlesRef = useRef(new ParticleSystem());
 
@@ -257,13 +260,19 @@ export function useRenderer(
         : (right?.present ? prevSel.qualIdx : 0);
       const bothActive = leftInDial && rightInDial;
 
+      // Note labels follow the selected key/scale (default = C major = NOTES).
+      const music = musicRef?.current;
+      const noteLabels = music
+        ? scaleNotes(music.keyOffset, music.scale).map(n => n.label)
+        : NOTES;
+
       // Left wheel — note selection
       const leftCenterLabel = bothActive
-        ? `${NOTES[noteIdx]}${QUALITY_LABELS[QUALITIES[qualIdx]]}`
-        : leftInDial ? NOTES[noteIdx] : 'NOTE';
+        ? `${noteLabels[noteIdx]}${QUALITY_LABELS[QUALITIES[qualIdx]]}`
+        : leftInDial ? noteLabels[noteIdx] : 'NOTE';
       drawWheel(
         ctx, leftCx, wheelCy, outerR,
-        NOTES, noteIdx, leftInDial,
+        noteLabels, noteIdx, leftInDial,
         () => 'rgba(245,158,11,0.60)',
         leftCenterLabel,
         bgColor

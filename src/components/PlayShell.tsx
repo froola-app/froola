@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
+import { KEYS, SCALE_NAMES, type ScaleName, type MusicConfig } from '../engine/music';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
+import GestureCoach from './GestureCoach';
 import FroolaLogo from './FroolaLogo';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
@@ -66,6 +68,12 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   const octaveRef = useRef(octave);
   octaveRef.current = octave;
 
+  // Key (tonic, 0–11 semitones above C) + scale select the 7 wheel notes.
+  const [keyOffset, setKeyOffset] = useState(0);
+  const [scale, setScale] = useState<ScaleName>('major');
+  const musicRef = useRef<MusicConfig>({ keyOffset, scale });
+  musicRef.current = { keyOffset, scale };
+
   const changeOctave = useCallback((delta: number) => {
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
@@ -80,7 +88,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef);
 
   return (
     <>
@@ -93,6 +101,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       )}
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
+      {(mode === 'camera' || mode === 'mouse') && <GestureCoach mode={mode} />}
       <div className="hud-bottom">
         <select
           className="instrument-select"
@@ -105,6 +114,26 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
         >
           {MODES.map(m => (
             <option key={m.value} value={m.value}>{m.label}</option>
+          ))}
+        </select>
+        <select
+          className="instrument-select"
+          value={keyOffset}
+          onChange={e => setKeyOffset(Number(e.target.value))}
+          aria-label="Key"
+        >
+          {KEYS.map((k, i) => (
+            <option key={k} value={i}>{k}</option>
+          ))}
+        </select>
+        <select
+          className="instrument-select"
+          value={scale}
+          onChange={e => setScale(e.target.value as ScaleName)}
+          aria-label="Scale"
+        >
+          {SCALE_NAMES.map(s => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
         <div className="octave-control" role="group" aria-label="Octave">

@@ -5,7 +5,7 @@ import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
-import { buildCommand, melodyMidi } from './engine/music';
+import { buildCommand, melodyMidi, scaleNotes, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
@@ -21,7 +21,9 @@ export function useCoordinator(
   // When provided, drive playback from this signal source (e.g. recorded replay)
   // instead of live hand/mouse input. The gesture-input hook still runs but its
   // signals are ignored, so live and replay share one audio/render pipeline.
-  externalSignalRef?: RefObject<GestureSignal[]>
+  externalSignalRef?: RefObject<GestureSignal[]>,
+  // Current key + scale; selects the 7 wheel notes. Defaults to C major.
+  musicRef?: RefObject<MusicConfig>
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -81,6 +83,8 @@ export function useCoordinator(
       const instrMode = modeRef.current;
       const engine = engineRef.current;
       const octave = octaveRef?.current ?? 0;
+      const music = musicRef?.current ?? DEFAULT_MUSIC;
+      const notes = scaleNotes(music.keyOffset, music.scale);
 
       // Kick off sampler loading as soon as user selects piano
       if (instrMode === 'piano' && engine) {
@@ -95,7 +99,7 @@ export function useCoordinator(
         if (!latched) {
           // Rising edge: capture and start the held chord, then stop normal mode.
           const y = left?.present ? left.y : 0.5;
-          engine.play(buildCommand(noteIdx, qualIdx, y, octave), instrMode);
+          engine.play(buildCommand(noteIdx, qualIdx, y, octave, notes), instrMode);
           latched = true;
           sounding = false;
           melodyNote = -1;
@@ -103,7 +107,7 @@ export function useCoordinator(
         // Left hand on the wheel plays a single melody note over the held chord.
         if (leftInDial) {
           if (noteIdx !== melodyNote) {
-            engine.playMelody(melodyMidi(noteIdx));
+            engine.playMelody(melodyMidi(noteIdx, notes));
             melodyNote = noteIdx;
           }
         } else if (melodyNote !== -1) {
@@ -140,7 +144,7 @@ export function useCoordinator(
         const octChanged = octave !== lastOctave;
 
         if (!sounding || selChanged || yChanged || octChanged) {
-          engine.play(buildCommand(noteIdx, qualIdx, y, octave), instrMode);
+          engine.play(buildCommand(noteIdx, qualIdx, y, octave, notes), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
@@ -164,7 +168,9 @@ export function useCoordinator(
     canvasRef as RefObject<HTMLCanvasElement>,
     signalRef as RefObject<GestureSignal[]>,
     analyserRef,
-    selectedRef
+    selectedRef,
+    undefined,
+    musicRef
   );
 
   function preloadSampler(m: InstrumentMode) {
