@@ -5,10 +5,22 @@ import type Soundfont from 'soundfont-player'
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
 type SampleNode = { stop(when?: number): void }
 
+// Sound design ported from soundgo (github.com/Gojaehyeon/soundgo).
+// soundgo's chord pad = 4 triangle oscillators → gain → lowpass(1800Hz) → out,
+// with notes gliding over 0.12s and gentle gains. We mirror that chain here so
+// Froola's synth voice has the same warm, rounded, slightly muffled character.
+const VOICES = 4                 // soundgo pads every chord to 4 voices
+const SYNTH_LOWPASS_HZ = 1800    // soundgo chordFilter cutoff
+const CHORD_GLIDE = 0.12         // soundgo o.frequency.rampTo(freq, 0.12)
+const CHORD_GAIN_RAMP = 0.06     // soundgo chordGain.gain.rampTo(_, 0.06)
+const SYNTH_TOTAL_GAIN = 0.2     // soundgo targetChordGain cap
+const SYNTH_VOICE_GAIN = SYNTH_TOTAL_GAIN / VOICES
+
 export class AudioEngine {
   private ctx: AudioContext
   private oscillators: OscillatorNode[]
   private voiceGains: GainNode[]
+  private synthFilter: BiquadFilterNode
   private masterGain: GainNode
   private analyser: AnalyserNode
   private samplerGain: GainNode
@@ -19,8 +31,10 @@ export class AudioEngine {
   constructor() {
     this.ctx = new AudioContext()
 
+    // Master is unity now; the synth sits at soundgo's gentle 0.2 on its own,
+    // and the sampler keeps its previous 0.7 level on a dedicated gain stage.
     this.masterGain = this.ctx.createGain()
-    this.masterGain.gain.value = 0.7
+    this.masterGain.gain.value = 1
 
     const compressor = this.ctx.createDynamicsCompressor()
     compressor.threshold.value = -6
@@ -37,24 +51,37 @@ export class AudioEngine {
     this.analyser.connect(this.ctx.destination)
 
     this.samplerGain = this.ctx.createGain()
-    this.samplerGain.gain.value = 1
+    this.samplerGain.gain.value = 0.7
     this.samplerGain.connect(this.masterGain)
+
+    // soundgo routes the chord oscillators through a lowpass filter — this is
+    // what gives it its warm, mellow tone instead of a raw buzzy triangle.
+    this.synthFilter = this.ctx.createBiquadFilter()
+    this.synthFilter.type = 'lowpass'
+    this.synthFilter.frequency.value = SYNTH_LOWPASS_HZ
+    this.synthFilter.connect(this.masterGain)
 
     this.oscillators = []
     this.voiceGains = []
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < VOICES; i++) {
       const osc = this.ctx.createOscillator()
       // Triangle gives a rounder, more instrument-like tone than sine
       osc.type = 'triangle'
       const gain = this.ctx.createGain()
       gain.gain.value = 0
       osc.connect(gain)
-      gain.connect(this.masterGain)
+      gain.connect(this.synthFilter)
       osc.start()
       this.oscillators.push(osc)
       this.voiceGains.push(gain)
     }
+  }
+
+  // soundgo pads a 3-note triad to 4 voices by adding the root an octave up.
+  private voicingFor(cmd: MusicalCommand): number[] {
+    if (cmd.voicing.length >= VOICES) return cmd.voicing.slice(0, VOICES)
+    return [...cmd.voicing, cmd.voicing[0] + 12]
   }
 
   startLoadingSampler(mode: 'piano' | 'guitar'): void {
@@ -96,9 +123,10 @@ export class AudioEngine {
       // The soundfont samples have no loop points so they can't sustain —
       // the oscillators hold the note indefinitely while the hand is on the wheel.
       // They fade in after the initial attack so they don't clash with it.
-      const sustainGain = 0.7 / 3 * 0.45
+      // Pitch is set instantly here (under a percussive attack a glide sounds wrong).
+      const sustainGain = SYNTH_VOICE_GAIN * 0.45
       const fadeIn = mode === 'piano' ? 0.25 : 0.06
-      cmd.voicing.forEach((midi, i) => {
+      this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
         this.oscillators[i].frequency.cancelScheduledValues(now)
         this.oscillators[i].frequency.setValueAtTime(hz, now)
@@ -109,16 +137,16 @@ export class AudioEngine {
       return
     }
 
-    // Pure synth path (or piano/guitar while sampler is still loading)
-    const peakGain = 0.7 / 3
-    cmd.voicing.forEach((midi, i) => {
+    // Pure synth path (or piano/guitar while sampler is still loading) — soundgo
+    // chord pad: gentle per-voice gain, notes glide to pitch over CHORD_GLIDE.
+    this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
       this.oscillators[i].frequency.cancelScheduledValues(now)
-      this.oscillators[i].frequency.setValueAtTime(hz, now)
+      this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
+      this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
       this.voiceGains[i].gain.cancelScheduledValues(now)
       this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
-      const attack = mode === 'piano' ? 0.008 : mode === 'guitar' ? 0.005 : 0.012
-      this.voiceGains[i].gain.linearRampToValueAtTime(peakGain, now + attack)
+      this.voiceGains[i].gain.linearRampToValueAtTime(SYNTH_VOICE_GAIN, now + CHORD_GAIN_RAMP)
     })
   }
 
