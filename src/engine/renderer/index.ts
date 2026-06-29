@@ -1,16 +1,12 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, ChordQuality, MusicalCommand } from '../types';
-import { NOTES, QUALITIES } from '../types';
-import { scaleNotes, type MusicConfig } from '../music/keyScale';
+import type { GestureSignal, MusicalCommand } from '../types';
+import { NOTES } from '../types';
+import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
-
-const QUALITY_LABELS: Record<ChordQuality, string> = {
-  major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
-};
 
 // Continuous slice position (0..n) of the orb around the wheel. The +π/2 offset
 // puts slice 0 at the top; integer values land on slice centres.
@@ -34,11 +30,10 @@ function stickySlice(pos: number, n: number, cur: number): number {
   return cur;
 }
 
-function qualitySliceColor(q: ChordQuality, alpha: number): string {
-  if (q === 'major' || q === 'maj7') return `rgba(245,158,11,${alpha})`;
-  if (q === 'dom7')                  return `rgba(255,130,50,${alpha})`;
-  if (q === 'minor' || q === 'min7') return `rgba(74,158,255,${alpha})`;
-  return                                    `rgba(184,122,255,${alpha})`;
+// Extension wheel uses a cool blue→violet ramp, distinct from the amber note wheel.
+function extensionColor(i: number, n: number, alpha: number): string {
+  const hue = 205 + (i / Math.max(1, n - 1)) * 95;
+  return `hsla(${hue}, 70%, 62%, ${alpha})`;
 }
 
 function drawWheel(
@@ -248,7 +243,7 @@ export function useRenderer(
       // across frames, which doubles as the hysteresis state.
       const prevSel = selectedRef.current;
       const notePos = angleToSlicePos(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length);
-      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length);
+      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, wheelCy, EXTENSIONS.length);
       // Apply hysteresis while on the wheel; hold the last selection while the hand
       // is present but off-ring (e.g. crossing the centre hub between slices, where
       // atan2 is unstable); reset only when the hand disappears entirely.
@@ -256,20 +251,18 @@ export function useRenderer(
         ? stickySlice(notePos, NOTES.length, prevSel.noteIdx)
         : (left?.present ? prevSel.noteIdx : 0);
       const qualIdx = rightInDial
-        ? stickySlice(qualPos, QUALITIES.length, prevSel.qualIdx)
+        ? stickySlice(qualPos, EXTENSIONS.length, prevSel.qualIdx)
         : (right?.present ? prevSel.qualIdx : 0);
       const bothActive = leftInDial && rightInDial;
 
-      // Note labels follow the selected key/scale (default = C major = NOTES).
-      const music = musicRef?.current;
-      const noteLabels = music
-        ? scaleNotes(music.keyOffset, music.scale).map(n => n.label)
-        : NOTES;
+      // Labels follow the selected key/scale. The note wheel shows the scale's
+      // note names; the centre shows the actual diatonic chord (e.g. "Dm7").
+      const music = musicRef?.current ?? { keyOffset: 0, scale: 'major' as const };
+      const noteLabels = scaleNotes(music.keyOffset, music.scale).map(n => n.label);
+      const chordName = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale).label;
 
-      // Left wheel — note selection
-      const leftCenterLabel = bothActive
-        ? `${noteLabels[noteIdx]}${QUALITY_LABELS[QUALITIES[qualIdx]]}`
-        : leftInDial ? noteLabels[noteIdx] : 'NOTE';
+      // Left wheel — chord root (its major/minor quality comes from the scale)
+      const leftCenterLabel = (bothActive || leftInDial) ? chordName : 'NOTE';
       drawWheel(
         ctx, leftCx, wheelCy, outerR,
         noteLabels, noteIdx, leftInDial,
@@ -278,13 +271,13 @@ export function useRenderer(
         bgColor
       );
 
-      // Right wheel — chord quality selection
+      // Right wheel — chord extension (triad / 7th / sus / …)
       drawWheel(
         ctx, rightCx, wheelCy, outerR,
-        QUALITIES.map(q => QUALITY_LABELS[q]),
+        EXTENSIONS.map(e => e.label),
         qualIdx, rightInDial,
-        (i) => qualitySliceColor(QUALITIES[i], 0.60),
-        rightInDial ? QUALITY_LABELS[QUALITIES[qualIdx]] : 'CHORD',
+        (i) => extensionColor(i, EXTENSIONS.length, 0.60),
+        rightInDial ? EXTENSIONS[qualIdx].label : 'CHORD',
         bgColor
       );
 

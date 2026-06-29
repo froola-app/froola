@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scaleNotes, SCALES, KEYS } from './keyScale';
+import { scaleNotes, diatonicChord, SCALES, KEYS } from './keyScale';
 
 describe('scaleNotes', () => {
   it('default C major reproduces the original wheel (C5 ascending)', () => {
@@ -32,5 +32,32 @@ describe('scaleNotes', () => {
   it('labels wrap within the 12 pitch classes', () => {
     const notes = scaleNotes(11, 'major'); // B major — wraps past B back to lower letters
     for (const n of notes) expect(KEYS).toContain(n.label);
+  });
+});
+
+describe('diatonicChord — quality follows the scale degree', () => {
+  it('C major: I is major, ii is minor, vii is diminished', () => {
+    expect(diatonicChord(0, 0, 0, 'major').midis).toEqual([72, 76, 79]); // C E G
+    expect(diatonicChord(0, 0, 0, 'major').label).toBe('C');
+    expect(diatonicChord(1, 0, 0, 'major').label).toBe('Dm');           // D F A
+    expect(diatonicChord(6, 0, 0, 'major').label).toBe('B°');           // B D F
+  });
+
+  it('the SAME degree flips major↔minor when the scale changes (the mood)', () => {
+    expect(diatonicChord(0, 0, 0, 'major').midis).toEqual([72, 76, 79]); // C major
+    expect(diatonicChord(0, 0, 0, 'minor').midis).toEqual([72, 75, 79]); // C minor (Eb)
+    expect(diatonicChord(0, 0, 0, 'minor').label).toBe('Cm');
+  });
+
+  it('extensions stack scale tones (7th adds the diatonic 7th)', () => {
+    // G dominant 7th = degree 4 (G) + 7th in C major: G B D F
+    expect(diatonicChord(4, 2, 0, 'major').midis).toEqual([79, 83, 86, 89]);
+    expect(diatonicChord(4, 2, 0, 'major').label).toBe('G7');
+  });
+
+  it('octave shifts the whole chord by 12 semitones', () => {
+    const base = diatonicChord(0, 0, 0, 'major').midis;
+    const up = diatonicChord(0, 0, 0, 'major', 1).midis;
+    expect(up).toEqual(base.map(m => m + 12));
   });
 });

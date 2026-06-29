@@ -5,7 +5,7 @@ import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
-import { buildCommand, melodyMidi, scaleNotes, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
+import { buildCommand, melodyMidi, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
@@ -85,7 +85,6 @@ export function useCoordinator(
       const engine = engineRef.current;
       const octave = octaveRef?.current ?? 0;
       const music = musicRef?.current ?? DEFAULT_MUSIC;
-      const notes = scaleNotes(music.keyOffset, music.scale);
 
       // Kick off sampler loading as soon as user selects piano
       if (instrMode === 'piano' && engine) {
@@ -100,7 +99,7 @@ export function useCoordinator(
         if (!latched) {
           // Rising edge: capture and start the held chord, then stop normal mode.
           const y = left?.present ? left.y : 0.5;
-          engine.play(buildCommand(noteIdx, qualIdx, y, octave, notes), instrMode);
+          engine.play(buildCommand(noteIdx, qualIdx, y, octave, music), instrMode);
           latched = true;
           sounding = false;
           melodyNote = -1;
@@ -108,7 +107,7 @@ export function useCoordinator(
         // Left hand on the wheel plays a single melody note over the held chord.
         if (leftInDial) {
           if (noteIdx !== melodyNote) {
-            engine.playMelody(melodyMidi(noteIdx, notes));
+            engine.playMelody(melodyMidi(noteIdx, music));
             melodyNote = noteIdx;
           }
         } else if (melodyNote !== -1) {
@@ -149,7 +148,7 @@ export function useCoordinator(
         const musicChanged = musicKey !== lastMusicKey;
 
         if (!sounding || selChanged || yChanged || octChanged || musicChanged) {
-          engine.play(buildCommand(noteIdx, qualIdx, y, octave, notes), instrMode);
+          engine.play(buildCommand(noteIdx, qualIdx, y, octave, music), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
