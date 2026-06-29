@@ -15,15 +15,22 @@ function Harness() {
 }
 
 describe('LandingPage', () => {
-  it('renders title and tagline', () => {
+  it('renders the tagline and both input choices', () => {
     render(<Harness />);
-    expect(screen.getByText('froola')).toBeInTheDocument();
     expect(screen.getByText('play music with your hands')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enable camera/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use (mouse|touch) instead/i })).toBeInTheDocument();
   });
 
-  it('navigates to /play on button click', async () => {
+  it('navigates to /play when enabling the camera', async () => {
     render(<Harness />);
-    await userEvent.click(screen.getByRole('button', { name: /play/i }));
+    await userEvent.click(screen.getByRole('button', { name: /enable camera/i }));
+    expect(screen.getByText('play shell')).toBeInTheDocument();
+  });
+
+  it('navigates to /play when choosing pointer input', async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole('button', { name: /use (mouse|touch) instead/i }));
     expect(screen.getByText('play shell')).toBeInTheDocument();
   });
 });

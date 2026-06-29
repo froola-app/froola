@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
+import type { InputMode } from '../engine/input';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
@@ -48,12 +50,17 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
 }
 
 export default function PlayShell() {
+  const location = useLocation();
+  // Input mode is chosen on the landing page; fall back to the prompt
+  // when /play is opened directly without a choice.
+  const initialInput = ((location.state as { input?: InputMode } | null)?.input) ?? 'asking';
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   modeRef.current = instrumentMode;
 
-  const { mode, requestCamera, useMouse, signalRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef);
+  const { mode, requestCamera, useMouse, signalRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput);
 
   return (
     <>
