@@ -479,13 +479,25 @@ body {
   padding: 4rem 1.5rem 3rem;
 }
 
-.landing-v2__eyebrow {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
+/* Slim top bar holding a contact shortcut */
+.landing-v2__topbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.25rem 1.5rem 0;
+}
+
+.landing-v2__topbar-link {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555555;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.landing-v2__topbar-link:hover {
   color: #D4500A;
-  margin-top: 0.25rem;
+  border-color: #D4500A;
 }
 
 .landing-v2__headline {
@@ -494,7 +506,6 @@ body {
   letter-spacing: -0.035em;
   line-height: 1.02;
   color: #111111;
-  margin-top: -0.25rem;
 }
 
 .landing-v2__tagline {
@@ -505,7 +516,7 @@ body {
 }
 
 .landing-v2__lede {
-  max-width: 440px;
+  max-width: 460px;
   color: #555555;
   font-size: 1.02rem;
   line-height: 1.55;
@@ -519,8 +530,13 @@ body {
   margin-top: 0.5rem;
 }
 
+.landing-v2__note {
+  font-size: 0.8rem;
+  color: #a8a59d;
+}
+
 .landing-v2__scroll-hint {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -539,19 +555,12 @@ body {
 
 /* Content sections under the hero */
 .landing-v2__section,
-.landing-v2__cta {
-  max-width: 760px;
+.landing-v2__mission,
+.landing-v2__contact {
+  max-width: 620px;
   margin: 0 auto;
   padding: 3.5rem 1.5rem;
   text-align: center;
-}
-
-.landing-v2__cta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding-bottom: 5rem;
 }
 
 .landing-v2__section-title {
@@ -559,92 +568,97 @@ body {
   font-weight: 800;
   letter-spacing: -0.02em;
   color: #111111;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.5rem;
 }
 
-.landing-v2__cta .landing-v2__section-title { margin-bottom: 0.25rem; }
-
-/* How-it-works steps */
+/* How-it-works: a readable numbered list, no busy card grid */
 .landing-v2__steps {
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   text-align: left;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .landing-v2__step {
-  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 16px;
-  padding: 1.4rem 1.25rem 1.25rem;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-}
-
-.landing-v2__step-num {
-  position: absolute;
-  top: 1rem;
-  right: 1.1rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #D4500A;
-  opacity: 0.55;
-}
-
-.landing-v2__step-emoji { font-size: 1.7rem; }
-
-.landing-v2__step-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111111;
-}
-
-.landing-v2__step-body {
-  font-size: 0.88rem;
-  line-height: 1.45;
-  color: #777777;
-}
-
-/* Feature trio */
-.landing-v2__features {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  align-items: flex-start;
   gap: 1rem;
 }
 
-.landing-v2__feature {
+.landing-v2__step-num {
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(212, 80, 10, 0.1);
+  color: #D4500A;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.landing-v2__step-text {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #444444;
+  padding-top: 0.2rem;
+}
+
+.landing-v2__steps-more {
+  margin-top: 1.75rem;
+  font-size: 0.88rem;
+  color: #999999;
+}
+
+/* Mission */
+.landing-v2__mission-body {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: #444444;
+}
+
+.landing-v2__mission-by {
+  margin-top: 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #D4500A;
+}
+
+/* Contact */
+.landing-v2__contact {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem;
+  gap: 1rem;
+  padding-bottom: 5rem;
 }
 
-.landing-v2__feature-emoji { font-size: 1.6rem; }
+.landing-v2__contact .landing-v2__section-title { margin-bottom: 0.25rem; }
 
-.landing-v2__feature-label {
-  font-size: 0.95rem;
+.landing-v2__contact-body {
+  max-width: 440px;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #555555;
+}
+
+.landing-v2__email {
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #111111;
+  color: #D4500A;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(212, 80, 10, 0.35);
+  transition: border-color 0.15s;
 }
 
-.landing-v2__feature-sub {
-  font-size: 0.82rem;
-  color: #888888;
-}
-
-@media (max-width: 640px) {
-  .landing-v2__steps,
-  .landing-v2__features {
-    grid-template-columns: 1fr;
-  }
-}
+.landing-v2__email:hover { border-color: #D4500A; }
 
 .landing-v2__btn-primary {
   padding: 0.8rem 2.5rem;
