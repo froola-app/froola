@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { RefObject } from 'react';
 import type { GestureSignal } from '../engine/types';
 import { useRecorder } from '../engine/recording/useRecorder';
+import { copyToClipboard } from '../utils/clipboard';
 
 type Props = {
   signalsRef: RefObject<GestureSignal[]>;
@@ -14,7 +15,7 @@ export default function RecordButton({ signalsRef, vibe }: Props) {
 
   async function handleShare() {
     if (!shareUrl) return;
-    await navigator.clipboard.writeText(shareUrl);
+    await copyToClipboard(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }

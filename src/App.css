@@ -302,7 +302,6 @@ body {
   position: fixed;
   inset: 0;
   font-family: 'DM Sans', system-ui, sans-serif;
-  cursor: none;
 }
 
 .landing-v2__canvas {
@@ -331,6 +330,15 @@ body {
   letter-spacing: 0.01em;
 }
 
+.landing-v2__body {
+  max-width: 420px;
+  text-align: center;
+  color: #888888;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  padding: 0 1.5rem;
+}
+
 .landing-v2__actions {
   display: flex;
   flex-direction: column;
@@ -355,6 +363,24 @@ body {
 }
 
 .landing-v2__btn-primary:hover { background: #D4500A; }
+
+.landing-v2__btn-secondary {
+  padding: 0.8rem 2rem;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  color: #111111;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.landing-v2__btn-secondary:hover {
+  border-color: #D4500A;
+  box-shadow: 0 0 0 1px #D4500A;
+}
 
 .landing-v2__btn-google {
   display: flex;

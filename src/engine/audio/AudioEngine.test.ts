@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mockAudioContext } from '../../test-utils/webAudioMock'
 import { AudioEngine } from './AudioEngine'
+import { midiToHz } from '../music/scales'
 import type { MusicalCommand } from '../types'
+
+// soundgo chord gain (0.2) spread over its 4 voices
+const SYNTH_VOICE_GAIN = 0.2 / 4
 
 const CMD: MusicalCommand = {
   chord: 'Cmaj',
@@ -18,11 +22,11 @@ beforeEach(() => {
 })
 
 describe('AudioEngine — construction', () => {
-  it('creates exactly 3 oscillators', () => {
+  it('creates exactly 4 oscillators (soundgo 4-voice chord pad)', () => {
     new AudioEngine()
-    expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(3)
+    expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(4)
   })
-  it('starts all 3 oscillators', () => {
+  it('starts all oscillators', () => {
     new AudioEngine()
     mockAudioContext.createOscillator.mock.results.forEach(r => {
       expect(r.value.start).toHaveBeenCalledTimes(1)
@@ -33,6 +37,13 @@ describe('AudioEngine — construction', () => {
     mockAudioContext.createOscillator.mock.results.forEach(r => {
       expect(r.value.type).toBe('triangle')
     })
+  })
+  it('creates a lowpass synth filter at 1800 Hz (soundgo chord filter)', () => {
+    new AudioEngine()
+    expect(mockAudioContext.createBiquadFilter).toHaveBeenCalledTimes(1)
+    const filter = mockAudioContext.createBiquadFilter.mock.results[0].value
+    expect(filter.type).toBe('lowpass')
+    expect(filter.frequency.value).toBe(1800)
   })
   it('creates an analyser with fftSize 256', () => {
     new AudioEngine()
@@ -47,59 +58,69 @@ describe('AudioEngine — construction', () => {
 })
 
 describe('AudioEngine — play()', () => {
-  it('sets frequency for all 3 oscillators', () => {
+  // soundgo glides notes to pitch (rampTo 0.12s) rather than jumping instantly.
+  it('glides frequency for all oscillators', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     mockAudioContext.createOscillator.mock.results.forEach(r => {
-      expect(r.value.frequency.setValueAtTime).toHaveBeenCalled()
+      expect(r.value.frequency.linearRampToValueAtTime).toHaveBeenCalled()
     })
   })
 
-  it('ramps gain for all 3 voice gain nodes', () => {
+  it('ramps gain for all voice gain nodes', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     const gainRampCalls = mockAudioContext.createGain.mock.results
       .map(r => r.value.gain.linearRampToValueAtTime.mock.calls.length)
     const ramped = gainRampCalls.filter(n => n > 0)
-    expect(ramped.length).toBeGreaterThanOrEqual(3)
+    expect(ramped.length).toBeGreaterThanOrEqual(4)
   })
 
-  it('targets 440 Hz for MIDI 69 (A4)', () => {
+  it('glides to 440 Hz for MIDI 69 (A4)', () => {
     const engine = new AudioEngine()
     engine.play({ ...CMD, voicing: [69, 73, 76] })
     const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const calls = firstOsc.frequency.setValueAtTime.mock.calls
+    const calls = firstOsc.frequency.linearRampToValueAtTime.mock.calls
     const targetHz = calls[calls.length - 1][0]
     expect(targetHz).toBeCloseTo(440, 1)
   })
 
-  it('targets ~261.63 Hz for MIDI 60 (C4)', () => {
+  it('glides to ~261.63 Hz for MIDI 60 (C4)', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const calls = firstOsc.frequency.setValueAtTime.mock.calls
+    const calls = firstOsc.frequency.linearRampToValueAtTime.mock.calls
     const targetHz = calls[calls.length - 1][0]
     expect(targetHz).toBeCloseTo(261.63, 1)
   })
 
-  it('gain ramp end time is currentTime + 0.012s for synth mode', () => {
+  it('pads a 3-note triad to a 4th octave voice (soundgo voicing)', () => {
+    const engine = new AudioEngine()
+    engine.play(CMD) // voicing [60, 64, 67] → 4th voice = 60 + 12 = 72
+    const fourthOsc = mockAudioContext.createOscillator.mock.results[3].value
+    const calls = fourthOsc.frequency.linearRampToValueAtTime.mock.calls
+    const targetHz = calls[calls.length - 1][0]
+    expect(targetHz).toBeCloseTo(midiToHz(72), 1)
+  })
+
+  it('gain ramp end time is currentTime + 0.06s (soundgo chord ramp)', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     const allGainRamps = mockAudioContext.createGain.mock.results.flatMap(r =>
       r.value.gain.linearRampToValueAtTime.mock.calls
     )
-    const endTime = allGainRamps.find(([val]: [number]) => Math.abs(val - 0.7 / 3) < 0.001)?.[1]
-    expect(endTime).toBeCloseTo(mockAudioContext.currentTime + 0.012, 5)
+    const endTime = allGainRamps.find(([val]: [number]) => Math.abs(val - SYNTH_VOICE_GAIN) < 0.001)?.[1]
+    expect(endTime).toBeCloseTo(mockAudioContext.currentTime + 0.06, 5)
   })
 
-  it('targets per-voice gain of 0.7 / 3 ≈ 0.233', () => {
+  it('targets soundgo per-voice gain of 0.2 / 4 = 0.05', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     const allGainRamps = mockAudioContext.createGain.mock.results.flatMap(r =>
       r.value.gain.linearRampToValueAtTime.mock.calls
     )
     const hasCorrectGain = allGainRamps.some(
-      ([val]: [number]) => Math.abs(val - 0.7 / 3) < 0.001
+      ([val]: [number]) => Math.abs(val - SYNTH_VOICE_GAIN) < 0.001
     )
     expect(hasCorrectGain).toBe(true)
   })

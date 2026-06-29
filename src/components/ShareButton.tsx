@@ -1,17 +1,18 @@
 import { useState } from 'react';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function ShareButton() {
-  const [copied, setCopied] = useState(false);
+  const [label, setLabel] = useState<'Share' | 'Copied!' | 'Failed'>('Share');
 
   async function handleShare() {
-    await navigator.clipboard.writeText(window.location.origin + '/play');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    const ok = await copyToClipboard(window.location.origin + '/play');
+    setLabel(ok ? 'Copied!' : 'Failed');
+    setTimeout(() => setLabel('Share'), 1500);
   }
 
   return (
     <button className="share-btn" onClick={handleShare}>
-      {copied ? 'Copied!' : 'Share'}
+      {label}
     </button>
   );
 }

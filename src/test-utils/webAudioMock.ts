@@ -25,6 +25,10 @@ function makeAnalyser() {
   return { ...makeNode(), fftSize: 256, getByteFrequencyData: vi.fn() }
 }
 
+function makeBiquadFilter() {
+  return { ...makeNode(), type: 'lowpass', frequency: makeParam(), Q: makeParam() }
+}
+
 function makeCompressor() {
   return {
     ...makeNode(),
@@ -43,6 +47,7 @@ const mockAudioContext = {
   createOscillator: vi.fn().mockImplementation(makeOscillator),
   createGain: vi.fn().mockImplementation(makeGain),
   createAnalyser: vi.fn().mockImplementation(makeAnalyser),
+  createBiquadFilter: vi.fn().mockImplementation(makeBiquadFilter),
   createDynamicsCompressor: vi.fn().mockImplementation(makeCompressor),
   resume: vi.fn().mockResolvedValue(undefined),
   suspend: vi.fn().mockResolvedValue(undefined),
