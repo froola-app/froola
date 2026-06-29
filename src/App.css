@@ -445,26 +445,57 @@ body {
   position: fixed;
   inset: 0;
   font-family: 'DM Sans', system-ui, sans-serif;
+  color: #111111;
+  -webkit-font-smoothing: antialiased;
 }
 
+/* Glow canvas stays pinned to the viewport while the content scrolls over it. */
 .landing-v2__canvas {
-  position: absolute;
+  position: fixed;
   inset: 0;
   display: block;
+  z-index: 0;
 }
 
-.landing-v2__ui {
+.landing-v2__scroll {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Hero fills the first screen; later sections flow underneath. */
+.landing-v2__hero {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
-  pointer-events: none;
+  text-align: center;
+  gap: 1.1rem;
+  padding: 4rem 1.5rem 3rem;
 }
 
-.landing-v2__ui > * { pointer-events: auto; }
+.landing-v2__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #D4500A;
+  margin-top: 0.25rem;
+}
+
+.landing-v2__headline {
+  font-size: clamp(2.1rem, 6vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  color: #111111;
+  margin-top: -0.25rem;
+}
 
 .landing-v2__tagline {
   font-size: 0.95rem;
@@ -473,13 +504,11 @@ body {
   letter-spacing: 0.01em;
 }
 
-.landing-v2__body {
-  max-width: 420px;
-  text-align: center;
-  color: #888888;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  padding: 0 1.5rem;
+.landing-v2__lede {
+  max-width: 440px;
+  color: #555555;
+  font-size: 1.02rem;
+  line-height: 1.55;
 }
 
 .landing-v2__actions {
@@ -487,7 +516,134 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.landing-v2__scroll-hint {
+  margin-top: 1.25rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b6b3ab;
+  animation: landing-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes landing-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-v2__scroll-hint { animation: none; }
+}
+
+/* Content sections under the hero */
+.landing-v2__section,
+.landing-v2__cta {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+}
+
+.landing-v2__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 5rem;
+}
+
+.landing-v2__section-title {
+  font-size: clamp(1.4rem, 3.5vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111111;
+  margin-bottom: 1.75rem;
+}
+
+.landing-v2__cta .landing-v2__section-title { margin-bottom: 0.25rem; }
+
+/* How-it-works steps */
+.landing-v2__steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  text-align: left;
+}
+
+.landing-v2__step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 16px;
+  padding: 1.4rem 1.25rem 1.25rem;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.landing-v2__step-num {
+  position: absolute;
+  top: 1rem;
+  right: 1.1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #D4500A;
+  opacity: 0.55;
+}
+
+.landing-v2__step-emoji { font-size: 1.7rem; }
+
+.landing-v2__step-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.landing-v2__step-body {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #777777;
+}
+
+/* Feature trio */
+.landing-v2__features {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.landing-v2__feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+}
+
+.landing-v2__feature-emoji { font-size: 1.6rem; }
+
+.landing-v2__feature-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.landing-v2__feature-sub {
+  font-size: 0.82rem;
+  color: #888888;
+}
+
+@media (max-width: 640px) {
+  .landing-v2__steps,
+  .landing-v2__features {
+    grid-template-columns: 1fr;
+  }
 }
 
 .landing-v2__btn-primary {
