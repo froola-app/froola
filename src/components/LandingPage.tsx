@@ -7,28 +7,13 @@ import { getRememberedInput, rememberInput, type RememberedInput } from '../lib/
 
 const isTouchDevice = () => navigator.maxTouchPoints > 0;
 
-const STEPS = [
-  {
-    emoji: '👈',
-    title: 'Left hand picks the note',
-    body: 'Move it around the note dial to choose a root — A through G.',
-  },
-  {
-    emoji: '👉',
-    title: 'Right hand shapes the chord',
-    body: 'Major, minor, sevenths and more, then raise your hands to climb octaves.',
-  },
-  {
-    emoji: '✊',
-    title: 'Make a fist to lock it',
-    body: 'Hold a chord while you move freely — or hit record and share the take.',
-  },
-];
+const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
-const FEATURES = [
-  { emoji: '🎹', label: 'Three instruments', sub: 'Synth, piano, guitar' },
-  { emoji: '🔒', label: 'Private by design', sub: 'Hand tracking on-device' },
-  { emoji: '🔗', label: 'Shareable replays', sub: 'Every take gets a link' },
+const STEPS = [
+  'Raise your hands to the camera. Two dials appear on screen.',
+  'Your left hand moves around one dial to pick the note. Your right hand moves around the other to pick the chord.',
+  'Lift your hands higher for higher notes, lower them for deeper ones.',
+  'Choose synth or piano, then record what you play and share it with a link.',
 ];
 
 export default function LandingPage() {
@@ -44,7 +29,7 @@ export default function LandingPage() {
     setInput(mode);
   };
 
-  // Start playing inline — no URL change, same screen.
+  // Start playing inline, no URL change, same screen.
   if (input) return <PlayShell initialInput={input} />;
 
   const actions = (
@@ -62,56 +47,62 @@ export default function LandingPage() {
     <div className="landing-v2">
       <canvas ref={canvasRef} className="landing-v2__canvas" />
 
-      <main className="landing-v2__scroll">
-        <section className="landing-v2__hero">
-          <FroolaLogo size={64} />
-          <p className="landing-v2__eyebrow">Browser instrument · no download</p>
-          <h1 className="landing-v2__headline">
-            Make music with
-            <br />a wave of your hand.
-          </h1>
-          <p className="landing-v2__tagline">play music with your hands</p>
-          <p className="landing-v2__lede">
-            Froola reads your hands through the camera and turns motion into chords and
-            melody — no instrument, no theory, nothing to install.
-          </p>
-          {actions}
-          <p className="landing-v2__privacy">Camera runs on-device — video never leaves your screen.</p>
-          <span className="landing-v2__scroll-hint" aria-hidden="true">scroll to see how ↓</span>
-        </section>
+      <div className="landing-v2__scroll">
+        <header className="landing-v2__topbar">
+          <a className="landing-v2__topbar-link" href={`mailto:${CONTACT_EMAIL}`}>
+            Contact
+          </a>
+        </header>
 
-        <section className="landing-v2__section">
-          <h2 className="landing-v2__section-title">How it works</h2>
-          <ol className="landing-v2__steps">
-            {STEPS.map((s, i) => (
-              <li key={s.title} className="landing-v2__step">
-                <span className="landing-v2__step-num">{i + 1}</span>
-                <span className="landing-v2__step-emoji" aria-hidden="true">{s.emoji}</span>
-                <span className="landing-v2__step-title">{s.title}</span>
-                <span className="landing-v2__step-body">{s.body}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <main>
+          <section className="landing-v2__hero">
+            <FroolaLogo size={64} />
+            <h1 className="landing-v2__headline">Make music with your hands.</h1>
+            <p className="landing-v2__tagline">play music with your hands</p>
+            <p className="landing-v2__lede">
+              Froola turns the way you move into chords and melody, right in your browser.
+              Nothing to buy, no theory to learn. Move your hands and listen.
+            </p>
+            {actions}
+            <p className="landing-v2__note">Your camera is processed on your device.</p>
+            <span className="landing-v2__scroll-hint" aria-hidden="true">scroll to see how it works</span>
+          </section>
 
-        <section className="landing-v2__section">
-          <ul className="landing-v2__features">
-            {FEATURES.map((f) => (
-              <li key={f.label} className="landing-v2__feature">
-                <span className="landing-v2__feature-emoji" aria-hidden="true">{f.emoji}</span>
-                <span className="landing-v2__feature-label">{f.label}</span>
-                <span className="landing-v2__feature-sub">{f.sub}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="landing-v2__section">
+            <h2 className="landing-v2__section-title">How it works</h2>
+            <ol className="landing-v2__steps">
+              {STEPS.map((step, i) => (
+                <li key={i} className="landing-v2__step">
+                  <span className="landing-v2__step-num">{i + 1}</span>
+                  <span className="landing-v2__step-text">{step}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="landing-v2__steps-more">More ways to play are on the way.</p>
+          </section>
 
-        <section className="landing-v2__cta">
-          <h2 className="landing-v2__section-title">Ready to play?</h2>
-          {actions}
-          <p className="landing-v2__privacy">Works in your browser. No sign-up to start.</p>
-        </section>
-      </main>
+          <section className="landing-v2__mission">
+            <h2 className="landing-v2__section-title">Why we built it</h2>
+            <p className="landing-v2__mission-body">
+              We think making music should be open to everyone, not just people who own an
+              instrument or took years of lessons. Froola is our attempt at that: a way to
+              play just by moving your hands.
+            </p>
+            <p className="landing-v2__mission-by">Built by two high school students.</p>
+          </section>
+
+          <section className="landing-v2__contact">
+            <h2 className="landing-v2__section-title">Get in touch</h2>
+            <p className="landing-v2__contact-body">
+              Have a question, an idea, or just want to say hi? We would love to hear from you.
+            </p>
+            <a className="landing-v2__email" href={`mailto:${CONTACT_EMAIL}`}>
+              {CONTACT_EMAIL}
+            </a>
+            {actions}
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
