@@ -23,7 +23,7 @@ export default function RecordButton({ signalsRef, vibe }: Props) {
   if (state === 'idle') {
     return (
       <button className="record-btn record-btn--idle" onClick={start}>
-        ● Rec
+        <span className="rec-dot" /> Record
       </button>
     );
   }
@@ -34,7 +34,7 @@ export default function RecordButton({ signalsRef, vibe }: Props) {
       <>
         <div className="record-progress" style={{ width: `${pct}%` }} />
         <button className="record-btn record-btn--recording" onClick={stop}>
-          ■ {Math.floor(elapsed)}s — Stop
+          <span className="rec-dot rec-dot--live" /> Rec {Math.floor(elapsed)}s · Stop
         </button>
       </>
     );
