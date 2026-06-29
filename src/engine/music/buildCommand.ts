@@ -20,12 +20,18 @@ const QUALITY_TENSION: Record<ChordQuality, number> = {
   major: 0.0, minor: 0.2, maj7: 0.3, min7: 0.4, dom7: 0.6, aug: 0.8, dim: 1.0,
 };
 
-export function buildCommand(noteIdx: number, qualIdx: number, y: number): MusicalCommand {
+export function buildCommand(
+  noteIdx: number,
+  qualIdx: number,
+  y: number,
+  octave = 0,
+): MusicalCommand {
   const note = NOTES[noteIdx % NOTES.length];
   const quality = QUALITIES[qualIdx % QUALITIES.length];
   const rootMidi = NOTE_MIDI[note];
   const intervals = QUALITY_INTERVALS[quality];
-  const offset = 0;
+  // Each octave step shifts the whole voicing by 12 semitones.
+  const offset = octave * 12;
   return {
     chord: `${note}${quality}`,
     voicing: intervals.map(i => rootMidi + i + offset),

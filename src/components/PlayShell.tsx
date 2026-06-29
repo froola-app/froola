@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
@@ -11,6 +11,9 @@ const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
   { value: 'piano',  label: 'piano'  },
 ];
+
+const OCTAVE_MIN = -2;
+const OCTAVE_MAX = 2;
 
 const isTouchDevice = () => navigator.maxTouchPoints > 0;
 
@@ -59,7 +62,25 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   modeRef.current = instrumentMode;
 
-  const { mode, requestCamera, useMouse, signalRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput);
+  const [octave, setOctave] = useState(0);
+  const octaveRef = useRef(octave);
+  octaveRef.current = octave;
+
+  const changeOctave = useCallback((delta: number) => {
+    setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
+  }, []);
+
+  // Arrow keys are a quick shortcut for the on-screen octave stepper.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'ArrowUp')        { e.preventDefault(); changeOctave(1); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); changeOctave(-1); }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [changeOctave]);
+
+  const { mode, requestCamera, useMouse, signalRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef);
 
   return (
     <>
@@ -72,19 +93,42 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       )}
       <ShareButton />
       <RecordButton signalsRef={signalRef} vibe={vibe} />
-      <select
-        className="instrument-select"
-        value={instrumentMode}
-        onChange={e => {
-          const m = e.target.value as InstrumentMode;
-          setInstrumentMode(m);
-          preloadSampler(m);
-        }}
-      >
-        {MODES.map(m => (
-          <option key={m.value} value={m.value}>{m.label}</option>
-        ))}
-      </select>
+      <div className="hud-bottom">
+        <select
+          className="instrument-select"
+          value={instrumentMode}
+          onChange={e => {
+            const m = e.target.value as InstrumentMode;
+            setInstrumentMode(m);
+            preloadSampler(m);
+          }}
+        >
+          {MODES.map(m => (
+            <option key={m.value} value={m.value}>{m.label}</option>
+          ))}
+        </select>
+        <div className="octave-control" role="group" aria-label="Octave">
+          <button
+            className="octave-btn"
+            onClick={() => changeOctave(-1)}
+            disabled={octave <= OCTAVE_MIN}
+            aria-label="Octave down"
+          >
+            −
+          </button>
+          <span className="octave-value">
+            oct {octave > 0 ? `+${octave}` : octave}
+          </span>
+          <button
+            className="octave-btn"
+            onClick={() => changeOctave(1)}
+            disabled={octave >= OCTAVE_MAX}
+            aria-label="Octave up"
+          >
+            +
+          </button>
+        </div>
+      </div>
     </>
   );
 }

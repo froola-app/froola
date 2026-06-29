@@ -12,7 +12,8 @@ const REGISTER_THRESHOLD = 0.5 / 24;
 export function useCoordinator(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   modeRef: RefObject<InstrumentMode>,
-  initialMode: InputMode = 'asking'
+  initialMode: InputMode = 'asking',
+  octaveRef?: RefObject<number>
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -41,6 +42,7 @@ export function useCoordinator(
     let lastNoteIdx = -1;
     let lastQualIdx = -1;
     let lastY = -1;
+    let lastOctave = 0;
     let wasTouching = false;
 
     function tick() {
@@ -86,14 +88,17 @@ export function useCoordinator(
 
       if (touching && engineRef.current) {
         const y = left?.present ? left.y : (right?.y ?? lastY);
+        const octave = octaveRef?.current ?? 0;
         const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
+        const octChanged = octave !== lastOctave;
 
-        if (justEntered || selChanged || yChanged) {
-          engineRef.current.play(buildCommand(noteIdx, qualIdx, y), instrMode);
+        if (justEntered || selChanged || yChanged || octChanged) {
+          engineRef.current.play(buildCommand(noteIdx, qualIdx, y, octave), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
+          lastOctave = octave;
         }
       }
 
@@ -102,7 +107,7 @@ export function useCoordinator(
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [signalRef, modeRef]);
+  }, [signalRef, modeRef, octaveRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,
