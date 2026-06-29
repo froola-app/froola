@@ -22,7 +22,7 @@ export type MusicalCommand = {
   texture: number;    // 0–1, sparse to dense
   tension: number;    // 0–1, tonal to dissonant (drives warm-zone color)
   rootNote: string;   // pitch-class label, e.g. "C" or "F#" (depends on key/scale)
-  chordQuality: ChordQuality;
+  chordQuality: string; // diatonic quality is implied by scale; this holds the extension id
 };
 
 /** One recorded gesture sample. 5 bytes when packed by codec. */
