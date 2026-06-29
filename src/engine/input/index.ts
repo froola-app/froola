@@ -2,11 +2,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 
-type InputMode = 'asking' | 'camera' | 'mouse';
+export type InputMode = 'asking' | 'camera' | 'mouse';
 
-export function useGestureInput(): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
+export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
   const signalRef = useRef<GestureSignal[]>([]);
-  const [mode, setMode] = useState<InputMode>('asking');
+  const [mode, setMode] = useState<InputMode>(initialMode);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
