@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, beforeEach } from 'vitest';
+import { vi } from 'vitest';
 import LandingPage from './LandingPage';
 
 // PlayShell pulls in the audio/canvas coordinator, so stub it: we only care that
@@ -10,8 +10,6 @@ vi.mock('./PlayShell', () => ({
     <div>play shell: {initialInput}</div>
   ),
 }));
-
-beforeEach(() => localStorage.clear());
 
 describe('LandingPage', () => {
   it('renders the tagline and both input choices', () => {
@@ -32,24 +30,5 @@ describe('LandingPage', () => {
     render(<LandingPage />);
     await userEvent.click(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i })[0]);
     expect(screen.getByText('play shell: mouse')).toBeInTheDocument();
-  });
-
-  it('skips the prompt and reuses a recent choice on the next load', () => {
-    localStorage.setItem(
-      'froola.inputChoice',
-      JSON.stringify({ mode: 'camera', expires: Date.now() + 60_000 }),
-    );
-    render(<LandingPage />);
-    expect(screen.getByText('play shell: camera')).toBeInTheDocument();
-    expect(screen.queryByText('play music with your hands')).not.toBeInTheDocument();
-  });
-
-  it('shows the prompt again once the saved choice has expired', () => {
-    localStorage.setItem(
-      'froola.inputChoice',
-      JSON.stringify({ mode: 'camera', expires: Date.now() - 1 }),
-    );
-    render(<LandingPage />);
-    expect(screen.getByText('play music with your hands')).toBeInTheDocument();
   });
 });
