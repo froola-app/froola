@@ -18,14 +18,14 @@ export default function GestureCoach({ mode }: { mode: 'camera' | 'mouse' }) {
   const isCamera = mode === 'camera';
   const tips = [
     {
-      icon: isCamera ? '✋' : '🖱️',
+      icon: isCamera ? '🙌' : '🖱️',
       text: isCamera
         ? 'Put both hands on the wheels to play a chord'
         : 'Move over the wheels to play a chord',
     },
-    { icon: '🎯', text: 'Left wheel picks the chord · right wheel adds flavour (7th, sus…)' },
+    { icon: '🎯', text: 'Left wheel picks the chord, right wheel adds flavour (7th, sus…)' },
     ...(isCamera
-      ? [{ icon: '✊', text: 'Make a right fist to hold a chord and solo with your left hand' }]
+      ? [{ icon: '👊', text: 'Make a right fist to hold a chord and solo with your left hand' }]
       : []),
     { icon: '⌨️', text: 'Press ↑ / ↓ to change octave' },
   ];
