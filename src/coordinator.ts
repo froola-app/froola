@@ -4,7 +4,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
-import { buildCommand } from './engine/music';
+import { buildCommand, melodyMidi } from './engine/music';
 import { AudioEngine } from './engine/audio';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
@@ -46,6 +46,9 @@ export function useCoordinator(
     let lastY = -1;
     let sounding = false;
     let lastTouchMs = -Infinity;
+    // Latch state: right fist holds the selected chord while the left hand solos.
+    let latched = false;
+    let melodyNote = -1;
 
     function tick() {
       const signals = signalRef.current;
@@ -70,6 +73,52 @@ export function useCoordinator(
       const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx);
       const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx);
 
+      const { noteIdx, qualIdx } = selectedRef.current;
+      const instrMode = modeRef.current;
+      const engine = engineRef.current;
+
+      // Kick off sampler loading as soon as user selects piano or guitar
+      if ((instrMode === 'piano' || instrMode === 'guitar') && engine) {
+        engine.startLoadingSampler(instrMode);
+      }
+
+      // Right fist = latch the current chord (synth only) and free the left hand
+      // to play a melody over it. Releasing the fist releases the chord.
+      const rightFist = !!right?.fist && instrMode === 'synth';
+
+      if (rightFist && engine) {
+        if (!latched) {
+          // Rising edge: capture and start the held chord, then stop normal mode.
+          const y = left?.present ? left.y : 0.5;
+          engine.play(buildCommand(noteIdx, qualIdx, y), instrMode);
+          latched = true;
+          sounding = false;
+          melodyNote = -1;
+        }
+        // Left hand on the wheel plays a single melody note over the held chord.
+        if (leftInDial) {
+          if (noteIdx !== melodyNote) {
+            engine.playMelody(melodyMidi(noteIdx));
+            melodyNote = noteIdx;
+          }
+        } else if (melodyNote !== -1) {
+          engine.silenceMelody();
+          melodyNote = -1;
+        }
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      if (latched && engine) {
+        // Falling edge: fist opened — release the held chord and melody.
+        engine.silence(instrMode);
+        engine.silenceMelody();
+        latched = false;
+        melodyNote = -1;
+        lastNoteIdx = -1;
+        lastQualIdx = -1;
+      }
+
       // Both hands on their wheels = chord plays (left=note, right=quality).
       const touching = leftInDial && rightInDial;
       const nowMs = performance.now();
@@ -79,29 +128,21 @@ export function useCoordinator(
       // silence/retrigger as you move around the wheels.
       const inGrace = !touching && (nowMs - lastTouchMs) < SILENCE_GRACE_MS;
 
-      const { noteIdx, qualIdx } = selectedRef.current;
-      const instrMode = modeRef.current;
-
-      // Kick off sampler loading as soon as user selects piano or guitar
-      if ((instrMode === 'piano' || instrMode === 'guitar') && engineRef.current) {
-        engineRef.current.startLoadingSampler(instrMode);
-      }
-
-      if (touching && engineRef.current) {
+      if (touching && engine) {
         const y = left?.present ? left.y : (right?.y ?? lastY);
         const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
 
         if (!sounding || selChanged || yChanged) {
-          engineRef.current.play(buildCommand(noteIdx, qualIdx, y), instrMode);
+          engine.play(buildCommand(noteIdx, qualIdx, y), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
         }
         sounding = true;
-      } else if (!inGrace && sounding && engineRef.current) {
+      } else if (!inGrace && sounding && engine) {
         // Grace expired (or hand fully gone) — release the held note.
-        engineRef.current.silence(instrMode);
+        engine.silence(instrMode);
         sounding = false;
       }
 
