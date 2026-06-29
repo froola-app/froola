@@ -17,14 +17,21 @@ function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: ()
   const touch = isTouchDevice();
   return (
     <div className="permission-screen">
-      <FroolaLogo size={64} color="#FAFAF8" />
-      <p className="privacy-note">Your camera never leaves your device.</p>
-      <p>MediaPipe runs entirely on your device — no video is transmitted.</p>
-      <div className="permission-buttons">
-        <button onClick={onCamera} className="btn-primary">Enable camera</button>
-        <button onClick={onMouse} className="btn-secondary">
-          {touch ? 'Use touch instead' : 'Use mouse instead'}
-        </button>
+      <div className="permission-card">
+        <FroolaLogo size={56} color="#111111" />
+        <p className="permission-eyebrow">Camera access</p>
+        <h1 className="permission-title">Conduct with your hands</h1>
+        <p className="permission-body">
+          Froola turns your hand movements into music. MediaPipe runs entirely on
+          your device — no video is ever transmitted or stored.
+        </p>
+        <p className="permission-privacy">Your camera never leaves your device.</p>
+        <div className="permission-buttons">
+          <button onClick={onCamera} className="permission-btn-primary">Enable camera</button>
+          <button onClick={onMouse} className="permission-btn-secondary">
+            {touch ? 'Use touch instead' : 'Use mouse instead'}
+          </button>
+        </div>
       </div>
     </div>
   );

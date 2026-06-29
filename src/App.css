@@ -25,54 +25,111 @@ body {
   inset: 0;
   z-index: 2;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  color: #e5e7eb;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  text-align: center;
   padding: 2rem;
-  background: rgba(10, 14, 26, 0.85);
-  backdrop-filter: blur(4px);
+  background: #FAFAF8;
+  color: #111111;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-align: center;
 }
 
-.privacy-note {
-  font-size: 1.1rem;
-  color: #f59e0b;
+/* faint breathing orange wash, echoes the landing canvas */
+.permission-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 55% at 50% 42%, rgba(212, 80, 10, 0.06), rgba(212, 80, 10, 0) 70%);
+}
+
+.permission-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 460px;
+  width: 100%;
+}
+
+.permission-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #D4500A;
+  margin-top: 0.25rem;
+}
+
+.permission-title {
+  font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin-top: -0.5rem;
+}
+
+.permission-body {
+  color: #888888;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-top: -0.25rem;
+}
+
+.permission-privacy {
+  font-size: 0.78rem;
+  color: #D4500A;
   font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .permission-buttons {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  width: 100%;
 }
 
-.btn-primary {
-  padding: 0.75rem 1.75rem;
-  border-radius: 9999px;
+.permission-btn-primary {
+  padding: 0.8rem 2.5rem;
+  border-radius: 2px;
   border: none;
-  background: #f59e0b;
-  color: #0A0E1A;
-  font-size: 1rem;
-  font-weight: 600;
+  background: #111111;
+  color: #FAFAF8;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
-.btn-primary:hover { background: #d97706; }
+.permission-btn-primary:hover { background: #D4500A; }
 
-.btn-secondary {
-  padding: 0.75rem 1.75rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  background: transparent;
-  color: #e5e7eb;
-  font-size: 1rem;
+.permission-btn-secondary {
+  padding: 0.8rem 2rem;
+  border-radius: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  color: #111111;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.btn-secondary:hover { border-color: #f59e0b; color: #f5d98a; }
+.permission-btn-secondary:hover {
+  border-color: #D4500A;
+  box-shadow: 0 0 0 1px #D4500A;
+}
 
 .mode-badge {
   position: fixed;
@@ -80,17 +137,18 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
-  font-family: system-ui, sans-serif;
-  font-size: 0.85rem;
-  color: rgba(229, 231, 235, 0.5);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.82rem;
+  color: rgba(229, 231, 235, 0.6);
 }
 
 .link-btn {
   background: none;
   border: none;
-  color: #f59e0b;
+  color: #D4500A;
   cursor: pointer;
   font-size: inherit;
+  font-weight: 600;
   text-decoration: underline;
 }
 
@@ -103,6 +161,20 @@ body {
   background: #0A0E1A;
   gap: 1.5rem;
 }
+
+/* legacy button — still used by the dark ReplayShell "coming soon" page */
+.btn-primary {
+  padding: 0.75rem 1.75rem;
+  border-radius: 9999px;
+  border: none;
+  background: #f59e0b;
+  color: #0A0E1A;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:hover { background: #d97706; }
 
 .landing-logo {
   width: 72px;
