@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { GestureSignal, InstrumentMode } from './engine/types';
-import { useGestureInput } from './engine/input';
+import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { buildCommand } from './engine/music';
 import { AudioEngine } from './engine/audio';
@@ -11,13 +11,14 @@ const REGISTER_THRESHOLD = 0.5 / 24;
 
 export function useCoordinator(
   canvasRef: RefObject<HTMLCanvasElement | null>,
-  modeRef: RefObject<InstrumentMode>
+  modeRef: RefObject<InstrumentMode>,
+  initialMode: InputMode = 'asking'
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
 
-  const { signalRef, mode, requestCamera, useMouse } = useGestureInput();
+  const { signalRef, mode, requestCamera, useMouse } = useGestureInput(initialMode);
 
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
