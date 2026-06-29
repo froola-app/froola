@@ -20,6 +20,13 @@ const QUALITY_TENSION: Record<ChordQuality, number> = {
   major: 0.0, minor: 0.2, maj7: 0.3, min7: 0.4, dom7: 0.6, aug: 0.8, dim: 1.0,
 };
 
+// MIDI note for a melody line played from the note wheel — one octave above the
+// chord register so it sits clearly over the held pad.
+export function melodyMidi(noteIdx: number): number {
+  const note = NOTES[noteIdx % NOTES.length];
+  return NOTE_MIDI[note] + 12;
+}
+
 export function buildCommand(noteIdx: number, qualIdx: number, y: number): MusicalCommand {
   const note = NOTES[noteIdx % NOTES.length];
   const quality = QUALITIES[qualIdx % QUALITIES.length];

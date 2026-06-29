@@ -26,6 +26,10 @@ const REVERB_SECONDS = 1.8
 const REVERB_DECAY = 2.6
 const REVERB_SEND = 0.18
 
+// Single lead voice for the melody played over a latched chord. Same triangle →
+// lowpass timbre as the pad, but louder than one pad voice so it reads on top.
+const MELODY_GAIN = 0.12
+
 export class AudioEngine {
   private ctx: AudioContext
   private oscillators: OscillatorNode[]
@@ -34,6 +38,8 @@ export class AudioEngine {
   private masterGain: GainNode
   private analyser: AnalyserNode
   private samplerGain: GainNode
+  private melodyOsc: OscillatorNode
+  private melodyGain: GainNode
   private samplers: Partial<Record<'piano' | 'guitar', Player>> = {}
   private samplerLoading = new Set<'piano' | 'guitar'>()
   private activeSampleNodes: SampleNode[] = []
@@ -100,6 +106,19 @@ export class AudioEngine {
       this.oscillators.push(osc)
       this.voiceGains.push(gain)
     }
+
+    // Dedicated lead voice for the melody over a latched chord. Same triangle →
+    // lowpass path as the pad (so it shares the timbre), centred in the field.
+    this.melodyOsc = this.ctx.createOscillator()
+    this.melodyOsc.type = 'triangle'
+    this.melodyGain = this.ctx.createGain()
+    this.melodyGain.gain.value = 0
+    const melodyPanner = this.ctx.createStereoPanner()
+    melodyPanner.pan.value = 0
+    this.melodyOsc.connect(this.melodyGain)
+    this.melodyGain.connect(melodyPanner)
+    melodyPanner.connect(this.synthFilter)
+    this.melodyOsc.start()
   }
 
   /** Decaying-noise impulse response for a short, soft room reverb. */
@@ -186,6 +205,25 @@ export class AudioEngine {
       this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
       this.voiceGains[i].gain.linearRampToValueAtTime(SYNTH_VOICE_GAIN, now + CHORD_GAIN_RAMP)
     })
+  }
+
+  /** Sound a single melody note (articulated — pitch jumps, gain re-attacks). */
+  playMelody(midi: number): void {
+    const now = this.ctx.currentTime
+    const hz = midiToHz(midi)
+    this.melodyOsc.frequency.cancelScheduledValues(now)
+    this.melodyOsc.frequency.setValueAtTime(hz, now)
+    this.melodyGain.gain.cancelScheduledValues(now)
+    this.melodyGain.gain.setValueAtTime(this.melodyGain.gain.value, now)
+    this.melodyGain.gain.linearRampToValueAtTime(MELODY_GAIN, now + 0.012)
+  }
+
+  /** Fade the melody lead out (chord, if latched, keeps sounding). */
+  silenceMelody(): void {
+    const now = this.ctx.currentTime
+    this.melodyGain.gain.cancelScheduledValues(now)
+    this.melodyGain.gain.setValueAtTime(this.melodyGain.gain.value, now)
+    this.melodyGain.gain.linearRampToValueAtTime(0, now + 0.06)
   }
 
   silence(mode: InstrumentMode = 'synth'): void {

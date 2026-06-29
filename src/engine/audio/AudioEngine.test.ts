@@ -22,9 +22,9 @@ beforeEach(() => {
 })
 
 describe('AudioEngine — construction', () => {
-  it('creates exactly 4 oscillators (soundgo 4-voice chord pad)', () => {
+  it('creates 5 oscillators (4-voice chord pad + 1 melody lead)', () => {
     new AudioEngine()
-    expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(4)
+    expect(mockAudioContext.createOscillator).toHaveBeenCalledTimes(5)
   })
   it('starts all oscillators', () => {
     new AudioEngine()
@@ -55,13 +55,14 @@ describe('AudioEngine — construction', () => {
     new AudioEngine()
     expect(mockAudioContext.createDynamicsCompressor).toHaveBeenCalledTimes(1)
   })
-  it('gives each voice a distinct detune and stereo pan for width', () => {
+  it('gives each pad voice a distinct detune and stereo pan for width', () => {
     new AudioEngine()
-    expect(mockAudioContext.createStereoPanner).toHaveBeenCalledTimes(4)
-    const detunes = mockAudioContext.createOscillator.mock.results.map(r => r.value.detune.value)
-    const pans = mockAudioContext.createStereoPanner.mock.results.map(r => r.value.pan.value)
-    expect(new Set(detunes).size).toBe(4)
-    expect(new Set(pans).size).toBe(4)
+    // 4 pad voices + 1 melody lead, each panned.
+    expect(mockAudioContext.createStereoPanner).toHaveBeenCalledTimes(5)
+    const padDetunes = mockAudioContext.createOscillator.mock.results.slice(0, 4).map(r => r.value.detune.value)
+    const padPans = mockAudioContext.createStereoPanner.mock.results.slice(0, 4).map(r => r.value.pan.value)
+    expect(new Set(padDetunes).size).toBe(4)
+    expect(new Set(padPans).size).toBe(4)
   })
   it('creates a convolver reverb with an impulse buffer', () => {
     new AudioEngine()
@@ -73,10 +74,10 @@ describe('AudioEngine — construction', () => {
 
 describe('AudioEngine — play()', () => {
   // soundgo glides notes to pitch (rampTo 0.12s) rather than jumping instantly.
-  it('glides frequency for all oscillators', () => {
+  it('glides frequency for all four pad oscillators', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
-    mockAudioContext.createOscillator.mock.results.forEach(r => {
+    mockAudioContext.createOscillator.mock.results.slice(0, 4).forEach(r => {
       expect(r.value.frequency.linearRampToValueAtTime).toHaveBeenCalled()
     })
   })
@@ -137,6 +138,41 @@ describe('AudioEngine — play()', () => {
       ([val]: [number]) => Math.abs(val - SYNTH_VOICE_GAIN) < 0.001
     )
     expect(hasCorrectGain).toBe(true)
+  })
+})
+
+describe('AudioEngine — playMelody() / silenceMelody()', () => {
+  // The melody lead is the 5th oscillator (after the 4 pad voices).
+  const melodyOsc = () => mockAudioContext.createOscillator.mock.results[4].value
+
+  it('sets the melody oscillator pitch and raises its gain', () => {
+    const engine = new AudioEngine()
+    engine.playMelody(69) // A4
+    const hz = melodyOsc().frequency.setValueAtTime.mock.calls.at(-1)?.[0]
+    expect(hz).toBeCloseTo(440, 1)
+    const melodyGainRamp = mockAudioContext.createGain.mock.results
+      .flatMap(r => r.value.gain.linearRampToValueAtTime.mock.calls)
+      .some(([val]: [number]) => val > 0.1 && val < 0.2)
+    expect(melodyGainRamp).toBe(true)
+  })
+
+  it('does not retrigger the chord pad when playing a melody note', () => {
+    const engine = new AudioEngine()
+    engine.playMelody(72)
+    // The 4 pad oscillators get no frequency changes from a melody note.
+    mockAudioContext.createOscillator.mock.results.slice(0, 4).forEach(r => {
+      expect(r.value.frequency.setValueAtTime).not.toHaveBeenCalled()
+    })
+  })
+
+  it('silenceMelody ramps the melody gain to 0', () => {
+    const engine = new AudioEngine()
+    engine.playMelody(72)
+    engine.silenceMelody()
+    const zeroRamp = mockAudioContext.createGain.mock.results
+      .flatMap(r => r.value.gain.linearRampToValueAtTime.mock.calls)
+      .some(([val]: [number]) => val === 0)
+    expect(zeroRamp).toBe(true)
   })
 })
 
