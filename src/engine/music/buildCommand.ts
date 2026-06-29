@@ -1,9 +1,9 @@
 import type { NoteName, ChordQuality, MusicalCommand } from '../types';
 import { NOTES, QUALITIES } from '../types';
 
-// A4–B4 then C5–G5 so the wheel ascends in pitch without a large drop at C.
+// C-major scale ascending from C5 so the wheel rises in pitch from the top (C) clockwise.
 const NOTE_MIDI: Record<NoteName, number> = {
-  A: 69, B: 71, C: 72, D: 74, E: 76, F: 77, G: 79,
+  C: 72, D: 74, E: 76, F: 77, G: 79, A: 81, B: 83,
 };
 
 const QUALITY_INTERVALS: Record<ChordQuality, [0, number, number]> = {
