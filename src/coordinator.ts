@@ -55,6 +55,7 @@ export function useCoordinator(
     let lastQualIdx = -1;
     let lastY = -1;
     let lastOctave = 0;
+    let lastMusicKey = '';
     let sounding = false;
     let lastTouchMs = -Infinity;
     // Latch state: right fist holds the selected chord while the left hand solos.
@@ -142,13 +143,18 @@ export function useCoordinator(
         const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
         const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
         const octChanged = octave !== lastOctave;
+        // Re-voice a held chord when the key/scale changes too (otherwise
+        // changing the dropdown mid-hold does nothing until the next note).
+        const musicKey = `${music.keyOffset}:${music.scale}`;
+        const musicChanged = musicKey !== lastMusicKey;
 
-        if (!sounding || selChanged || yChanged || octChanged) {
+        if (!sounding || selChanged || yChanged || octChanged || musicChanged) {
           engine.play(buildCommand(noteIdx, qualIdx, y, octave, notes), instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = qualIdx;
           lastY = y;
           lastOctave = octave;
+          lastMusicKey = musicKey;
         }
         sounding = true;
       } else if (!inGrace && sounding && engine) {
