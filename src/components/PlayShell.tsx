@@ -10,7 +10,6 @@ import FroolaLogo from './FroolaLogo';
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
   { value: 'piano',  label: 'piano'  },
-  { value: 'guitar', label: 'guitar' },
 ];
 
 const isTouchDevice = () => navigator.maxTouchPoints > 0;
