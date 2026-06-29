@@ -4,7 +4,7 @@ import type { GestureSignal } from '../types';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
-export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void } {
+export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void; cameraVideoRef: React.RefObject<HTMLVideoElement | null> } {
   const signalRef = useRef<GestureSignal[]>([]);
   const [mode, setMode] = useState<InputMode>(initialMode);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -234,5 +234,5 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, useMouse: switchToMouse };
+  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef };
 }

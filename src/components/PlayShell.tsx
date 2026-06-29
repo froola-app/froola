@@ -6,6 +6,7 @@ import { KEYS, SCALE_NAMES, type ScaleName, type MusicConfig } from '../engine/m
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
+import VideoRecordButton from './VideoRecordButton';
 import GestureCoach from './GestureCoach';
 import FroolaLogo from './FroolaLogo';
 
@@ -88,7 +89,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef);
 
   return (
     <>
@@ -101,6 +102,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       )}
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
+      <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       {(mode === 'camera' || mode === 'mouse') && <GestureCoach mode={mode} />}
       <div className="hud-bottom">
         <select

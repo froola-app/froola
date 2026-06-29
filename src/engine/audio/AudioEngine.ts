@@ -257,6 +257,22 @@ export class AudioEngine {
     return this.analyser
   }
 
+  // Creates a MediaStream mixing the instrument output with the given mic stream.
+  // Both are routed through this AudioContext so they are combined before export.
+  createRecordingStream(micStream: MediaStream): { stream: MediaStream; stop: () => void } {
+    const dest = this.ctx.createMediaStreamDestination()
+    this.analyser.connect(dest)
+    const micSource = this.ctx.createMediaStreamSource(micStream)
+    micSource.connect(dest)
+    return {
+      stream: dest.stream,
+      stop: () => {
+        try { this.analyser.disconnect(dest) } catch { /* ok */ }
+        try { micSource.disconnect(dest) } catch { /* ok */ }
+      },
+    }
+  }
+
   resume(): void {
     this.ctx.resume()
   }
