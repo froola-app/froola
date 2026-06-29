@@ -40,8 +40,8 @@ export class AudioEngine {
   private samplerGain: GainNode
   private melodyOsc: OscillatorNode
   private melodyGain: GainNode
-  private samplers: Partial<Record<'piano' | 'guitar', Player>> = {}
-  private samplerLoading = new Set<'piano' | 'guitar'>()
+  private samplers: Partial<Record<'piano', Player>> = {}
+  private samplerLoading = new Set<'piano'>()
   private activeSampleNodes: SampleNode[] = []
 
   constructor() {
@@ -141,12 +141,11 @@ export class AudioEngine {
     return [...cmd.voicing, cmd.voicing[0] + 12]
   }
 
-  startLoadingSampler(mode: 'piano' | 'guitar'): void {
+  startLoadingSampler(mode: 'piano'): void {
     if (this.samplers[mode] || this.samplerLoading.has(mode)) return
     this.samplerLoading.add(mode)
-    const name = mode === 'piano' ? 'acoustic_grand_piano' : 'acoustic_guitar_nylon'
     import('soundfont-player')
-      .then(({ default: SF }) => SF.instrument(this.ctx, name, { destination: this.samplerGain }))
+      .then(({ default: SF }) => SF.instrument(this.ctx, 'acoustic_grand_piano', { destination: this.samplerGain }))
       .then(player => {
         this.samplers[mode] = player
         this.samplerLoading.delete(mode)
@@ -157,12 +156,10 @@ export class AudioEngine {
     const now = this.ctx.currentTime
 
     // Wait silently if the sampler is still loading — no oscillator fallback
-    if (mode === 'piano' || mode === 'guitar') {
-      if (!this.samplers[mode]) return
-    }
+    if (mode === 'piano' && !this.samplers.piano) return
 
-    if ((mode === 'piano' || mode === 'guitar') && this.samplers[mode]) {
-      const player = this.samplers[mode]!
+    if (mode === 'piano' && this.samplers.piano) {
+      const player = this.samplers.piano
 
       // Clear previous attack samples
       const prev = this.activeSampleNodes
@@ -182,7 +179,7 @@ export class AudioEngine {
       // They fade in after the initial attack so they don't clash with it.
       // Pitch is set instantly here (under a percussive attack a glide sounds wrong).
       const sustainGain = SYNTH_VOICE_GAIN * 0.45
-      const fadeIn = mode === 'piano' ? 0.25 : 0.06
+      const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
         this.oscillators[i].frequency.cancelScheduledValues(now)
@@ -194,7 +191,7 @@ export class AudioEngine {
       return
     }
 
-    // Pure synth path (or piano/guitar while sampler is still loading) — soundgo
+    // Pure synth path (or piano while its sampler is still loading) — soundgo
     // chord pad: gentle per-voice gain, notes glide to pitch over CHORD_GLIDE.
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
@@ -229,7 +226,7 @@ export class AudioEngine {
   silence(mode: InstrumentMode = 'synth'): void {
     const now = this.ctx.currentTime
 
-    if (mode === 'piano' || mode === 'guitar') {
+    if (mode === 'piano') {
       // Fade the sample output quickly (it's naturally decaying anyway)
       this.samplerGain.gain.cancelScheduledValues(now)
       this.samplerGain.gain.setValueAtTime(this.samplerGain.gain.value, now)
@@ -239,7 +236,7 @@ export class AudioEngine {
       nodes.forEach(n => { try { n.stop(now + 0.35) } catch { /* already stopped */ } })
 
       // Fade the oscillator sustain layer — this is what the user hears sustaining
-      const release = mode === 'piano' ? 1.8 : 0.5
+      const release = 1.8
       this.voiceGains.forEach(g => {
         g.gain.cancelScheduledValues(now)
         g.gain.setValueAtTime(g.gain.value, now)

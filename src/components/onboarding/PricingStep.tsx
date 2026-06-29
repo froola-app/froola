@@ -3,7 +3,7 @@ interface Props {
 }
 
 const FREE_FEATURES = [
-  'All 4 instruments (synth, piano, guitar, pad)',
+  'Both instruments (synth, piano)',
   'Camera mode & mouse mode',
   'Recordings up to 60 seconds',
   'Share links',

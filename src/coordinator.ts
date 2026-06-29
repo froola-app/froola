@@ -77,14 +77,14 @@ export function useCoordinator(
       const instrMode = modeRef.current;
       const engine = engineRef.current;
 
-      // Kick off sampler loading as soon as user selects piano or guitar
-      if ((instrMode === 'piano' || instrMode === 'guitar') && engine) {
+      // Kick off sampler loading as soon as user selects piano
+      if (instrMode === 'piano' && engine) {
         engine.startLoadingSampler(instrMode);
       }
 
-      // Right fist = latch the current chord (synth only) and free the left hand
-      // to play a melody over it. Releasing the fist releases the chord.
-      const rightFist = !!right?.fist && instrMode === 'synth';
+      // Right fist = latch the current chord and free the left hand to play a
+      // melody over it (synth lead). Releasing the fist releases the chord.
+      const rightFist = !!right?.fist;
 
       if (rightFist && engine) {
         if (!latched) {
@@ -161,7 +161,7 @@ export function useCoordinator(
   );
 
   function preloadSampler(m: InstrumentMode) {
-    if ((m === 'piano' || m === 'guitar') && engineRef.current) {
+    if (m === 'piano' && engineRef.current) {
       engineRef.current.startLoadingSampler(m);
     }
   }

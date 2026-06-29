@@ -1,4 +1,4 @@
-export type InstrumentMode = 'synth' | 'piano' | 'guitar';
+export type InstrumentMode = 'synth' | 'piano';
 
 export type GestureSignal = {
   x: number;        // 0–1, horizontal position (left = 0, right = 1)
