@@ -31,7 +31,7 @@ export function useCoordinator(
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
-  const { mode, requestCamera, useMouse } = input;
+  const { mode, requestCamera, useMouse, cameraVideoRef } = input;
 
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
@@ -194,5 +194,7 @@ export function useCoordinator(
     selectedRef,
     preloadSampler,
     vibe: 'warm' as string,
+    cameraVideoRef,
+    engineRef,
   };
 }
