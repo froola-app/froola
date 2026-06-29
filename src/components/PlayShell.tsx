@@ -49,11 +49,11 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
   );
 }
 
-export default function PlayShell() {
+export default function PlayShell({ initialInput: inputProp }: { initialInput?: InputMode } = {}) {
   const location = useLocation();
-  // Input mode is chosen on the landing page; fall back to the prompt
-  // when /play is opened directly without a choice.
-  const initialInput = ((location.state as { input?: InputMode } | null)?.input) ?? 'asking';
+  // Input mode comes from the landing page — either passed directly as a prop
+  // (rendered inline) or via router state. Fall back to the prompt otherwise.
+  const initialInput = inputProp ?? ((location.state as { input?: InputMode } | null)?.input) ?? 'asking';
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
