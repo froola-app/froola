@@ -80,7 +80,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, signalRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef);
 
   return (
     <>
@@ -92,7 +92,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
         <MouseModeBadge onSwitch={requestCamera} />
       )}
       <ShareButton />
-      <RecordButton signalsRef={signalRef} vibe={vibe} />
+      <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <div className="hud-bottom">
         <select
           className="instrument-select"

@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
+import { wheelGeometry } from './engine/renderer/geometry';
 import { buildCommand, melodyMidi } from './engine/music';
 import { AudioEngine } from './engine/audio';
 
@@ -16,13 +17,19 @@ export function useCoordinator(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   modeRef: RefObject<InstrumentMode>,
   initialMode: InputMode = 'asking',
-  octaveRef?: RefObject<number>
+  octaveRef?: RefObject<number>,
+  // When provided, drive playback from this signal source (e.g. recorded replay)
+  // instead of live hand/mouse input. The gesture-input hook still runs but its
+  // signals are ignored, so live and replay share one audio/render pipeline.
+  externalSignalRef?: RefObject<GestureSignal[]>
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
 
-  const { signalRef, mode, requestCamera, useMouse } = useGestureInput(initialMode);
+  const input = useGestureInput(initialMode);
+  const signalRef = externalSignalRef ?? input.signalRef;
+  const { mode, requestCamera, useMouse } = input;
 
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
@@ -62,12 +69,7 @@ export function useCoordinator(
       const canvas = canvasRef.current;
       const w = canvas?.width  ?? window.innerWidth;
       const h = canvas?.height ?? window.innerHeight;
-      const outerR  = Math.min(w, h) * 0.24;
-      const innerR  = outerR * 0.36;
-      const leftCx  = outerR * 1.5;
-      const wheelCy = h * 0.65;
-
-      const rightCx = w - outerR * 1.5;
+      const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
       const inRing = (x: number, y: number, cx: number) => {
         const d = Math.hypot(x * w - cx, y * h - wheelCy);
         return d >= innerR && d <= outerR;
@@ -176,6 +178,9 @@ export function useCoordinator(
     requestCamera,
     useMouse,
     signalRef,
+    // The angle-derived note/quality selection the audio path actually plays.
+    // The recorder samples this (not raw x) so a recording matches what was heard.
+    selectedRef,
     preloadSampler,
     vibe: 'warm' as string,
   };

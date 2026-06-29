@@ -1,10 +1,10 @@
 import { renderHook, act } from '@testing-library/react';
 import type { RefObject } from 'react';
-import type { GestureSignal } from '../types';
+import type { DialSelection } from '../renderer';
 import { useRecorder } from './useRecorder';
 
-function makeRef(signals: GestureSignal[] = []): RefObject<GestureSignal[]> {
-  return { current: signals };
+function makeRef(sel: DialSelection = { noteIdx: 0, qualIdx: 0 }): RefObject<DialSelection> {
+  return { current: sel };
 }
 
 describe('useRecorder', () => {

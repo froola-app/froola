@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal, ChordQuality, MusicalCommand } from '../types';
 import { NOTES, QUALITIES } from '../types';
 import { ParticleSystem } from './particles';
+import { wheelGeometry } from './geometry';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
 
@@ -210,12 +211,7 @@ export function useRenderer(
         amplitude = freqData.reduce((a, b) => a + b, 0) / freqData.length / 255;
       }
 
-      // Cap so the two wheels (centered at outerR*1.5 from each edge) never overlap.
-      // Gap between edges = w - 5*outerR; keep at least 8px.
-      const outerR = Math.min(Math.min(w, h) * 0.24, (w - 8) / 5);
-      const leftCx  = outerR * 1.5;
-      const rightCx = w - outerR * 1.5;
-      const wheelCy = h * 0.65;
+      const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
       const bgColor = 'rgba(10,14,26,0.88)';
 
       // Particles — between warm zone and dials
@@ -239,7 +235,6 @@ export function useRenderer(
       // Orb touches a slice only when it is in the annular ring (innerR..outerR).
       // Inside innerR (center hub) atan2 is unstable — tiny tremors flip the
       // selected slice — so we treat that zone as inactive.
-      const innerR    = outerR * 0.36;
       const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - wheelCy);
       const rightDist = Math.hypot(rightOrbX - rightCx, rightOrbY - wheelCy);
       const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
