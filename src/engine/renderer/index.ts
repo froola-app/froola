@@ -10,12 +10,26 @@ const QUALITY_LABELS: Record<ChordQuality, string> = {
   major: 'maj', minor: 'min', maj7: 'M7', min7: 'm7', dom7: '7', aug: 'aug', dim: 'dim',
 };
 
-function angleToSlice(orbX: number, orbY: number, cx: number, cy: number, n: number): number {
+// Continuous slice position (0..n) of the orb around the wheel. The +π/2 offset
+// puts slice 0 at the top; integer values land on slice centres.
+function angleToSlicePos(orbX: number, orbY: number, cx: number, cy: number, n: number): number {
   const angle = Math.atan2(orbY - cy, orbX - cx);
   const normalized = ((angle + Math.PI / 2) + Math.PI * 2) % (Math.PI * 2);
-  // Math.round centres the hit-region on each visual slice rather than
-  // starting at its left edge (which would shift selection half a slice clockwise).
-  return Math.round(normalized / (Math.PI * 2) * n) % n;
+  return normalized / (Math.PI * 2) * n;
+}
+
+// Deadband (in slices) the orb must travel past a boundary before the selection
+// flips. Stops jitter/tremor near a boundary from rapidly retriggering the audio.
+const SLICE_HYSTERESIS = 0.18;
+
+function stickySlice(pos: number, n: number, cur: number): number {
+  let d = (pos - cur) % n;
+  if (d < -n / 2) d += n;
+  if (d >= n / 2) d -= n;
+  if (Math.abs(d) > 0.5 + SLICE_HYSTERESIS) {
+    return ((Math.round(pos) % n) + n) % n;
+  }
+  return cur;
 }
 
 function qualitySliceColor(q: ChordQuality, alpha: number): string {
@@ -231,9 +245,21 @@ export function useRenderer(
       const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
       const rightInDial = !!right?.present && rightDist >= innerR && rightDist <= outerR;
 
-      // Slice selections (compute both before drawing so left wheel can show full chord name)
-      const noteIdx = left?.present ? angleToSlice(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length) : 0;
-      const qualIdx = right?.present ? angleToSlice(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length) : 0;
+      // Slice selections with hysteresis (compute both before drawing so the left
+      // wheel can show the full chord name). selectedRef persists the last choice
+      // across frames, which doubles as the hysteresis state.
+      const prevSel = selectedRef.current;
+      const notePos = angleToSlicePos(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length);
+      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, wheelCy, QUALITIES.length);
+      // Apply hysteresis while on the wheel; hold the last selection while the hand
+      // is present but off-ring (e.g. crossing the centre hub between slices, where
+      // atan2 is unstable); reset only when the hand disappears entirely.
+      const noteIdx = leftInDial
+        ? stickySlice(notePos, NOTES.length, prevSel.noteIdx)
+        : (left?.present ? prevSel.noteIdx : 0);
+      const qualIdx = rightInDial
+        ? stickySlice(qualPos, QUALITIES.length, prevSel.qualIdx)
+        : (right?.present ? prevSel.qualIdx : 0);
       const bothActive = leftInDial && rightInDial;
 
       // Left wheel — note selection

@@ -94,6 +94,12 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
         },
         runningMode: 'VIDEO',
         numHands: 2,
+        // Lower than the 0.5 defaults so a hand held close to the camera (large,
+        // blurry, partially out of frame) — where confidence dips — keeps being
+        // tracked instead of dropping out entirely.
+        minHandDetectionConfidence: 0.3,
+        minHandPresenceConfidence: 0.3,
+        minTrackingConfidence: 0.3,
       });
 
       if (cancelled) { landmarker.close(); return; }
