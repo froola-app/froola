@@ -4,17 +4,31 @@ import type { GestureSignal } from '../types';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
+const INPUT_MODE_KEY = 'froola-input-mode';
+
+function savedMode(): InputMode | null {
+  try {
+    const v = localStorage.getItem(INPUT_MODE_KEY);
+    return v === 'camera' || v === 'mouse' ? v : null;
+  } catch { return null; }
+}
+
 export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void; cameraVideoRef: React.RefObject<HTMLVideoElement | null> } {
   const signalRef = useRef<GestureSignal[]>([]);
-  const [mode, setMode] = useState<InputMode>(initialMode);
+  // Restore persisted choice so the user isn't re-prompted on every navigation
+  const [mode, setMode] = useState<InputMode>(() =>
+    initialMode === 'asking' ? (savedMode() ?? 'asking') : initialMode
+  );
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   function switchToMouse() {
+    try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
     setMode('mouse');
   }
 
   function requestCamera() {
+    try { localStorage.setItem(INPUT_MODE_KEY, 'camera'); } catch { /* ignore */ }
     setMode('camera');
   }
 
@@ -117,6 +131,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
           video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
         });
       } catch {
+        try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
         setMode('mouse');
         landmarker.close();
         return;
@@ -137,10 +152,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
 
       // Per-hand EMA + fist-lock state
       const SMOOTH = 0.35;
-      type HandState = { x: number; y: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
+      // How long (ms) a hand must be absent before we re-initialize its EMA
+      // on the next appearance instead of blending from the stale position.
+      // Prevents the orb from snapping to the 0.5,0.5 default when a hand
+      // first appears or briefly drops out (e.g. due to handedness flipping).
+      const REAPPEAR_GAP_MS = 300;
+      type HandState = { x: number; y: number; lastSeenMs: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
       const smooth: Record<'left' | 'right', HandState> = {
-        left:  { x: 0.5, y: 0.5, wasFist: false, frozenX: null, frozenY: null },
-        right: { x: 0.5, y: 0.5, wasFist: false, frozenX: null, frozenY: null },
+        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
+        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
       };
 
       function isFist(lm: { x: number; y: number; z: number }[]): boolean {
@@ -184,10 +204,22 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
             const fist = isFist(lm);
             const s = smooth[handId];
 
-            // Only update EMA when hand is open — curled fingertip coords are invalid
+            // Jump EMA to actual position on first appearance or after a tracking
+            // gap — prevents the orb from drifting in from center (0.5, 0.5).
+            const isNew = now - s.lastSeenMs > REAPPEAR_GAP_MS;
+            s.lastSeenMs = now;
+
             if (!fist) {
-              s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
-              s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+              if (isNew) {
+                s.x = rx; s.y = ry;
+              } else {
+                s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
+                s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+              }
+            } else if (isNew) {
+              // Fist on reappearance: seed EMA at actual position so the freeze
+              // captures the real hand location, not the stale center default.
+              s.x = rx; s.y = ry;
             }
 
             // Freeze reported position on fist-close; unfreeze on fist-open
