@@ -114,7 +114,7 @@ export default function LearnShell() {
 
       {mode === 'camera' && trackingUnstable && <TrackingWarning />}
 
-      {runner.phase === 'idle' && (
+      {runner.phase === 'idle' && mode !== 'asking' && (
         <div className="lesson-start-screen">
           <div className="lesson-start-card">
             <p className="lesson-start__eyebrow">{lesson.difficulty}</p>
