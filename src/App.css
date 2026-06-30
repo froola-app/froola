@@ -1700,3 +1700,20 @@ body {
 .lesson-complete__btn--primary:hover { background: #d97706; }
 
 .coach-btn:hover { background: #b8440a; }
+
+.volume-badge {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(20, 20, 30, 0.85);
+  color: #E5E7EB;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  pointer-events: none;
+}

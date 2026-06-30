@@ -80,6 +80,14 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
 
+  const [volumeDisplay, setVolumeDisplay] = useState<number | null>(null);
+  const volumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleVolumeChange = useCallback((v: number) => {
+    setVolumeDisplay(Math.round(v * 100));
+    if (volumeTimerRef.current) clearTimeout(volumeTimerRef.current);
+    volumeTimerRef.current = setTimeout(() => setVolumeDisplay(null), 1500);
+  }, []);
+
   // Arrow keys are a quick shortcut for the on-screen octave stepper.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -90,11 +98,14 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange);
 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {volumeDisplay !== null && (
+        <div className="volume-badge">vol {volumeDisplay}%</div>
+      )}
       {mode === 'asking' && (
         <CameraPrompt onCamera={requestCamera} onMouse={useMouse} />
       )}
