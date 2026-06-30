@@ -26,14 +26,16 @@ export function useCoordinator(
   musicRef?: RefObject<MusicConfig>,
   // Optional ghost orb signals for lesson mode — translucent target-hand indicators.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
+  onVolumeChange?: (v: number) => void,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
+  const volumeRef = useRef(1.0);
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
-  const { mode, requestCamera, useMouse, cameraVideoRef } = input;
+  const { mode, requestCamera, useMouse, cameraVideoRef, nodEventRef } = input;
 
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
@@ -128,6 +130,18 @@ export function useCoordinator(
         melodyNote = -1;
         lastNoteIdx = -1;
         lastQualIdx = -1;
+      }
+
+      // Nod gesture → discrete volume step
+      const nod = nodEventRef.current;
+      if (nod && engine) {
+        volumeRef.current = nod === 'up'
+          ? Math.min(volumeRef.current + 0.1, 1.0)
+          : Math.max(volumeRef.current - 0.1, 0.0);
+        volumeRef.current = Math.round(volumeRef.current * 10) / 10;
+        engine.setVolume(volumeRef.current);
+        onVolumeChange?.(volumeRef.current);
+        nodEventRef.current = null;
       }
 
       // Both hands on their wheels = chord plays (left=note, right=quality).
