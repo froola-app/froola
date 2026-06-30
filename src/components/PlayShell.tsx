@@ -9,6 +9,7 @@ import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
 import GestureCoach from './GestureCoach';
 import FroolaLogo from './FroolaLogo';
+import TrackingWarning from './TrackingWarning';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -90,7 +91,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, trackingUnstable } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef);
 
   return (
     <>
@@ -101,6 +102,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       {mode === 'mouse' && (
         <MouseModeBadge onSwitch={requestCamera} />
       )}
+      {mode === 'camera' && trackingUnstable && <TrackingWarning />}
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />

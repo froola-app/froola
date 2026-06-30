@@ -13,7 +13,7 @@ function savedMode(): InputMode | null {
   } catch { return null; }
 }
 
-export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void; cameraVideoRef: React.RefObject<HTMLVideoElement | null> } {
+export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void; cameraVideoRef: React.RefObject<HTMLVideoElement | null>; trackingUnstable: boolean } {
   const signalRef = useRef<GestureSignal[]>([]);
   // Restore persisted choice so the user isn't re-prompted on every navigation
   const [mode, setMode] = useState<InputMode>(() =>
@@ -21,6 +21,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
   );
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+  // True when tracking has been noisy for a sustained stretch — usually means
+  // poor lighting is starving MediaPipe of detection confidence. Surfaced to
+  // the UI so it can suggest finding better light.
+  const [trackingUnstable, setTrackingUnstable] = useState(false);
 
   function switchToMouse() {
     try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
@@ -180,6 +184,18 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       let soloId: 'left' | 'right' | null = null;
       const SOLO_HYSTERESIS = 0.05;
 
+      // Tracking-quality heuristic: bad lighting starves MediaPipe of
+      // detection confidence, which shows up as the same two symptoms our
+      // noise filters above are already built to catch — rejected jumps and
+      // hands flickering in and out of detection. Reuse those signals as a
+      // slow-moving "badness" score and surface a hint to find better light
+      // when it stays elevated, instead of reacting to a single bad frame.
+      let prevHandCount = 0;
+      let trackingBadness = 0;
+      const BADNESS_ON = 0.35;
+      const BADNESS_OFF = 0.15;
+      let unstable = false;
+
       function isFist(lm: { x: number; y: number; z: number }[]): boolean {
         const wrist = lm[0];
         const tipIdx = [8, 12, 16, 20];
@@ -245,6 +261,8 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
             ids = [];
           }
 
+          let rejectedThisTick = false;
+
           const signals: GestureSignal[] = [];
           for (let i = 0; i < detections.length; i++) {
             const handId = ids[i];
@@ -267,6 +285,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
                   // detection. Hold the last good position instead of blending
                   // toward it.
                   s.rejectStreak++;
+                  rejectedThisTick = true;
                 } else {
                   s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
                   s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
@@ -302,6 +321,24 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
             });
           }
           signalRef.current = signals;
+
+          // Update the rolling tracking-quality score. A flicker on its own
+          // (e.g. putting a hand up for the first time) barely moves a slow
+          // EMA; only sustained instability — many rejected jumps and/or
+          // hands repeatedly dropping detection, both far more likely under
+          // poor lighting — pushes it past the threshold.
+          const flickerThisTick = detections.length !== prevHandCount;
+          prevHandCount = detections.length;
+          const tickBad = (rejectedThisTick ? 0.6 : 0) + (flickerThisTick ? 0.4 : 0);
+          trackingBadness = trackingBadness * 0.95 + tickBad * 0.05;
+
+          if (!unstable && trackingBadness > BADNESS_ON) {
+            unstable = true;
+            setTrackingUnstable(true);
+          } else if (unstable && trackingBadness < BADNESS_OFF) {
+            unstable = false;
+            setTrackingUnstable(false);
+          }
         }
         animFrameId = requestAnimationFrame(loop);
       }
@@ -321,8 +358,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       cancelled = true;
       cleanupRef.current?.();
       cleanupRef.current = null;
+      setTrackingUnstable(false);
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef };
+  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, trackingUnstable };
 }

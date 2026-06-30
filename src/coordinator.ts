@@ -33,7 +33,7 @@ export function useCoordinator(
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
-  const { mode, requestCamera, useMouse, cameraVideoRef } = input;
+  const { mode, requestCamera, useMouse, cameraVideoRef, trackingUnstable } = input;
 
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
@@ -196,6 +196,9 @@ export function useCoordinator(
     // this to switch the coordinator's driving signals to ghost positions during
     // preview while still falling back to live hand tracking during attempt.
     cameraSignalRef: input.signalRef,
+    // True when camera tracking has been noisy for a sustained stretch —
+    // usually poor lighting. UI surfaces this as a "find better light" hint.
+    trackingUnstable,
     // The angle-derived note/quality selection the audio path actually plays.
     // The recorder samples this (not raw x) so a recording matches what was heard.
     selectedRef,

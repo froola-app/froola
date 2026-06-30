@@ -10,6 +10,7 @@ import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
 import LessonHUD from './LessonHUD';
 import StepResultScreen from './StepResultScreen';
 import CompletionScreen from './CompletionScreen';
+import TrackingWarning from '../TrackingWarning';
 
 const INITIAL_INPUT: InputMode = 'asking';
 
@@ -42,6 +43,7 @@ export default function LearnShell() {
     selectedRef,
     engineRef,
     cameraSignalRef,
+    trackingUnstable,
   } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, drivingRef, undefined, ghostSignalsRef);
 
   // Keep a ref to the current phase so the RAF below can read it without
@@ -136,6 +138,8 @@ export default function LearnShell() {
       {runner.phase !== 'complete' && (
         <button className="lesson-exit-btn" onClick={handleExit}>✕ Exit</button>
       )}
+
+      {mode === 'camera' && trackingUnstable && <TrackingWarning />}
 
       {runner.phase === 'idle' && (
         <div className="lesson-start-screen">
