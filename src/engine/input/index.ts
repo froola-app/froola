@@ -157,11 +157,28 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       // Prevents the orb from snapping to the 0.5,0.5 default when a hand
       // first appears or briefly drops out (e.g. due to handedness flipping).
       const REAPPEAR_GAP_MS = 300;
-      type HandState = { x: number; y: number; lastSeenMs: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
+      // A real hand can't teleport more than this fraction of the screen in a
+      // single ~33ms inference tick. A single noisy/low-confidence detection
+      // (motion blur, brief occlusion) can land anywhere, including near
+      // (0.5, 0.5) — without a clamp, that one bad frame tugs the EMA toward
+      // the screen centre and shows up as a visible jitter/snap. Frames whose
+      // jump exceeds this are treated as noise and held; if the jump persists
+      // for MAX_REJECT_STREAK frames in a row it's accepted as real movement
+      // (e.g. an intentional fast swing, or hands crossing sides) so legitimate
+      // motion never gets stuck.
+      const MAX_JUMP = 0.28;
+      const MAX_REJECT_STREAK = 2;
+      type HandState = { x: number; y: number; lastSeenMs: number; rejectStreak: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
       const smooth: Record<'left' | 'right', HandState> = {
-        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
-        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
+        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, rejectStreak: 0, wasFist: false, frozenX: null, frozenY: null },
+        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, rejectStreak: 0, wasFist: false, frozenX: null, frozenY: null },
       };
+      // Sticky left/right assignment for the single-hand case — without this,
+      // a lone hand hovering near the screen's horizontal centre can flip
+      // its assigned id every frame, each flip briefly spawning a phantom
+      // orb near (0.5, *) on the newly-assigned side.
+      let soloId: 'left' | 'right' | null = null;
+      const SOLO_HYSTERESIS = 0.05;
 
       function isFist(lm: { x: number; y: number; z: number }[]): boolean {
         const wrist = lm[0];
@@ -215,7 +232,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
           if (detections.length === 2) {
             ids = detections[0].rx <= detections[1].rx ? ['left', 'right'] : ['right', 'left'];
           } else if (detections.length === 1) {
-            ids = [detections[0].rx < 0.5 ? 'left' : 'right'];
+            const rx0 = detections[0].rx;
+            if (soloId === null) {
+              soloId = rx0 < 0.5 ? 'left' : 'right';
+            } else if (soloId === 'left' && rx0 > 0.5 + SOLO_HYSTERESIS) {
+              soloId = 'right';
+            } else if (soloId === 'right' && rx0 < 0.5 - SOLO_HYSTERESIS) {
+              soloId = 'left';
+            }
+            ids = [soloId];
           } else {
             ids = [];
           }
@@ -234,14 +259,25 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
             if (!fist) {
               if (isNew) {
                 s.x = rx; s.y = ry;
+                s.rejectStreak = 0;
               } else {
-                s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
-                s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+                const jump = Math.hypot(rx - s.x, ry - s.y);
+                if (jump > MAX_JUMP && s.rejectStreak < MAX_REJECT_STREAK) {
+                  // Implausible single-frame jump — likely a noisy/misclassified
+                  // detection. Hold the last good position instead of blending
+                  // toward it.
+                  s.rejectStreak++;
+                } else {
+                  s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
+                  s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+                  s.rejectStreak = 0;
+                }
               }
             } else if (isNew) {
               // Fist on reappearance: seed EMA at actual position so the freeze
               // captures the real hand location, not the stale center default.
               s.x = rx; s.y = ry;
+              s.rejectStreak = 0;
             }
 
             // Freeze reported position on fist-close; unfreeze on fist-open
