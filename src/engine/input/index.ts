@@ -137,10 +137,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
 
       // Per-hand EMA + fist-lock state
       const SMOOTH = 0.35;
-      type HandState = { x: number; y: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
+      // How long (ms) a hand must be absent before we re-initialize its EMA
+      // on the next appearance instead of blending from the stale position.
+      // Prevents the orb from snapping to the 0.5,0.5 default when a hand
+      // first appears or briefly drops out (e.g. due to handedness flipping).
+      const REAPPEAR_GAP_MS = 300;
+      type HandState = { x: number; y: number; lastSeenMs: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
       const smooth: Record<'left' | 'right', HandState> = {
-        left:  { x: 0.5, y: 0.5, wasFist: false, frozenX: null, frozenY: null },
-        right: { x: 0.5, y: 0.5, wasFist: false, frozenX: null, frozenY: null },
+        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
+        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
       };
 
       function isFist(lm: { x: number; y: number; z: number }[]): boolean {
@@ -184,10 +189,22 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
             const fist = isFist(lm);
             const s = smooth[handId];
 
-            // Only update EMA when hand is open — curled fingertip coords are invalid
+            // Jump EMA to actual position on first appearance or after a tracking
+            // gap — prevents the orb from drifting in from center (0.5, 0.5).
+            const isNew = now - s.lastSeenMs > REAPPEAR_GAP_MS;
+            s.lastSeenMs = now;
+
             if (!fist) {
-              s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
-              s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+              if (isNew) {
+                s.x = rx; s.y = ry;
+              } else {
+                s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
+                s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+              }
+            } else if (isNew) {
+              // Fist on reappearance: seed EMA at actual position so the freeze
+              // captures the real hand location, not the stale center default.
+              s.x = rx; s.y = ry;
             }
 
             // Freeze reported position on fist-close; unfreeze on fist-open
