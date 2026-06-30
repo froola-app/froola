@@ -13,7 +13,14 @@ function savedMode(): InputMode | null {
   } catch { return null; }
 }
 
-export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void; cameraVideoRef: React.RefObject<HTMLVideoElement | null> } {
+export function useGestureInput(initialMode: InputMode = 'asking'): {
+  signalRef: React.RefObject<GestureSignal[]>;
+  mode: InputMode;
+  requestCamera: () => void;
+  useMouse: () => void;
+  cameraVideoRef: React.RefObject<HTMLVideoElement | null>;
+  nodEventRef: React.RefObject<'up' | 'down' | null>;
+} {
   const signalRef = useRef<GestureSignal[]>([]);
   // Restore persisted choice so the user isn't re-prompted on every navigation
   const [mode, setMode] = useState<InputMode>(() =>
@@ -21,6 +28,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
   );
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const nodEventRef = useRef<'up' | 'down' | null>(null);
 
   function switchToMouse() {
     try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
@@ -94,7 +102,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
     const INFERENCE_INTERVAL = 33; // ms (~30 fps inference)
 
     async function startCamera() {
-      const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      const { HandLandmarker, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
 
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
@@ -118,7 +126,19 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
         minTrackingConfidence: 0.5,
       });
 
-      if (cancelled) { landmarker.close(); return; }
+      const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numFaces: 1,
+        minFaceDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
+
+      if (cancelled) { landmarker.close(); faceLandmarker.close(); return; }
 
       const video = document.createElement('video');
       video.playsInline = true;
@@ -134,10 +154,11 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
         try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
         setMode('mouse');
         landmarker.close();
+        faceLandmarker.close();
         return;
       }
 
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); return; }
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); faceLandmarker.close(); return; }
 
       video.srcObject = stream;
       video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transform:scaleX(-1);';
@@ -147,6 +168,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
+        faceLandmarker.close();
         return;
       }
 
@@ -175,6 +197,16 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
         }
         return curled >= 3;
       }
+
+      const FACE_INTERVAL = 100;
+      let lastFaceInferenceTime = 0;
+      let nodSmoothedY = 0.5;
+      let nodPrevY = 0.5;
+      let nodState: 'IDLE' | 'NODDING_DOWN' | 'NODDING_UP' = 'IDLE';
+      let nodDebounceUntil = 0;
+      const NOD_DOWN_THRESHOLD = 0.018;
+      const NOD_UP_THRESHOLD = -0.018;
+      const FACE_SMOOTH = 0.4;
 
       function loop() {
         if (cancelled) return;
@@ -244,6 +276,34 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
             });
           }
           signalRef.current = signals;
+
+          // Face inference at ~10fps for nod detection
+          if (now - lastFaceInferenceTime >= FACE_INTERVAL) {
+            const faceResult = faceLandmarker.detectForVideo(video, now);
+            lastFaceInferenceTime = now;
+
+            if (faceResult.faceLandmarks.length > 0) {
+              const noseTip = faceResult.faceLandmarks[0][1];
+              nodSmoothedY = FACE_SMOOTH * noseTip.y + (1 - FACE_SMOOTH) * nodSmoothedY;
+              const dy = nodSmoothedY - nodPrevY;
+              nodPrevY = nodSmoothedY;
+
+              if (now > nodDebounceUntil) {
+                if (nodState === 'IDLE') {
+                  if (dy > NOD_DOWN_THRESHOLD) nodState = 'NODDING_DOWN';
+                  else if (dy < NOD_UP_THRESHOLD) nodState = 'NODDING_UP';
+                } else if (nodState === 'NODDING_DOWN' && dy < 0) {
+                  nodEventRef.current = 'down';
+                  nodState = 'IDLE';
+                  nodDebounceUntil = now + 750;
+                } else if (nodState === 'NODDING_UP' && dy > 0) {
+                  nodEventRef.current = 'up';
+                  nodState = 'IDLE';
+                  nodDebounceUntil = now + 750;
+                }
+              }
+            }
+          }
         }
         animFrameId = requestAnimationFrame(loop);
       }
@@ -252,6 +312,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       cleanupRef.current = () => {
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
+        faceLandmarker.close();
         cancelAnimationFrame(animFrameId);
         if (video.parentNode) video.parentNode.removeChild(video);
       };
@@ -266,5 +327,5 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef };
+  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, nodEventRef };
 }
