@@ -192,10 +192,6 @@ export function useCoordinator(
     requestCamera,
     useMouse,
     signalRef,
-    // Raw camera/mouse signals before any external override. LearnShell uses
-    // this to switch the coordinator's driving signals to ghost positions during
-    // preview while still falling back to live hand tracking during attempt.
-    cameraSignalRef: input.signalRef,
     // True when camera tracking has been noisy for a sustained stretch —
     // usually poor lighting. UI surfaces this as a "find better light" hint.
     trackingUnstable,

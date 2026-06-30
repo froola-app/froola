@@ -1,7 +1,9 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal } from '../types';
+import type { GestureSignal, Recording } from '../types';
 import type { DialSelection } from '../renderer';
+import type { AudioEngine } from '../audio';
+import { buildCommand } from '../music';
 import { sampleEndTimes, signalsAt } from '../recording/replayPlayer';
 import { scoreFrame, meanScore } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
@@ -22,10 +24,32 @@ export type LessonRunnerAPI = {
 const COUNTDOWN_SECS = 3;
 const SCORE_INTERVAL_MS = 100;
 
+// Coalesce consecutive identical-chord samples into segments, each marking
+// when (relative to preview start) the chord changes. Used to schedule
+// direct engine.play() calls for the "listen to the target" preview —
+// driving audio this way (instead of simulating a hand position on the
+// wheels and letting the normal hit-test pick it up) sidesteps any
+// dependency on render/animation-frame timing, so the preview is reliably
+// audible regardless of frame scheduling.
+type PreviewSegment = { atMs: number; noteIdx: number; qualityIdx: number };
+
+function buildPreviewSegments(recording: Recording): PreviewSegment[] {
+  const segments: PreviewSegment[] = [];
+  let acc = 0;
+  for (const sample of recording.samples) {
+    const last = segments[segments.length - 1];
+    if (!last || last.noteIdx !== sample.noteIdx || last.qualityIdx !== sample.qualityIdx) {
+      segments.push({ atMs: acc, noteIdx: sample.noteIdx, qualityIdx: sample.qualityIdx });
+    }
+    acc += sample.dt;
+  }
+  return segments;
+}
+
 export function useLessonRunner(
   lesson: Lesson,
   liveSelectedRef: RefObject<DialSelection>,
-  _engineRef: RefObject<unknown>,  // reserved for future preview audio playback
+  engineRef: RefObject<AudioEngine | null>,
   canvasRef: RefObject<HTMLCanvasElement | null>,
   ghostSignalsRef: RefObject<GestureSignal[]>,
 ): LessonRunnerAPI {
@@ -40,6 +64,7 @@ export function useLessonRunner(
   const attemptStartRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
+  const previewTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Keep refs in sync with state so callbacks always read current values
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -48,7 +73,10 @@ export function useLessonRunner(
   const clearTimers = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-  }, []);
+    previewTimeoutsRef.current.forEach(clearTimeout);
+    previewTimeoutsRef.current = [];
+    engineRef.current?.silence('synth');
+  }, [engineRef]);
 
   useEffect(() => clearTimers, [clearTimers]);
 
@@ -85,11 +113,23 @@ export function useLessonRunner(
     const previewStart = performance.now();
     startGhostLoop(stepIdx, previewStart);
 
+    // Play the target chord sequence so "listen to the target" is actually
+    // audible. Scheduled directly against the engine rather than simulated
+    // through a fake hand position on the wheels.
+    const engine = engineRef.current;
+    if (engine) {
+      previewTimeoutsRef.current = buildPreviewSegments(step.targetRecording).map(seg =>
+        setTimeout(() => {
+          engine.play(buildCommand(seg.noteIdx, seg.qualityIdx, 0.5, 0, lesson.musicConfig), 'synth');
+        }, seg.atMs)
+      );
+    }
+
     // After the target recording finishes, move to countdown
     timerRef.current = setTimeout(() => {
       startCountdown(stepIdx);
     }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
-  }, [lesson, clearTimers, startGhostLoop]);
+  }, [lesson, clearTimers, startGhostLoop, engineRef]);
 
   // ── Countdown phase ────────────────────────────────────────────────────────
   const startCountdown = useCallback((stepIdx: number) => {
