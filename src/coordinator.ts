@@ -144,8 +144,10 @@ export function useCoordinator(
         nodEventRef.current = null;
       }
 
-      // Both hands on their wheels = chord plays (left=note, right=quality).
-      const touching = leftInDial && rightInDial;
+      // Left hand on its wheel = chord plays. Right hand on its wheel modifies
+      // the chord quality; if absent, a plain triad (qualIdx 0) is used.
+      const touching = leftInDial;
+      const effectiveQualIdx = rightInDial ? qualIdx : 0;
       const nowMs = performance.now();
       if (touching) lastTouchMs = nowMs;
       // A brief loss of contact (crossing the centre hub between slices, a dropped
@@ -156,7 +158,7 @@ export function useCoordinator(
       if (touching && engine) {
         const y = left?.present ? left.y : (right?.y ?? lastY);
         const yChanged = instrMode === 'synth' && Math.abs(y - lastY) > REGISTER_THRESHOLD;
-        const selChanged = noteIdx !== lastNoteIdx || qualIdx !== lastQualIdx;
+        const selChanged = noteIdx !== lastNoteIdx || effectiveQualIdx !== lastQualIdx;
         const octChanged = octave !== lastOctave;
         // Re-voice a held chord when the key/scale changes too (otherwise
         // changing the dropdown mid-hold does nothing until the next note).
@@ -164,9 +166,9 @@ export function useCoordinator(
         const musicChanged = musicKey !== lastMusicKey;
 
         if (!sounding || selChanged || yChanged || octChanged || musicChanged) {
-          engine.play(buildCommand(noteIdx, qualIdx, y, octave, music), instrMode);
+          engine.play(buildCommand(noteIdx, effectiveQualIdx, y, octave, music), instrMode);
           lastNoteIdx = noteIdx;
-          lastQualIdx = qualIdx;
+          lastQualIdx = effectiveQualIdx;
           lastY = y;
           lastOctave = octave;
           lastMusicKey = musicKey;
