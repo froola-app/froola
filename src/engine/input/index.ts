@@ -204,8 +204,8 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       let nodPrevY = 0.5;
       let nodState: 'IDLE' | 'NODDING_DOWN' | 'NODDING_UP' = 'IDLE';
       let nodDebounceUntil = 0;
-      const NOD_DOWN_THRESHOLD = 0.018;
-      const NOD_UP_THRESHOLD = -0.018;
+      const NOD_DOWN_THRESHOLD = 0.010;
+      const NOD_UP_THRESHOLD = -0.010;
       const FACE_SMOOTH = 0.4;
 
       function loop() {
