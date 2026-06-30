@@ -208,3 +208,35 @@ describe('AudioEngine — resume() / suspend()', () => {
     expect(mockAudioContext.suspend).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('AudioEngine — setVolume', () => {
+  it('ramps masterGain to clamped value over 80ms', () => {
+    const engine = new AudioEngine()
+    const gainNode = mockAudioContext.createGain.mock.results[0].value
+    engine.setVolume(0.5)
+    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.5,
+      expect.any(Number),
+    )
+  })
+
+  it('clamps volume above 1.0 to 1.0', () => {
+    const engine = new AudioEngine()
+    const gainNode = mockAudioContext.createGain.mock.results[0].value
+    engine.setVolume(1.5)
+    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      1.0,
+      expect.any(Number),
+    )
+  })
+
+  it('clamps volume below 0.0 to 0.0', () => {
+    const engine = new AudioEngine()
+    const gainNode = mockAudioContext.createGain.mock.results[0].value
+    engine.setVolume(-0.2)
+    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      0.0,
+      expect.any(Number),
+    )
+  })
+})
