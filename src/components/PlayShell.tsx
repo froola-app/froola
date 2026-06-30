@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, type ScaleName, type MusicConfig } from '../engine/music';
@@ -56,6 +56,7 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
 
 export default function PlayShell({ initialInput: inputProp }: { initialInput?: InputMode } = {}) {
   const location = useLocation();
+  const navigate = useNavigate();
   // Input mode comes from the landing page — either passed directly as a prop
   // (rendered inline) or via router state. Fall back to the prompt otherwise.
   const initialInput = inputProp ?? ((location.state as { input?: InputMode } | null)?.input) ?? 'asking';
@@ -103,6 +104,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
+      <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       {(mode === 'camera' || mode === 'mouse') && <GestureCoach mode={mode} />}
       <div className="hud-bottom">
         <select

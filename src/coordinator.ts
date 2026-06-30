@@ -23,7 +23,9 @@ export function useCoordinator(
   // signals are ignored, so live and replay share one audio/render pipeline.
   externalSignalRef?: RefObject<GestureSignal[]>,
   // Current key + scale; selects the 7 wheel notes. Defaults to C major.
-  musicRef?: RefObject<MusicConfig>
+  musicRef?: RefObject<MusicConfig>,
+  // Optional ghost orb signals for lesson mode — translucent target-hand indicators.
+  ghostSignalsRef?: RefObject<GestureSignal[]>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -175,7 +177,8 @@ export function useCoordinator(
     analyserRef,
     selectedRef,
     undefined,
-    musicRef
+    musicRef,
+    ghostSignalsRef,
   );
 
   function preloadSampler(m: InstrumentMode) {

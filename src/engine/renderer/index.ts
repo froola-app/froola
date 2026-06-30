@@ -129,7 +129,8 @@ function drawOrb(
   signal: GestureSignal,
   w: number,
   h: number,
-  amplitude: number
+  amplitude: number,
+  isGhost = false,
 ) {
   const cx = signal.x * w;
   const cy = signal.y * h;
@@ -137,6 +138,26 @@ function drawOrb(
   const glowRadius = baseRadius + amplitude * 40;
 
   const isLeft = signal.handId === 'left';
+
+  if (isGhost) {
+    // Ghost orb: dashed ring only — shows where the target hand should be
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowRadius * 1.4, 0, Math.PI * 2);
+    ctx.strokeStyle = isLeft ? 'rgba(180,220,255,1)' : 'rgba(255,220,140,1)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = isLeft ? 'rgba(180,220,255,0.6)' : 'rgba(255,220,140,0.6)';
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
   const stop0 = isLeft ? 'rgba(200,230,255,0.9)' : 'rgba(255,240,200,0.9)';
   const stop1 = isLeft ? 'rgba(100,180,255,0.4)' : 'rgba(245,200,100,0.4)';
   const stop2 = isLeft ? 'rgba(100,180,255,0)'   : 'rgba(245,158,11,0)';
@@ -172,8 +193,10 @@ export function useRenderer(
   analyserRef: RefObject<AnalyserNode | null>,
   selectedRef: RefObject<DialSelection>,
   commandRef?: RefObject<MusicalCommand | null>,
-  // Current key + scale, so the note wheel labels match what's playing.
-  musicRef?: RefObject<MusicConfig>
+  musicRef?: RefObject<MusicConfig>,
+  // Optional ghost orbs — translucent dashed rings showing lesson target positions.
+  // Drawn before live orbs so live hands always appear on top.
+  ghostSignalsRef?: RefObject<GestureSignal[]>,
 ): void {
   const particlesRef = useRef(new ParticleSystem());
 
@@ -284,7 +307,14 @@ export function useRenderer(
       // Publish slice selection so the coordinator can drive audio
       selectedRef.current = { noteIdx, qualIdx };
 
-      // Orbs
+      // Ghost orbs (lesson target) drawn first so live hands appear on top
+      const ghostSignals = ghostSignalsRef?.current ?? [];
+      for (const gs of ghostSignals) {
+        if (!gs.present) continue;
+        drawOrb(ctx, gs, w, h, 0, true);
+      }
+
+      // Live orbs
       for (const signal of signals) {
         if (!signal.present) continue;
         drawOrb(ctx, signal, w, h, amplitude);
@@ -299,5 +329,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, signalsRef, analyserRef, commandRef]);
+  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef]);
 }
