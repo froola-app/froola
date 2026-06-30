@@ -4,17 +4,31 @@ import type { GestureSignal } from '../types';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
+const INPUT_MODE_KEY = 'froola-input-mode';
+
+function savedMode(): InputMode | null {
+  try {
+    const v = localStorage.getItem(INPUT_MODE_KEY);
+    return v === 'camera' || v === 'mouse' ? v : null;
+  } catch { return null; }
+}
+
 export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef: React.RefObject<GestureSignal[]>; mode: InputMode; requestCamera: () => void; useMouse: () => void; cameraVideoRef: React.RefObject<HTMLVideoElement | null> } {
   const signalRef = useRef<GestureSignal[]>([]);
-  const [mode, setMode] = useState<InputMode>(initialMode);
+  // Restore persisted choice so the user isn't re-prompted on every navigation
+  const [mode, setMode] = useState<InputMode>(() =>
+    initialMode === 'asking' ? (savedMode() ?? 'asking') : initialMode
+  );
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   function switchToMouse() {
+    try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
     setMode('mouse');
   }
 
   function requestCamera() {
+    try { localStorage.setItem(INPUT_MODE_KEY, 'camera'); } catch { /* ignore */ }
     setMode('camera');
   }
 
@@ -117,6 +131,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
           video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
         });
       } catch {
+        try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
         setMode('mouse');
         landmarker.close();
         return;
