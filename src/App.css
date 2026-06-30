@@ -501,7 +501,277 @@ body {
   transition: width 0.1s linear;
 }
 
-/* ── Landing v2 ─────────────────────────────────────────────── */
+/* ── Landing v3 ─────────────────────────────────────────────── */
+
+.lp3 {
+  position: fixed;
+  inset: 0;
+  background: #FAFAF8;
+  color: #111111;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.lp3::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 55% at 50% 42%, rgba(212, 80, 10, 0.07), rgba(212, 80, 10, 0) 70%);
+}
+
+.lp3__nav {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.75rem 3.5rem;
+}
+
+@media (max-width: 640px) {
+  .lp3__nav { padding: 1.25rem 1.5rem; }
+}
+
+.lp3__nav-link {
+  font-size: 0.875rem;
+  color: #888888;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.lp3__nav-link:hover { color: #111111; }
+
+.lp3__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem 3.5rem;
+}
+
+.lp3__headline {
+  margin-top: 3rem;
+  font-size: clamp(1.8rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.0;
+  color: #111111;
+}
+
+.lp3__wave-wrap {
+  margin: 2.5rem 0 3rem;
+}
+
+.lp3__wave {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 48px;
+  width: 320px;
+  margin: 0 auto;
+}
+
+.lp3__wave-bar {
+  flex: 1;
+  min-width: 0;
+  border-radius: 2px;
+  transition: height 0ms;
+}
+
+.lp3__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lp3__btn-primary,
+.lp3__btn-secondary {
+  width: 220px;
+  padding: 0.875rem 0;
+  border-radius: 2px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.lp3__btn-primary {
+  border: none;
+  background: #111111;
+  color: #FAFAF8;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: opacity 0.15s;
+}
+
+.lp3__btn-primary:hover { opacity: 0.85; }
+
+.lp3__btn-secondary {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: transparent;
+  color: #111111;
+  font-weight: 400;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.lp3__btn-secondary:hover {
+  color: #888888;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.lp3__privacy {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #aaaaaa;
+}
+
+.lp3__scroll-hint {
+  margin-top: 3rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #aaaaaa;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.lp3__scroll-hint:hover { color: #111111; }
+
+
+.lp3__step-num {
+  display: block;
+  font-size: 0.875rem;
+  color: #D4500A;
+  margin-bottom: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.lp3__step-heading {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #111111;
+}
+
+.lp3__step-body {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #888888;
+  font-weight: 300;
+}
+
+.lp3__scroll-section {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .lp3__scroll-section { padding: 3rem 4rem; }
+}
+
+.lp3__label {
+  font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.0;
+  color: #111111;
+  margin-bottom: 2.5rem;
+}
+
+/* Steps grid */
+.lp3__steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem 2.5rem;
+  max-width: 48rem;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .lp3__steps { grid-template-columns: 1fr; gap: 3rem; }
+}
+
+.lp3__step-num {
+  display: block;
+  font-size: 0.6875rem;
+  letter-spacing: 0.15em;
+  color: #D4500A;
+  margin-bottom: 1.25rem;
+}
+
+.lp3__step-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111111;
+  margin-bottom: 0.5rem;
+}
+
+.lp3__step-body {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #888888;
+  font-weight: 300;
+}
+
+/* Prose sections (why / contact) */
+.lp3__prose {
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lp3__prose-body {
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #888888;
+  font-weight: 300;
+}
+
+.lp3__byline {
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: #D4500A;
+  text-decoration: none;
+}
+
+.lp3__email {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #D4500A;
+  text-decoration: none;
+  margin-bottom: 2rem;
+}
+
+.lp3__email:hover { text-decoration: underline; }
+
+.lp3__actions--contact { margin-top: 0; }
+
+.lp3__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 2.5rem 1.5rem;
+}
+
+.lp3__footer-copy {
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.3);
+}
+
+/* ── Landing v2 legacy (SignInPage only) ────────────────────── */
 
 .landing-v2 {
   position: fixed;
@@ -511,7 +781,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Glow canvas stays pinned to the viewport while the content scrolls over it. */
 .landing-v2__canvas {
   position: fixed;
   inset: 0;
@@ -519,69 +788,10 @@ body {
   z-index: 0;
 }
 
-.landing-v2__scroll {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-/* Hero fills the first screen; later sections flow underneath. */
-.landing-v2__hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 1.1rem;
-  padding: 4rem 1.5rem 3rem;
-}
-
-/* Slim top bar holding a contact shortcut */
-.landing-v2__topbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 1.25rem 1.5rem 0;
-}
-
-.landing-v2__topbar-link {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #555555;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.landing-v2__topbar-link:hover {
-  color: #D4500A;
-  border-color: #D4500A;
-}
-
-.landing-v2__headline {
-  font-size: clamp(2.1rem, 6vw, 3.5rem);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
-  color: #111111;
-}
-
 .landing-v2__tagline {
   font-size: 0.95rem;
   color: #888888;
   font-weight: 400;
-  letter-spacing: 0.01em;
-}
-
-.landing-v2__lede {
-  max-width: 460px;
-  color: #555555;
-  font-size: 1.02rem;
-  line-height: 1.55;
 }
 
 .landing-v2__actions {
@@ -589,172 +799,6 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.landing-v2__note {
-  font-size: 0.8rem;
-  color: #a8a59d;
-}
-
-.landing-v2__scroll-hint {
-  margin-top: 1rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #b6b3ab;
-  animation: landing-bob 2.4s ease-in-out infinite;
-}
-
-@keyframes landing-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(4px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .landing-v2__scroll-hint { animation: none; }
-}
-
-/* Content sections under the hero */
-.landing-v2__section,
-.landing-v2__mission,
-.landing-v2__contact {
-  max-width: 620px;
-  margin: 0 auto;
-  padding: 3.5rem 1.5rem;
-  text-align: center;
-}
-
-.landing-v2__section-title {
-  font-size: clamp(1.4rem, 3.5vw, 1.9rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #111111;
-  margin-bottom: 1.5rem;
-}
-
-/* How-it-works: a readable numbered list, no busy card grid */
-.landing-v2__steps {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  text-align: left;
-  max-width: 520px;
-  margin: 0 auto;
-}
-
-.landing-v2__step {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.landing-v2__step-num {
-  flex-shrink: 0;
-  width: 1.9rem;
-  height: 1.9rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: rgba(212, 80, 10, 0.1);
-  color: #D4500A;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.landing-v2__step-text {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: #444444;
-  padding-top: 0.2rem;
-}
-
-.landing-v2__steps-more {
-  margin-top: 1.75rem;
-  font-size: 0.88rem;
-  color: #999999;
-}
-
-/* Mission */
-.landing-v2__mission-body {
-  font-size: 1.05rem;
-  line-height: 1.65;
-  color: #444444;
-}
-
-.landing-v2__mission-by {
-  margin-top: 1rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: #D4500A;
-}
-
-/* Contact */
-.landing-v2__contact {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  padding-bottom: 5rem;
-}
-
-.landing-v2__contact .landing-v2__section-title { margin-bottom: 0.25rem; }
-
-.landing-v2__contact-body {
-  max-width: 440px;
-  font-size: 1rem;
-  line-height: 1.55;
-  color: #555555;
-}
-
-.landing-v2__email {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #D4500A;
-  text-decoration: none;
-  border-bottom: 1px solid rgba(212, 80, 10, 0.35);
-  transition: border-color 0.15s;
-}
-
-.landing-v2__email:hover { border-color: #D4500A; }
-
-.landing-v2__btn-primary {
-  padding: 0.8rem 2.5rem;
-  border-radius: 2px;
-  border: none;
-  background: #111111;
-  color: #FAFAF8;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.landing-v2__btn-primary:hover { background: #D4500A; }
-
-.landing-v2__btn-secondary {
-  padding: 0.8rem 2rem;
-  border-radius: 2px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #ffffff;
-  color: #111111;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.landing-v2__btn-secondary:hover {
-  border-color: #D4500A;
-  box-shadow: 0 0 0 1px #D4500A;
 }
 
 .landing-v2__btn-google {

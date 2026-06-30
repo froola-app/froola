@@ -12,10 +12,9 @@ vi.mock('./PlayShell', () => ({
 }));
 
 describe('LandingPage', () => {
-  it('renders the tagline and both input choices', () => {
+  it('renders the headline and both input choices', () => {
     render(<LandingPage />);
-    expect(screen.getByText('play music with your hands')).toBeInTheDocument();
-    // Hero and the closing CTA each render the choices, so there are two of each.
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /enable camera/i }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i }).length).toBeGreaterThan(0);
   });

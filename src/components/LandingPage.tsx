@@ -1,102 +1,158 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { InputMode } from '../engine/input';
 import FroolaLogo from './FroolaLogo';
-import { useLandingCanvas } from '../hooks/useLandingCanvas';
 import PlayShell from './PlayShell';
+
+const WAVE_BARS = 40;
+const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
 const isTouchDevice = () => navigator.maxTouchPoints > 0;
 
-const CONTACT_EMAIL = 'supportfroola@gmail.com';
-
 const STEPS = [
-  'Raise your hands to the camera. Two dials appear on screen.',
-  'Your left hand moves around one dial to pick the note. Your right hand moves around the other to pick the chord.',
-  'Lift your hands higher for higher notes, lower them for deeper ones.',
-  'Choose synth or piano, then record what you play and share it with a link.',
+  {
+    num: '01',
+    title: 'Allow camera',
+    body: 'Nothing is recorded or sent anywhere — all processing happens locally in your browser.',
+  },
+  {
+    num: '02',
+    title: 'Move your hands',
+    body: 'Horizontal position picks the chord. Vertical height shapes the melody.',
+  },
+  {
+    num: '03',
+    title: 'Make music',
+    body: 'Real chords, real harmony, in real time. Every position sounds good by design.',
+  },
 ];
+
+function WaveVisual() {
+  const barsRef = useRef<HTMLDivElement[]>([]);
+  const frameRef = useRef<number>(0);
+
+  useEffect(() => {
+    const animate = (ts: number) => {
+      const t = ts / 1000;
+      barsRef.current.forEach((bar, i) => {
+        if (!bar) return;
+        const phase = (i / WAVE_BARS) * Math.PI * 3;
+        const h =
+          12 +
+          Math.sin(phase + t * 1.4) * 18 +
+          Math.sin(phase * 0.6 + t * 0.8) * 12 +
+          Math.sin(phase * 1.4 + t * 2.2) * 6;
+        bar.style.height = `${Math.max(3, h)}px`;
+      });
+      frameRef.current = requestAnimationFrame(animate);
+    };
+    frameRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frameRef.current);
+  }, []);
+
+  return (
+    <div className="lp3__wave">
+      {Array.from({ length: WAVE_BARS }).map((_, i) => (
+        <div
+          key={i}
+          ref={(el) => { if (el) barsRef.current[i] = el; }}
+          className="lp3__wave-bar"
+          style={{ background: i % 7 === 0 ? '#D4500A' : 'rgba(17,17,17,0.12)' }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const [input, setInput] = useState<InputMode | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useLandingCanvas(canvasRef);
   const touch = isTouchDevice();
 
-  const choose = (mode: InputMode) => setInput(mode);
-
-  // Start playing inline, no URL change, same screen.
   if (input) return <PlayShell initialInput={input} />;
 
-  const actions = (
-    <div className="landing-v2__actions">
-      <button className="landing-v2__btn-primary" onClick={() => choose('camera')}>
-        Enable camera
-      </button>
-      <button className="landing-v2__btn-secondary" onClick={() => choose('mouse')}>
-        {touch ? 'Use touch instead' : 'Use mouse instead'}
-      </button>
-    </div>
-  );
-
   return (
-    <div className="landing-v2">
-      <canvas ref={canvasRef} className="landing-v2__canvas" />
+    <div className="lp3">
+      {/* Nav */}
+      <nav className="lp3__nav">
+        <a href={`mailto:${CONTACT_EMAIL}`} className="lp3__nav-link">
+          Contact
+        </a>
+      </nav>
 
-      <div className="landing-v2__scroll">
-        <header className="landing-v2__topbar">
-          <a className="landing-v2__topbar-link" href={`mailto:${CONTACT_EMAIL}`}>
-            Contact
-          </a>
-        </header>
+      {/* Hero */}
+      <section className="lp3__hero">
+        <FroolaLogo size={56} />
 
-        <main>
-          <section className="landing-v2__hero">
-            <FroolaLogo size={64} />
-            <h1 className="landing-v2__headline">Make music with your hands.</h1>
-            <p className="landing-v2__tagline">play music with your hands</p>
-            <p className="landing-v2__lede">
-              Froola turns the way you move into chords and melody, right in your browser.
-              Nothing to buy, no theory to learn. Move your hands and listen.
-            </p>
-            {actions}
-            <p className="landing-v2__note">Your camera is processed on your device.</p>
-            <span className="landing-v2__scroll-hint" aria-hidden="true">scroll to see how it works</span>
-          </section>
+        <h1 className="lp3__headline">Make music<br />with your hands.</h1>
 
-          <section className="landing-v2__section">
-            <h2 className="landing-v2__section-title">How it works</h2>
-            <ol className="landing-v2__steps">
-              {STEPS.map((step, i) => (
-                <li key={i} className="landing-v2__step">
-                  <span className="landing-v2__step-num">{i + 1}</span>
-                  <span className="landing-v2__step-text">{step}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="landing-v2__steps-more">More ways to play are on the way.</p>
-          </section>
+        <div className="lp3__wave-wrap">
+          <WaveVisual />
+        </div>
 
-          <section className="landing-v2__mission">
-            <h2 className="landing-v2__section-title">Why we built it</h2>
-            <p className="landing-v2__mission-body">
-              We think making music should be open to everyone, not just people who own an
-              instrument or took years of lessons. Froola is our attempt at that: a way to
-              play just by moving your hands.
-            </p>
-            <p className="landing-v2__mission-by">Built by two high school students.</p>
-          </section>
+        <div className="lp3__actions">
+          <button className="lp3__btn-primary" onClick={() => setInput('camera')}>
+            Enable camera
+          </button>
+          <button className="lp3__btn-secondary" onClick={() => setInput('mouse')}>
+            {touch ? 'Use touch instead' : 'Use mouse instead'}
+          </button>
+        </div>
 
-          <section className="landing-v2__contact">
-            <h2 className="landing-v2__section-title">Get in touch</h2>
-            <p className="landing-v2__contact-body">
-              Have a question, an idea, or just want to say hi? We would love to hear from you.
-            </p>
-            <a className="landing-v2__email" href={`mailto:${CONTACT_EMAIL}`}>
-              {CONTACT_EMAIL}
-            </a>
-            {actions}
-          </section>
-        </main>
-      </div>
+        <a href="#how" className="lp3__scroll-hint">
+          Scroll to see how it works
+        </a>
+      </section>
+
+      {/* How it works */}
+      <section id="how" className="lp3__scroll-section">
+        <p className="lp3__label">How it works</p>
+        <div className="lp3__steps">
+          {STEPS.map((step) => (
+            <div key={step.num} className="lp3__step">
+              <span className="lp3__step-num">{step.num}</span>
+              <h3 className="lp3__step-heading">{step.title}</h3>
+              <p className="lp3__step-body">{step.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Why we built it */}
+      <section className="lp3__scroll-section">
+        <p className="lp3__label">Why we built it</p>
+        <div className="lp3__prose">
+          <p className="lp3__prose-body">
+            We think making music should be open to everyone, not just people
+            who own an instrument or took years of lessons. Froola is our
+            attempt at that: a way to play just by moving your hands.
+          </p>
+          <a href="#" className="lp3__byline">Built by two high school students.</a>
+        </div>
+      </section>
+
+      {/* Get in touch */}
+      <section id="contact" className="lp3__scroll-section">
+        <p className="lp3__label">Get in touch</p>
+        <div className="lp3__prose">
+          <p className="lp3__prose-body">
+            Have a question, an idea, or just want to say hi? We would love to
+            hear from you.
+          </p>
+          <a className="lp3__email" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          <div className="lp3__actions lp3__actions--contact">
+            <button className="lp3__btn-primary" onClick={() => setInput('camera')}>
+              Enable camera
+            </button>
+            <button className="lp3__btn-secondary" onClick={() => setInput('mouse')}>
+              {touch ? 'Use touch instead' : 'Use mouse instead'}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="lp3__footer">
+        <span className="lp3__footer-copy">froola © 2026</span>
+      </footer>
     </div>
   );
 }
