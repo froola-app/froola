@@ -53,10 +53,14 @@ function makeCompressor() {
   }
 }
 
+// state defaults to 'running' so existing play()/silence() tests can assert
+// synchronously without needing to resume() first. resume()/suspend()
+// actually flip `state`, like a real AudioContext, so tests that exercise
+// the suspended-on-first-play race (see AudioEngine.test.ts) can simulate it.
 const mockAudioContext = {
   currentTime: 0,
   sampleRate: 44100,
-  state: 'suspended' as AudioContextState,
+  state: 'running' as AudioContextState,
   destination: makeNode(),
   createOscillator: vi.fn().mockImplementation(makeOscillator),
   createGain: vi.fn().mockImplementation(makeGain),
@@ -66,8 +70,12 @@ const mockAudioContext = {
   createConvolver: vi.fn().mockImplementation(makeConvolver),
   createBuffer: vi.fn().mockImplementation(makeBuffer),
   createDynamicsCompressor: vi.fn().mockImplementation(makeCompressor),
-  resume: vi.fn().mockResolvedValue(undefined),
-  suspend: vi.fn().mockResolvedValue(undefined),
+  resume: vi.fn().mockImplementation(async function (this: { state: AudioContextState }) {
+    this.state = 'running'
+  }),
+  suspend: vi.fn().mockImplementation(async function (this: { state: AudioContextState }) {
+    this.state = 'suspended'
+  }),
 }
 
 function MockAudioContext() {

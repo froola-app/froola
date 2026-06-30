@@ -19,6 +19,7 @@ const CMD: MusicalCommand = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockAudioContext.state = 'running'
 })
 
 describe('AudioEngine — construction', () => {
@@ -206,5 +207,40 @@ describe('AudioEngine — resume() / suspend()', () => {
     const engine = new AudioEngine()
     engine.suspend()
     expect(mockAudioContext.suspend).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('AudioEngine — play() while the context is still suspended', () => {
+  // Regression test: play() used to schedule node automation immediately
+  // against ctx.currentTime regardless of ctx.state. If it's called right
+  // after the resume()-on-pointerdown handler but before that resume() has
+  // actually resolved (e.g. the very first chord of a lesson preview), the
+  // scheduled ramp can race the context coming online and some browsers
+  // silently drop it instead of replaying it once running — the chord never
+  // becomes audible. play() must defer the actual scheduling until the
+  // context is confirmed running.
+  it('does not schedule anything synchronously when suspended', () => {
+    mockAudioContext.state = 'suspended'
+    const engine = new AudioEngine()
+    engine.play(CMD)
+
+    mockAudioContext.createOscillator.mock.results.slice(0, 4).forEach(r => {
+      expect(r.value.frequency.linearRampToValueAtTime).not.toHaveBeenCalled()
+    })
+    expect(mockAudioContext.resume).toHaveBeenCalledTimes(1)
+  })
+
+  it('schedules the chord once resume() resolves', async () => {
+    mockAudioContext.state = 'suspended'
+    const engine = new AudioEngine()
+    engine.play(CMD)
+
+    // Flush the resume() promise and the play() re-invocation chained off it.
+    await new Promise(r => setTimeout(r, 0))
+
+    expect(mockAudioContext.state).toBe('running')
+    mockAudioContext.createOscillator.mock.results.slice(0, 4).forEach(r => {
+      expect(r.value.frequency.linearRampToValueAtTime).toHaveBeenCalled()
+    })
   })
 })

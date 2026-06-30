@@ -153,6 +153,17 @@ export class AudioEngine {
   }
 
   play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {
+    // If a play() lands while the context is still suspended (e.g. called
+    // right after the resume()-on-pointerdown handler, before that resume()
+    // has actually resolved), scheduling automation now races the resume —
+    // some browsers silently drop param changes scheduled against a
+    // not-yet-running context instead of replaying them once it starts.
+    // Wait for resume to actually finish, then re-issue the same call.
+    if (this.ctx.state !== 'running') {
+      this.ctx.resume().then(() => this.play(cmd, mode))
+      return
+    }
+
     const now = this.ctx.currentTime
 
     // Wait silently if the sampler is still loading — no oscillator fallback
