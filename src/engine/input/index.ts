@@ -172,10 +172,16 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       // motion never gets stuck.
       const MAX_JUMP = 0.28;
       const MAX_REJECT_STREAK = 2;
-      type HandState = { x: number; y: number; lastSeenMs: number; rejectStreak: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
+      type HandState = {
+        x: number; y: number; lastSeenMs: number; rejectStreak: number;
+        // Last frame's raw (pre-smoothing) movement vector — used to detect
+        // a hand zigzagging in place (jitter) rather than moving anywhere.
+        prevDx: number; prevDy: number;
+        wasFist: boolean; frozenX: number | null; frozenY: number | null;
+      };
       const smooth: Record<'left' | 'right', HandState> = {
-        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, rejectStreak: 0, wasFist: false, frozenX: null, frozenY: null },
-        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, rejectStreak: 0, wasFist: false, frozenX: null, frozenY: null },
+        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, rejectStreak: 0, prevDx: 0, prevDy: 0, wasFist: false, frozenX: null, frozenY: null },
+        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, rejectStreak: 0, prevDx: 0, prevDy: 0, wasFist: false, frozenX: null, frozenY: null },
       };
       // Sticky left/right assignment for the single-hand case — without this,
       // a lone hand hovering near the screen's horizontal centre can flip
@@ -184,12 +190,22 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       let soloId: 'left' | 'right' | null = null;
       const SOLO_HYSTERESIS = 0.05;
 
+      // Direction-reversal threshold for jitter detection: cos(angle) between
+      // this frame's and last frame's raw movement vectors below this means
+      // they point meaningfully opposite ways (>~107°) — a hand oscillating
+      // back and forth rather than moving somewhere. Below MIN_JITTER_MAG the
+      // movement is too small to judge direction reliably and is ignored.
+      const REVERSAL_COS = -0.3;
+      const MIN_JITTER_MAG = 0.015;
+
       // Tracking-quality heuristic: bad lighting starves MediaPipe of
-      // detection confidence, which shows up as the same two symptoms our
-      // noise filters above are already built to catch — rejected jumps and
-      // hands flickering in and out of detection. Reuse those signals as a
-      // slow-moving "badness" score and surface a hint to find better light
-      // when it stays elevated, instead of reacting to a single bad frame.
+      // detection confidence. The clearest symptom — a hand zigzagging in
+      // small steps that individually stay under MAX_JUMP — never trips a
+      // reject and never changes hand count, so it's invisible to those
+      // signals alone. Direction-reversal catches it regardless of step
+      // size, without flagging legitimate fast movement (which is
+      // directional, not oscillating). All three signals feed a slow-moving
+      // "badness" score so a single blip doesn't trigger the warning.
       let prevHandCount = 0;
       let trackingBadness = 0;
       const BADNESS_ON = 0.35;
@@ -262,6 +278,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
           }
 
           let rejectedThisTick = false;
+          let reversedThisTick = false;
 
           const signals: GestureSignal[] = [];
           for (let i = 0; i < detections.length; i++) {
@@ -278,8 +295,19 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
               if (isNew) {
                 s.x = rx; s.y = ry;
                 s.rejectStreak = 0;
+                s.prevDx = 0; s.prevDy = 0;
               } else {
-                const jump = Math.hypot(rx - s.x, ry - s.y);
+                const dx = rx - s.x;
+                const dy = ry - s.y;
+                const jump = Math.hypot(dx, dy);
+
+                const prevMag = Math.hypot(s.prevDx, s.prevDy);
+                if (jump > MIN_JITTER_MAG && prevMag > MIN_JITTER_MAG) {
+                  const cosAngle = (dx * s.prevDx + dy * s.prevDy) / (jump * prevMag);
+                  if (cosAngle < REVERSAL_COS) reversedThisTick = true;
+                }
+                s.prevDx = dx; s.prevDy = dy;
+
                 if (jump > MAX_JUMP && s.rejectStreak < MAX_REJECT_STREAK) {
                   // Implausible single-frame jump — likely a noisy/misclassified
                   // detection. Hold the last good position instead of blending
@@ -296,6 +324,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
               // Fist on reappearance: seed EMA at actual position so the freeze
               // captures the real hand location, not the stale center default.
               s.x = rx; s.y = ry;
+              s.prevDx = 0; s.prevDy = 0;
               s.rejectStreak = 0;
             }
 
@@ -322,14 +351,18 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
           }
           signalRef.current = signals;
 
-          // Update the rolling tracking-quality score. A flicker on its own
-          // (e.g. putting a hand up for the first time) barely moves a slow
-          // EMA; only sustained instability — many rejected jumps and/or
-          // hands repeatedly dropping detection, both far more likely under
-          // poor lighting — pushes it past the threshold.
+          // Update the rolling tracking-quality score. A flicker or a single
+          // reversed step on its own (e.g. putting a hand up, or one quick
+          // direction change during normal play) barely moves a slow EMA;
+          // only sustained instability — repeated rejects, hands dropping
+          // detection, or a hand visibly zigzagging in place — pushes it
+          // past the threshold.
           const flickerThisTick = detections.length !== prevHandCount;
           prevHandCount = detections.length;
-          const tickBad = (rejectedThisTick ? 0.6 : 0) + (flickerThisTick ? 0.4 : 0);
+          const tickBad =
+            (rejectedThisTick ? 0.5 : 0) +
+            (flickerThisTick ? 0.3 : 0) +
+            (reversedThisTick ? 0.45 : 0);
           trackingBadness = trackingBadness * 0.95 + tickBad * 0.05;
 
           if (!unstable && trackingBadness > BADNESS_ON) {
