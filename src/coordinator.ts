@@ -192,6 +192,10 @@ export function useCoordinator(
     requestCamera,
     useMouse,
     signalRef,
+    // Raw camera/mouse signals before any external override. LearnShell uses
+    // this to switch the coordinator's driving signals to ghost positions during
+    // preview while still falling back to live hand tracking during attempt.
+    cameraSignalRef: input.signalRef,
     // The angle-derived note/quality selection the audio path actually plays.
     // The recorder samples this (not raw x) so a recording matches what was heard.
     selectedRef,

@@ -5,7 +5,8 @@ type Props = {
   lesson: Lesson;
   stepResults: StepResult[];
   totalScore: number;
-  onSave?: () => void; // called once after mount if provided
+  nextLessonId?: string;
+  onSave?: () => void;
 };
 
 function grade(score: number): string {
@@ -16,10 +17,9 @@ function grade(score: number): string {
   return 'D';
 }
 
-export default function CompletionScreen({ lesson, stepResults, totalScore, onSave }: Props) {
+export default function CompletionScreen({ lesson, stepResults, totalScore, nextLessonId, onSave }: Props) {
   const navigate = useNavigate();
 
-  // Trigger save once on mount
   const savedRef = { current: false };
   if (!savedRef.current) {
     savedRef.current = true;
@@ -60,12 +60,14 @@ export default function CompletionScreen({ lesson, stepResults, totalScore, onSa
           >
             All lessons
           </button>
-          <button
-            className="lesson-complete__btn lesson-complete__btn--primary"
-            onClick={() => navigate('/play')}
-          >
-            Play freely →
-          </button>
+          {nextLessonId && (
+            <button
+              className="lesson-complete__btn lesson-complete__btn--primary"
+              onClick={() => navigate(`/learn/${nextLessonId}`)}
+            >
+              Next lesson →
+            </button>
+          )}
         </div>
       </div>
     </div>

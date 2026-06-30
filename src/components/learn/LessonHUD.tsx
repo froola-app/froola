@@ -12,6 +12,22 @@ type Props = {
   durationMs: number;
 };
 
+function StepDots({ total, active }: { total: number; active: number }) {
+  return (
+    <div className="lesson-hud__steps">
+      {Array.from({ length: total }, (_, i) => (
+        <span
+          key={i}
+          className={
+            'lesson-hud__dot' +
+            (i === active ? ' is-active' : i < active ? ' is-done' : '')
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function LessonHUD({
   phase,
   stepIndex,
@@ -26,7 +42,14 @@ export default function LessonHUD({
   if (phase === 'preview') {
     return (
       <div className="lesson-hud lesson-hud--preview">
-        <p className="lesson-hud__listen">Listen to the target…</p>
+        <div className="lesson-hud__preview-top">
+          <StepDots total={totalSteps} active={stepIndex} />
+          <span className="lesson-hud__listen-pill">Listen</span>
+        </div>
+        <div className="lesson-hud__preview-center">
+          <p className="lesson-hud__instruction">{instruction}</p>
+          {hint && <p className="lesson-hud__hint">{hint}</p>}
+        </div>
       </div>
     );
   }
@@ -34,8 +57,12 @@ export default function LessonHUD({
   if (phase === 'countdown') {
     return (
       <div className="lesson-hud lesson-hud--countdown">
+        <StepDots total={totalSteps} active={stepIndex} />
         <div className="lesson-countdown">{countdown === 0 ? 'Go!' : countdown}</div>
-        <p className="lesson-hud__instruction">{instruction}</p>
+        <div className="lesson-hud__countdown-footer">
+          <p className="lesson-hud__instruction">{instruction}</p>
+          {hint && <p className="lesson-hud__hint">{hint}</p>}
+        </div>
       </div>
     );
   }
@@ -47,19 +74,13 @@ export default function LessonHUD({
 
     return (
       <div className="lesson-hud lesson-hud--attempt">
-        <div className="lesson-hud__steps">
-          {Array.from({ length: totalSteps }, (_, i) => (
-            <span
-              key={i}
-              className={
-                'lesson-hud__dot' +
-                (i === stepIndex ? ' is-active' : i < stepIndex ? ' is-done' : '')
-              }
-            />
-          ))}
+        <div className="lesson-hud__top">
+          <StepDots total={totalSteps} active={stepIndex} />
         </div>
-        <p className="lesson-hud__instruction">{instruction}</p>
-        {hint && <p className="lesson-hud__hint">{hint}</p>}
+        <div className="lesson-hud__mid">
+          <p className="lesson-hud__instruction">{instruction}</p>
+          {hint && <p className="lesson-hud__hint">{hint}</p>}
+        </div>
         <div className="lesson-hud__bars">
           <div className="lesson-hud__bar-row">
             <span className="lesson-hud__bar-label">score</span>

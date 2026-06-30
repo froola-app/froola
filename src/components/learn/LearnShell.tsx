@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { InstrumentMode } from '../../engine/types';
-import type { GestureSignal } from '../../engine/types';
+import type { InstrumentMode, GestureSignal } from '../../engine/types';
 import type { InputMode } from '../../engine/input';
+import type { LessonPhase } from '../../engine/lessons/types';
 import { useCoordinator } from '../../coordinator';
-import { lessonById } from '../../engine/lessons/curriculum';
+import { lessonById, CURRICULUM } from '../../engine/lessons/curriculum';
 import { useLessonRunner } from '../../engine/lessons/useLessonRunner';
 import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
 import LessonHUD from './LessonHUD';
@@ -26,8 +26,14 @@ export default function LearnShell() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modeRef = useRef<InstrumentMode>('synth');
 
-  // Owned here — shared between coordinator (renderer reads it) and lesson runner (writes it)
+  // Ghost orbs drawn by the renderer as dashed target rings during attempt.
   const ghostSignalsRef = useRef<GestureSignal[]>([]);
+
+  // The coordinator uses this ref as its signal source. During preview we fill
+  // it with ghost positions so the audio engine plays the target; during all
+  // other phases we mirror the raw camera/mouse signals so the user's hands drive
+  // audio and visuals as normal.
+  const drivingRef = useRef<GestureSignal[]>([]);
 
   const {
     mode,
@@ -35,12 +41,36 @@ export default function LearnShell() {
     useMouse,
     selectedRef,
     engineRef,
-  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, undefined, ghostSignalsRef);
+    cameraSignalRef,
+  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, drivingRef, undefined, ghostSignalsRef);
+
+  // Keep a ref to the current phase so the RAF below can read it without
+  // stale closures.
+  const phaseRef = useRef<LessonPhase>('idle');
+
+  // Sync drivingRef every frame: ghost signals during preview (so audio plays
+  // the target), live signals the rest of the time.
+  useEffect(() => {
+    let rafId: number;
+    function tick() {
+      if (phaseRef.current === 'preview') {
+        drivingRef.current = ghostSignalsRef.current;
+      } else {
+        drivingRef.current = cameraSignalRef.current;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [cameraSignalRef]);
 
   const runner = lesson
     // eslint-disable-next-line react-hooks/rules-of-hooks
     ? useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef)
     : null;
+
+  // Keep phaseRef in sync so the driving-signal loop above stays correct.
+  phaseRef.current = runner?.phase ?? 'idle';
 
   const [elapsed, setElapsed] = useState(0);
   const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,6 +114,7 @@ export default function LearnShell() {
   if (!lesson || !runner) return null;
 
   const currentStep = lesson.steps[runner.stepIndex];
+  const nextLesson = CURRICULUM[CURRICULUM.findIndex(l => l.id === lesson.id) + 1];
 
   return (
     <>
@@ -155,6 +186,7 @@ export default function LearnShell() {
           lesson={lesson}
           stepResults={runner.stepResults}
           totalScore={runner.totalScore}
+          nextLessonId={nextLesson?.id}
           onSave={handleSave}
         />
       )}

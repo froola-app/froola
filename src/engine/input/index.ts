@@ -151,7 +151,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
       }
 
       // Per-hand EMA + fist-lock state
-      const SMOOTH = 0.35;
+      const SMOOTH = 0.18;
       // How long (ms) a hand must be absent before we re-initialize its EMA
       // on the next appearance instead of blending from the stale position.
       // Prevents the orb from snapping to the 0.5,0.5 default when a hand
