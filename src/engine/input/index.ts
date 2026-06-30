@@ -183,25 +183,47 @@ export function useGestureInput(initialMode: InputMode = 'asking'): { signalRef:
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
 
-          const signals: GestureSignal[] = [];
-          for (let i = 0; i < result.landmarks.length; i++) {
-            const lm = result.landmarks[i];
+          // Remap from video-native coords to viewport coords (object-fit:cover compensation)
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
+          const dw = window.innerWidth;
+          const dh = window.innerHeight;
+          const scale = Math.max(dw / vw, dh / vh);
+          const offsetX = (dw - vw * scale) / 2;
+          const offsetY = (dh - vh * scale) / 2;
+
+          const detections = result.landmarks.map(lm => {
             const tip = lm[8]; // index fingertip
-            const rawHandedness = result.handednesses[i][0].categoryName;
-            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
+            return {
+              rx: ((1 - tip.x) * vw * scale + offsetX) / dw,
+              ry: (tip.y * vh * scale + offsetY) / dh,
+              fist: isFist(lm),
+            };
+          });
 
-            // Remap from video-native coords to viewport coords (object-fit:cover compensation)
-            const vw = video.videoWidth;
-            const vh = video.videoHeight;
-            const dw = window.innerWidth;
-            const dh = window.innerHeight;
-            const scale = Math.max(dw / vw, dh / vh);
-            const offsetX = (dw - vw * scale) / 2;
-            const offsetY = (dh - vh * scale) / 2;
-            const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
-            const ry = (tip.y * vh * scale + offsetY) / dh;
+          // Assign left/right by on-screen x position rather than MediaPipe's
+          // per-frame handedness label. MediaPipe re-classifies handedness
+          // independently every frame with no identity tracking across frames,
+          // so when both hands are close together (exactly what happens during
+          // a chord) it can flip "Left"/"Right" several times a second. Since
+          // that flip touches both labels almost every frame, the EMA for each
+          // side keeps grabbing the other hand's position and both orbs drag
+          // toward the midpoint between the hands — "stuck in the middle".
+          // Screen position is stable frame to frame and matches what the user
+          // sees (left wheel responds to whichever hand is on the left).
+          let ids: Array<'left' | 'right'>;
+          if (detections.length === 2) {
+            ids = detections[0].rx <= detections[1].rx ? ['left', 'right'] : ['right', 'left'];
+          } else if (detections.length === 1) {
+            ids = [detections[0].rx < 0.5 ? 'left' : 'right'];
+          } else {
+            ids = [];
+          }
 
-            const fist = isFist(lm);
+          const signals: GestureSignal[] = [];
+          for (let i = 0; i < detections.length; i++) {
+            const handId = ids[i];
+            const { rx, ry, fist } = detections[i];
             const s = smooth[handId];
 
             // Jump EMA to actual position on first appearance or after a tracking
