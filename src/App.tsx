@@ -5,6 +5,8 @@ import PlayShell from './components/PlayShell';
 import ReplayShell from './components/ReplayShell';
 import SignInPage from './components/SignInPage';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
+import LessonCatalog from './components/learn/LessonCatalog';
+import LearnShell from './components/learn/LearnShell';
 import './App.css';
 
 function AppRoutes() {
@@ -19,6 +21,8 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/play" element={<PlayShell />} />
         <Route path="/replay" element={<ReplayShell />} />
+        <Route path="/learn" element={<LessonCatalog />} />
+        <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -49,6 +53,8 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/play" element={<PlayShell />} />
       <Route path="/replay" element={<ReplayShell />} />
+      <Route path="/learn" element={<LessonCatalog />} />
+      <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
