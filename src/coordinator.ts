@@ -93,24 +93,24 @@ export function useCoordinator(
         engine.startLoadingSampler(instrMode);
       }
 
-      // Right fist = latch the current chord and free the left hand to play a
+      // Left fist = latch the current chord and free the right hand to play a
       // melody over it (synth lead). Releasing the fist releases the chord.
-      const rightFist = !!right?.fist;
+      const leftFist = !!left?.fist;
 
-      if (rightFist && engine) {
+      if (leftFist && engine) {
         if (!latched) {
           // Rising edge: capture and start the held chord, then stop normal mode.
-          const y = left?.present ? left.y : 0.5;
+          const y = right?.present ? right.y : 0.5;
           engine.play(buildCommand(noteIdx, qualIdx, y, octave, music), instrMode);
           latched = true;
           sounding = false;
           melodyNote = -1;
         }
-        // Left hand on the wheel plays a single melody note over the held chord.
-        if (leftInDial) {
-          if (noteIdx !== melodyNote) {
-            engine.playMelody(melodyMidi(noteIdx, music));
-            melodyNote = noteIdx;
+        // Right hand on the wheel plays a single melody note over the held chord.
+        if (rightInDial) {
+          if (qualIdx !== melodyNote) {
+            engine.playMelody(melodyMidi(qualIdx, music));
+            melodyNote = qualIdx;
           }
         } else if (melodyNote !== -1) {
           engine.silenceMelody();
