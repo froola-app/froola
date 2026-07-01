@@ -11,6 +11,7 @@ import VideoRecordButton from './VideoRecordButton';
 import GestureCoach from './GestureCoach';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
+import BeginnerTutorial from './BeginnerTutorial';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -120,8 +121,10 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   }, [changeOctave]);
 
   const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, guardrailRef);
-  // signalRef is used by BeginnerTutorial in Task 3 — kept in destructure to surface the interface.
-  void signalRef;
+
+  const [showTutorial] = useState(
+    () => !localStorage.getItem('froola.tutorialSeen')
+  );
 
   // Create the looper after mount (the engine exists by then), wiring its
   // scheduling/playback to the audio engine. The deps are all stable refs.
@@ -162,6 +165,13 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {showTutorial && mode !== 'asking' && (
+        <BeginnerTutorial
+          signalRef={signalRef}
+          selectedRef={selectedRef}
+          mode={mode}
+        />
+      )}
       {volumeDisplay !== null && (
         <div className="volume-badge">vol {volumeDisplay}%</div>
       )}
