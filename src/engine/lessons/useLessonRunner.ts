@@ -2,9 +2,11 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import type { RefObject } from 'react';
 import type { GestureSignal } from '../types';
 import type { DialSelection } from '../renderer';
-import { sampleEndTimes, signalsAt } from '../recording/replayPlayer';
+import { sampleEndTimes, sampleIndexAt, signalsAt } from '../recording/replayPlayer';
 import { scoreFrame, meanScore } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
+import type { AudioEngine } from '../audio';
+import { buildCommand } from '../music';
 
 export type LessonRunnerAPI = {
   phase: LessonPhase;
@@ -25,7 +27,7 @@ const SCORE_INTERVAL_MS = 100;
 export function useLessonRunner(
   lesson: Lesson,
   liveSelectedRef: RefObject<DialSelection>,
-  _engineRef: RefObject<unknown>,  // reserved for future preview audio playback
+  engineRef: RefObject<AudioEngine | null>,
   canvasRef: RefObject<HTMLCanvasElement | null>,
   ghostSignalsRef: RefObject<GestureSignal[]>,
 ): LessonRunnerAPI {
@@ -40,6 +42,7 @@ export function useLessonRunner(
   const attemptStartRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
+  const previewAudioRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Keep refs in sync with state so callbacks always read current values
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -48,7 +51,12 @@ export function useLessonRunner(
   const clearTimers = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
     if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
-  }, []);
+    if (previewAudioRef.current) {
+      clearInterval(previewAudioRef.current);
+      previewAudioRef.current = null;
+      engineRef.current?.silence('synth');
+    }
+  }, [engineRef]);
 
   useEffect(() => clearTimers, [clearTimers]);
 
@@ -73,6 +81,29 @@ export function useLessonRunner(
     loop();
   }, [lesson, canvasRef]);
 
+  // ── Preview audio ──────────────────────────────────────────────────────────
+  // Runs only during preview. Sounds the target recording's chords as the
+  // ghost hand moves through them, so "Listen to the target" is actually audible.
+  const startPreviewAudio = useCallback((stepIdx: number, startMs: number) => {
+    const step = lesson.steps[stepIdx];
+    const ends = sampleEndTimes(step.targetRecording);
+    let lastSampleIdx = -1;
+
+    function tick() {
+      const engine = engineRef.current;
+      if (!engine) return;
+      const elapsed = performance.now() - startMs;
+      const idx = sampleIndexAt(ends, elapsed);
+      if (idx < 0 || idx === lastSampleIdx) return;
+      lastSampleIdx = idx;
+      const sample = step.targetRecording.samples[idx];
+      engine.play(buildCommand(sample.noteIdx, sample.qualityIdx, 0.5, 0, lesson.musicConfig));
+    }
+
+    tick();
+    previewAudioRef.current = setInterval(tick, 50);
+  }, [lesson, engineRef]);
+
   // ── Preview phase ──────────────────────────────────────────────────────────
   const startPreview = useCallback((stepIdx: number) => {
     clearTimers();
@@ -84,12 +115,13 @@ export function useLessonRunner(
     const step = lesson.steps[stepIdx];
     const previewStart = performance.now();
     startGhostLoop(stepIdx, previewStart);
+    startPreviewAudio(stepIdx, previewStart);
 
     // After the target recording finishes, move to countdown
     timerRef.current = setTimeout(() => {
       startCountdown(stepIdx);
     }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
-  }, [lesson, clearTimers, startGhostLoop]);
+  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio]);
 
   // ── Countdown phase ────────────────────────────────────────────────────────
   const startCountdown = useCallback((stepIdx: number) => {
