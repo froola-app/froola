@@ -5,6 +5,7 @@ import { NOTES } from '../types';
 import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
+import { drawGuardrail } from './guardrail';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
 
@@ -200,6 +201,7 @@ export function useRenderer(
   // When set, the extension (qualIdx) persists while the right wheel is untouched
   // instead of snapping back to a triad — for single-pointer mouse/touch play.
   stickyExtensionRef?: RefObject<boolean>,
+  guardrailRef?: RefObject<boolean>,
 ): void {
   const particlesRef = useRef(new ParticleSystem());
 
@@ -227,6 +229,13 @@ export function useRenderer(
 
       // Clear only — let the raw camera feed show through with no tint
       ctx.clearRect(0, 0, w, h);
+
+      // Guardrail: pulsing ring guides shown when no hands are in frame.
+      // Disappears the moment any hand is detected.
+      const handsPresent = signals.some(s => s.present);
+      if (!handsPresent && (guardrailRef?.current ?? true)) {
+        drawGuardrail(ctx, w, h, performance.now());
+      }
 
       // Audio amplitude
       let amplitude = 0;
@@ -335,5 +344,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, stickyExtensionRef]);
+  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, stickyExtensionRef, guardrailRef]);
 }

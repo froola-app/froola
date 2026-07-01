@@ -97,6 +97,18 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     volumeTimerRef.current = setTimeout(() => setVolumeDisplay(null), 1500);
   }, []);
 
+  const [guardrailOn, setGuardrailOn] = useState(() => {
+    try { return localStorage.getItem('froola.guardrail') !== 'false'; } catch { return true; }
+  });
+  const guardrailRef = useRef(guardrailOn);
+  guardrailRef.current = guardrailOn;
+
+  function toggleGuardrail() {
+    const next = !guardrailOn;
+    setGuardrailOn(next);
+    try { localStorage.setItem('froola.guardrail', String(next)); } catch {}
+  }
+
   // Arrow keys are a quick shortcut for the on-screen octave stepper.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -107,7 +119,9 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, guardrailRef);
+  // signalRef is used by BeginnerTutorial in Task 3 — kept in destructure to surface the interface.
+  void signalRef;
 
   // Create the looper after mount (the engine exists by then), wiring its
   // scheduling/playback to the audio engine. The deps are all stable refs.
@@ -220,6 +234,14 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
             +
           </button>
         </div>
+        <button
+          className="guardrail-toggle"
+          onClick={toggleGuardrail}
+          aria-label={guardrailOn ? 'Hide hand guides' : 'Show hand guides'}
+          title={guardrailOn ? 'Hide hand guides' : 'Show hand guides'}
+        >
+          {guardrailOn ? 'guide: on' : 'guide: off'}
+        </button>
       </div>
     </>
   );
