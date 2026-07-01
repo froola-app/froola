@@ -1,5 +1,6 @@
 import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
+import { TempoClock, type StepCallback, type TempoClockOptions } from './TempoClock'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
@@ -262,6 +263,13 @@ export class AudioEngine {
 
   getAnalyser(): AnalyserNode {
     return this.analyser
+  }
+
+  // A tempo clock bound to this engine's audio context, so scheduled steps line
+  // up with the same clock playback uses. Consumers (chord looper, arpeggiation)
+  // schedule sound in the callback against each step's `time`.
+  createClock(cb: StepCallback, opts?: TempoClockOptions): TempoClock {
+    return new TempoClock(this.ctx, cb, opts)
   }
 
   // Creates a MediaStream mixing the instrument output with the given mic stream.
