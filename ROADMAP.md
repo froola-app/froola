@@ -1,27 +1,35 @@
 # Froola — Roadmap
 
 Living list of fixes and feature ideas. Distilled from a multi-agent codebase
-review + QA pass (June 2026). Open items are tracked as GitHub issues; this file
-is the narrative master list.
+review + QA pass (June 2026), refreshed by a full read-through + browser-driven
+QA pass (30 Jun 2026). Open items are tracked as GitHub issues; this file is the
+narrative master list. Items marked **(verified)** were reproduced (or confirmed
+fixed) in a headless-Chromium run this pass.
 
 ## ✅ Recently shipped
 - **Single inline landing page** with remembered input choice (10-min TTL).
 - **Stable hand tracking** — reverted MediaPipe confidence to 0.5 (0.3 caused jitter + "stuck in the middle").
 - **Octave stepper** (−2…+2, ↑/↓ keys), also applied to latched chords.
-- **Replay playback (SP2)** — `/replay?d=…` links now actually play back, faithfully (recorder samples the angle-derived `selectedRef`, not raw cursor-x). Shared playback core: live vs recorded drive one pipeline via a pluggable signal source; shared wheel `geometry.ts` removes coordinator/renderer drift.
+- **Replay playback (SP2)** — `/replay?d=…` links now actually play back, faithfully (recorder samples the angle-derived `selectedRef`, not raw cursor-x). Shared playback core: live vs recorded drive one pipeline via a pluggable signal source; shared wheel `geometry.ts` removes coordinator/renderer drift. _(record→share→replay loop verified end-to-end this pass.)_
 - **Key + scale selector** — 12 keys × {major, minor, dorian, mixolydian}; note-wheel labels follow the key.
 - **First-run gesture coaching** overlay (two wheels, right-fist latch, octave keys).
+- **Mouse/touch mode now sounds (was the old P0)** — a left hand alone on the note wheel plays a plain triad without needing the right hand, so single-pointer mouse users hear the 7 diatonic triads. **(verified: cursor over the left wheel plays C-E-G.)** Note the follow-up gap below — mouse users still can't reach the extension wheel.
+- **Lesson preview audio** — the "Listen to the target" phase now actually plays the target chord.
+- **Lessons test real recall** — the graded attempt phase no longer shows the ghost/hint; results show real independent note vs. chord-quality accuracy; a Leitner-box spaced-repetition review re-tests completed chords cold (`/learn/review`).
 
 ## 🐞 Open fixes
 | Pri | Item | Where |
 |---|---|---|
-| P0 | **Mouse mode is silent** — one pointer emits a single `left` signal, but the coordinator needs `leftInDial && rightInDial`. Single-pointer users hear nothing. Fix: label the pointer by which wheel it's over + persist the other wheel's selection + OR-trigger in mouse mode (also add a coordinator-trigger test — currently untested). | `coordinator.ts`, `engine/input/index.ts`, `engine/renderer/index.ts` |
+| P1 | **`GestureCoach` tests fail on Node 22+ (verified — 3 tests red)** — Node's built-in `globalThis.localStorage` is `undefined` without `--localstorage-file` and shadows jsdom's `window.localStorage`, so the test's bare `localStorage.clear()` throws before the body runs. Alias the global to jsdom's Storage in the test setup. | `src/test-setup.ts` |
+| P1 | **Mouse/touch users can't reach the extension wheel (verified)** — the single mouse pointer is always labelled `left`, so the right (extension) wheel is unreachable and mouse mode is limited to plain triads (moving over the right wheel just silences). The old P0's suggested full fix — label the pointer by which wheel it's over + persist the other wheel's selection — was only half-implemented. | `engine/input/index.ts`, `coordinator.ts` |
 | P1 | **`vibe` is vestigial** — hardcoded `'warm'`; codec reserves 2 bits for a 4-vibe system with no UI/effect. Either wire it to the synth or drop the field. | `coordinator.ts`, `engine/recording/codec.ts` |
 | P1 | **Piano→synth sustain leak** — `silence('piano')` fades the oscillator sustain over 1.8s; switching instruments mid-note can leave voices ringing. Reset voice gains on mode change. | `engine/audio/AudioEngine.ts` |
-| P2 | **Dead `mapGesture`/`createMapper` path is what the integration tests exercise** — validates a pipeline that isn't shipped. Delete it and rewrite the test against the real `buildCommand`/coordinator path (would have caught the mouse bug). | `engine/music/mapGesture.ts`, `engine/integration.test.ts` |
-| P2 | **Misleading copy/comments** — onboarding advertises "Recordings up to 60 seconds" but the cap is 30s; a renderer comment references a non-existent "warm zone". | `components/onboarding/PricingStep.tsx`, `engine/recording/useRecorder.ts`, `engine/renderer/index.ts` |
+| P2 | **Dead `mapGesture`/`createMapper` path is what the integration tests exercise** — validates a pipeline that isn't shipped (the app drives audio via `buildCommand`/`coordinator`). `scales.ts` also still exports `WARM_MAJOR`/`ChordSlot` only for this dead path (its `midiToHz` is live). Delete the dead path and rewrite `integration.test.ts` against the real coordinator path (would have caught the mouse bug). | `engine/music/mapGesture.ts`, `engine/music/scales.ts`, `engine/integration.test.ts` |
+| P2 | **Vestigial `QUALITIES` array** — `types.ts` still exports the superseded chord-quality model (`major/minor/maj7/…`); the live right wheel uses `EXTENSIONS` (`triad/6th/7th/…`). `replayPlayer` relies on `QUALITIES.length` (7) coincidentally matching `EXTENSIONS.length` — a latent slice-count bug if either list changes. Reference `EXTENSIONS.length` and drop/retire `QUALITIES`. | `engine/types.ts`, `engine/recording/replayPlayer.ts` |
+| P2 | **Misleading copy/comments (verified still present)** — README advertises "3 instrument modes — synth, piano, guitar" (only synth+piano exist) and describes the right wheel as chord qualities (`maj7/min7/dom7/…`) rather than the shipped extension wheel; README + onboarding both say "Recordings up to 60 seconds" but the cap is 30s. | `README.md`, `components/onboarding/PricingStep.tsx` |
 | P2 | **Bundle size** — 763 kB / 231 kB gzip main chunk; MediaPipe + soundfont are already lazy, but Firebase loads eagerly. Lazy-load Firebase / route-split. | `firebase.ts`, app entry |
 | P3 | **Lint env artifact** — transient `.claude/worktrees/*` dirs create a second tsconfig root and break `npm run lint`. Add `.claude/` to eslint `ignores`. | `eslint.config.*` |
+| P3 | **Pre-existing `react-hooks` lint errors (12)** — `refs`/`set-state-in-effect`/`immutability`/`only-export-components` across `PlayShell`, `useLessonRunner`, `AuthContext`, etc. Not regressions, but they mask new violations. Triage in one pass. | multiple |
 
 ## 🚀 Feature roadmap
 **Make the replay link viral (highest leverage)**
