@@ -10,8 +10,8 @@ Froola is a browser-based musical instrument that uses your camera and hand trac
 
 Froola uses [MediaPipe](https://mediapipe.dev/) to track your hands entirely on-device — no video is ever sent to a server. Two circular dials appear on screen:
 
-- **Left hand → Note dial** — move your left hand around the wheel to select a root note (A–G)
-- **Right hand → Chord dial** — move your right hand to select a chord quality (major, minor, maj7, min7, dom7, aug, dim)
+- **Left hand → Note dial** — move your left hand around the wheel to pick a scale degree; its chord root (and major/minor/diminished quality) follows the selected key & scale
+- **Right hand → Extension dial** — move your right hand to add colour on top of that chord (triad, 6th, 7th, 9th, add9, sus2, sus4)
 - **Height** — how high your hands are controls the register (octave range)
 - **Make a fist** — locks your current chord selection while you move freely
 
@@ -22,9 +22,9 @@ No camera? Froola falls back to **mouse mode** (desktop) or **touch mode** (mobi
 ## Features
 
 ### Free
-- All 3 instrument modes — **synth**, **piano**, **guitar**
+- Both instrument modes — **synth** and **piano**
 - Camera hand tracking (on-device, private) + mouse/touch fallback
-- Recordings up to 60 seconds
+- Recordings up to 30 seconds
 - Shareable replay links
 
 ### Pro *(coming soon)*

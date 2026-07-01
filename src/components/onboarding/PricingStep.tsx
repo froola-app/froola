@@ -5,7 +5,7 @@ interface Props {
 const FREE_FEATURES = [
   'Both instruments (synth, piano)',
   'Camera mode & mouse mode',
-  'Recordings up to 60 seconds',
+  'Recordings up to 30 seconds',
   'Share links',
 ];
 
