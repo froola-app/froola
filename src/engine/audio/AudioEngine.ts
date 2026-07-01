@@ -1,5 +1,6 @@
 import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
+import { TempoClock, type StepCallback, type TempoClockOptions } from './TempoClock'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
@@ -211,6 +212,47 @@ export class AudioEngine {
     })
   }
 
+  /** Schedule a chord to sound at AudioContext time `when` (used by the looper's
+   *  tempo scheduler). Pitch jumps and the gain re-attacks at `when` so each step
+   *  articulates cleanly; cancelling only from `when` leaves earlier-scheduled
+   *  steps intact, so several upcoming steps can be queued at once. */
+  playAt(cmd: MusicalCommand, when: number, mode: InstrumentMode = 'synth'): void {
+    if (mode === 'piano' && !this.samplers.piano) return
+
+    if (mode === 'piano' && this.samplers.piano) {
+      const player = this.samplers.piano
+      // Hand off from the previous chord: stop its samples as the new one starts.
+      const prev = this.activeSampleNodes
+      this.activeSampleNodes = cmd.voicing.map(midi => player.play(midi.toString(), when))
+      prev.forEach(n => { try { n.stop(when) } catch { /* already stopped */ } })
+
+      // Make sure the sample bus is open at the scheduled time.
+      this.samplerGain.gain.setValueAtTime(1, when)
+
+      const sustainGain = SYNTH_VOICE_GAIN * 0.45
+      const fadeIn = 0.25
+      this.voicingFor(cmd).forEach((midi, i) => {
+        const hz = midiToHz(midi)
+        this.oscillators[i].frequency.cancelScheduledValues(when)
+        this.oscillators[i].frequency.setValueAtTime(hz, when)
+        this.voiceGains[i].gain.cancelScheduledValues(when)
+        this.voiceGains[i].gain.setValueAtTime(0, when)
+        this.voiceGains[i].gain.linearRampToValueAtTime(sustainGain, when + fadeIn)
+      })
+      return
+    }
+
+    // Synth path
+    this.voicingFor(cmd).forEach((midi, i) => {
+      const hz = midiToHz(midi)
+      this.oscillators[i].frequency.cancelScheduledValues(when)
+      this.oscillators[i].frequency.setValueAtTime(hz, when)
+      this.voiceGains[i].gain.cancelScheduledValues(when)
+      this.voiceGains[i].gain.setValueAtTime(0, when)
+      this.voiceGains[i].gain.linearRampToValueAtTime(SYNTH_VOICE_GAIN, when + CHORD_GAIN_RAMP)
+    })
+  }
+
   /** Sound a single melody note (articulated — pitch jumps, gain re-attacks). */
   playMelody(midi: number): void {
     const now = this.ctx.currentTime
@@ -262,6 +304,13 @@ export class AudioEngine {
 
   getAnalyser(): AnalyserNode {
     return this.analyser
+  }
+
+  // A tempo clock bound to this engine's audio context, so scheduled steps line
+  // up with the same clock playback uses. Consumers (chord looper, arpeggiation)
+  // schedule sound in the callback against each step's `time`.
+  createClock(cb: StepCallback, opts?: TempoClockOptions): TempoClock {
+    return new TempoClock(this.ctx, cb, opts)
   }
 
   // Creates a MediaStream mixing the instrument output with the given mic stream.

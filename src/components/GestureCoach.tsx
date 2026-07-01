@@ -1,7 +1,8 @@
 import { useState } from 'react';
 
 // Shown once per browser, the first time someone starts playing — the gesture
-// mechanics (two wheels, right-fist latch, octave keys) are otherwise invisible.
+// mechanics (two wheels, fist-to-sustain / Space pedal, octave keys) are
+// otherwise invisible.
 const SEEN_KEY = 'froola.coachSeen';
 
 function hasSeen(): boolean {
@@ -30,9 +31,14 @@ export default function GestureCoach({ mode }: { mode: 'camera' | 'mouse' }) {
         : 'Left wheel plays the chord; dial the right wheel to set a flavour (7th, sus…) — it sticks',
     },
     ...(isCamera
-      ? [{ icon: '👊', text: 'Make a right fist to hold a chord and solo with your left hand' }]
+      ? [{ icon: '👊', text: 'Make a fist to hold (sustain) the chord — make a fist again to release' }]
       : []),
-    { icon: '⌨️', text: 'Press ↑ / ↓ to change octave' },
+    {
+      icon: '⌨️',
+      text: isCamera
+        ? 'Hold Space to sustain · ↑ / ↓ to change octave'
+        : 'Hold Space to sustain the chord · ↑ / ↓ to change octave',
+    },
   ];
 
   function dismiss() {

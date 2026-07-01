@@ -12,13 +12,13 @@ describe('GestureCoach', () => {
     expect(screen.getByText(/both hands on the wheels/i)).toBeInTheDocument();
   });
 
-  it('only shows the fist-latch tip in camera mode', () => {
+  it('only shows the fist-to-sustain tip in camera mode', () => {
     const { unmount } = render(<GestureCoach mode="camera" />);
-    expect(screen.getByText(/right fist/i)).toBeInTheDocument();
+    expect(screen.getByText(/make a fist/i)).toBeInTheDocument();
     unmount();
     localStorage.clear();
     render(<GestureCoach mode="mouse" />);
-    expect(screen.queryByText(/right fist/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/make a fist/i)).not.toBeInTheDocument();
   });
 
   it('dismisses and stays dismissed on next mount', async () => {

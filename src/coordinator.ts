@@ -12,6 +12,9 @@ const REGISTER_THRESHOLD = 0.5 / 24;
 // How long a chord keeps ringing after both hands briefly leave the wheels, so
 // crossing the centre hub or a dropped tracking frame doesn't cut the note.
 const SILENCE_GRACE_MS = 140;
+// A fist must hold steady this long before it toggles sustain, so a flickering
+// hand-shape detection can't stutter the hold on and off.
+const FIST_DEBOUNCE_MS = 120;
 
 export function useCoordinator(
   canvasRef: RefObject<HTMLCanvasElement | null>,
@@ -27,6 +30,9 @@ export function useCoordinator(
   // Optional ghost orb signals for lesson mode — translucent target-hand indicators.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
   onVolumeChange?: (v: number) => void,
+  // When true, the chord looper drives the chord pad; the hand solos a melody
+  // lead instead of triggering chords.
+  loopPlayingRef?: RefObject<boolean>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -69,9 +75,35 @@ export function useCoordinator(
     let lastMusicKey = '';
     let sounding = false;
     let lastTouchMs = -Infinity;
-    // Latch state: right fist holds the selected chord while the left hand solos.
-    let latched = false;
+    // Sustain (hold) state. `spaceHeld` is the keyboard pedal; `sustainToggle`
+    // is flipped by a debounced fist (the camera equivalent). While sustained,
+    // a ringing chord is simply not released — sustain never re-attacks, so
+    // engaging it produces no extra sound.
+    let spaceHeld = false;
+    let sustainToggle = false;
+    let rawFistLast = false;
+    let fistChangedMs = -Infinity;
+    let fistStable = false;
+    // Melody lead note currently sounding while the loop plays (-1 = none).
     let melodyNote = -1;
+
+    // Space = sustain pedal. Ignore it while a form control / button is focused
+    // so it still activates them (and doesn't scroll the page).
+    const isTypingTarget = (t: EventTarget | null) =>
+      t instanceof HTMLElement &&
+      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+        t.tagName === 'BUTTON' || t.isContentEditable);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return;
+      e.preventDefault();
+      spaceHeld = true;
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || isTypingTarget(e.target)) return;
+      spaceHeld = false;
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
 
     function tick() {
       const signals = signalRef.current;
@@ -96,48 +128,44 @@ export function useCoordinator(
       const engine = engineRef.current;
       const octave = octaveRef?.current ?? 0;
       const music = musicRef?.current ?? DEFAULT_MUSIC;
+      const nowMs = performance.now();
 
       // Kick off sampler loading as soon as user selects piano
       if (instrMode === 'piano' && engine) {
         engine.startLoadingSampler(instrMode);
       }
 
-      // Left fist = latch the current chord and free the right hand to play a
-      // melody over it (synth lead). Releasing the fist releases the chord.
-      const leftFist = !!left?.fist;
-
-      if (leftFist && engine) {
-        if (!latched) {
-          // Rising edge: capture and start the held chord, then stop normal mode.
-          const y = right?.present ? right.y : 0.5;
-          engine.play(buildCommand(noteIdx, qualIdx, y, octave, music), instrMode);
-          latched = true;
-          sounding = false;
-          melodyNote = -1;
-        }
-        // Right hand on the wheel plays a single melody note over the held chord.
-        if (rightInDial) {
-          if (qualIdx !== melodyNote) {
-            engine.playMelody(melodyMidi(qualIdx, music));
-            melodyNote = qualIdx;
+      // While the loop is playing it owns the chord pad (via engine.playAt), so
+      // the coordinator must not touch it — the hand solos a melody lead instead.
+      if (loopPlayingRef?.current) {
+        if (sounding) { sounding = false; lastNoteIdx = -1; lastQualIdx = -1; }
+        if (leftInDial && engine) {
+          if (noteIdx !== melodyNote) {
+            engine.playMelody(melodyMidi(noteIdx, music));
+            melodyNote = noteIdx;
           }
-        } else if (melodyNote !== -1) {
+        } else if (melodyNote !== -1 && engine) {
           engine.silenceMelody();
           melodyNote = -1;
         }
         rafId = requestAnimationFrame(tick);
         return;
       }
+      // Just exited loop mode — make sure the lead isn't left ringing.
+      if (melodyNote !== -1 && engine) { engine.silenceMelody(); melodyNote = -1; }
 
-      if (latched && engine) {
-        // Falling edge: fist opened — release the held chord and melody.
-        engine.silence(instrMode);
-        engine.silenceMelody();
-        latched = false;
-        melodyNote = -1;
-        lastNoteIdx = -1;
-        lastQualIdx = -1;
+      // Sustain (hold): keep the current chord ringing without re-triggering it.
+      // A fist toggles the hold — debounced so a flickering hand-shape detection
+      // can't stutter it — and the Space pedal is tracked by the key listeners
+      // above. Engaging sustain never calls engine.play(), so there's no extra
+      // attack; releasing it lets the normal path silence the chord.
+      const rawFist = !!(left?.fist || right?.fist);
+      if (rawFist !== rawFistLast) { rawFistLast = rawFist; fistChangedMs = nowMs; }
+      if (rawFist !== fistStable && nowMs - fistChangedMs >= FIST_DEBOUNCE_MS) {
+        fistStable = rawFist;
+        if (fistStable) sustainToggle = !sustainToggle; // fist fully closed → toggle hold
       }
+      const sustained = spaceHeld || sustainToggle;
 
       // Nod gesture → discrete volume step
       const nod = nodEventRef.current;
@@ -157,7 +185,6 @@ export function useCoordinator(
       // extension (stickyExtension) since there's no second hand to hold it.
       const touching = leftInDial;
       const effectiveQualIdx = (rightInDial || stickyExtensionRef.current) ? qualIdx : 0;
-      const nowMs = performance.now();
       if (touching) lastTouchMs = nowMs;
       // A brief loss of contact (crossing the centre hub between slices, a dropped
       // tracking frame) holds the note instead of cutting it — avoids glitchy
@@ -183,8 +210,8 @@ export function useCoordinator(
           lastMusicKey = musicKey;
         }
         sounding = true;
-      } else if (!inGrace && sounding && engine) {
-        // Grace expired (or hand fully gone) — release the held note.
+      } else if (sounding && engine && !sustained && !inGrace) {
+        // Hand gone, not sustained, and grace expired — release the held note.
         engine.silence(instrMode);
         sounding = false;
       }
@@ -193,7 +220,11 @@ export function useCoordinator(
     }
 
     rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
   }, [signalRef, modeRef, octaveRef]);
 
   useRenderer(
