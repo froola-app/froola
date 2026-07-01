@@ -197,6 +197,9 @@ export function useRenderer(
   // Optional ghost orbs — translucent dashed rings showing lesson target positions.
   // Drawn before live orbs so live hands always appear on top.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
+  // When set, the extension (qualIdx) persists while the right wheel is untouched
+  // instead of snapping back to a triad — for single-pointer mouse/touch play.
+  stickyExtensionRef?: RefObject<boolean>,
 ): void {
   const particlesRef = useRef(new ParticleSystem());
 
@@ -273,9 +276,12 @@ export function useRenderer(
       const noteIdx = leftInDial
         ? stickySlice(notePos, NOTES.length, prevSel.noteIdx)
         : (left?.present ? prevSel.noteIdx : 0);
+      // Hold the extension while the right hand is present-but-off-ring; also
+      // hold it in sticky (pointer) mode where there's no right hand at all.
+      // Otherwise (camera, right hand gone) fall back to a plain triad.
       const qualIdx = rightInDial
         ? stickySlice(qualPos, EXTENSIONS.length, prevSel.qualIdx)
-        : (right?.present ? prevSel.qualIdx : 0);
+        : (right?.present || stickyExtensionRef?.current ? prevSel.qualIdx : 0);
       const bothActive = leftInDial && rightInDial;
 
       // Labels follow the selected key/scale. The note wheel shows the scale's
@@ -329,5 +335,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef]);
+  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, stickyExtensionRef]);
 }

@@ -23,7 +23,12 @@ export default function GestureCoach({ mode }: { mode: 'camera' | 'mouse' }) {
         ? 'Put both hands on the wheels to play a chord'
         : 'Move over the wheels to play a chord',
     },
-    { icon: '🎯', text: 'Left wheel picks the chord, right wheel adds flavour (7th, sus…)' },
+    {
+      icon: '🎯',
+      text: isCamera
+        ? 'Left wheel picks the chord, right wheel adds flavour (7th, sus…)'
+        : 'Left wheel plays the chord; dial the right wheel to set a flavour (7th, sus…) — it sticks',
+    },
     ...(isCamera
       ? [{ icon: '👊', text: 'Make a right fist to hold a chord and solo with your left hand' }]
       : []),
