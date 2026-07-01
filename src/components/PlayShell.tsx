@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
-import { KEYS, SCALE_NAMES, type ScaleName, type MusicConfig } from '../engine/music';
+import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
+import { ChordLooper, DEFAULT_BPM, type LooperState } from '../engine/looper';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
 import GestureCoach from './GestureCoach';
+import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
@@ -76,6 +78,13 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   const musicRef = useRef<MusicConfig>({ keyOffset, scale });
   musicRef.current = { keyOffset, scale };
 
+  // Chord looper: drives the chord pad while the hand solos over it. The ref
+  // lets the coordinator's hot loop know when the loop owns the pad.
+  const loopPlayingRef = useRef(false);
+  const [loopState, setLoopState] = useState<LooperState>({
+    slots: [], playing: false, bpm: DEFAULT_BPM, currentSlot: -1,
+  });
+
   const changeOctave = useCallback((delta: number) => {
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
@@ -98,7 +107,43 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef);
+
+  // Create the looper after mount (the engine exists by then), wiring its
+  // scheduling/playback to the audio engine. The deps are all stable refs.
+  const [looper, setLooper] = useState<ChordLooper | null>(null);
+  useEffect(() => {
+    const l = new ChordLooper({
+      createClock: (cb, opts) => engineRef.current!.createClock(cb, opts),
+      playAt: (c, when) => engineRef.current!.playAt(c, when, modeRef.current),
+      silence: () => engineRef.current!.silence(modeRef.current),
+      onChange: s => { setLoopState(s); loopPlayingRef.current = s.playing; },
+    });
+    setLooper(l);
+    return () => l.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Capture the currently-selected chord as a new loop slot.
+  const addCurrentChord = useCallback(() => {
+    if (!looper) return;
+    const { noteIdx, qualIdx } = selectedRef.current;
+    looper.add(buildCommand(noteIdx, qualIdx, 0.5, octaveRef.current, musicRef.current));
+  }, [looper, selectedRef]);
+
+  // Enter is a quick shortcut for "+ chord" (ignored while a control is focused).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Enter') return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+        t.tagName === 'BUTTON' || t.isContentEditable)) return;
+      e.preventDefault();
+      addCurrentChord();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [addCurrentChord]);
 
   return (
     <>
@@ -117,6 +162,9 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       {(mode === 'camera' || mode === 'mouse') && <GestureCoach mode={mode} />}
+      {looper && (mode === 'camera' || mode === 'mouse') && (
+        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
+      )}
       <div className="hud-bottom">
         <select
           className="instrument-select"

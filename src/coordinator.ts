@@ -5,7 +5,7 @@ import type { GestureSignal, InstrumentMode } from './engine/types';
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
-import { buildCommand, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
+import { buildCommand, melodyMidi, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
@@ -30,6 +30,9 @@ export function useCoordinator(
   // Optional ghost orb signals for lesson mode — translucent target-hand indicators.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
   onVolumeChange?: (v: number) => void,
+  // When true, the chord looper drives the chord pad; the hand solos a melody
+  // lead instead of triggering chords.
+  loopPlayingRef?: RefObject<boolean>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -81,6 +84,8 @@ export function useCoordinator(
     let rawFistLast = false;
     let fistChangedMs = -Infinity;
     let fistStable = false;
+    // Melody lead note currently sounding while the loop plays (-1 = none).
+    let melodyNote = -1;
 
     // Space = sustain pedal. Ignore it while a form control / button is focused
     // so it still activates them (and doesn't scroll the page).
@@ -129,6 +134,25 @@ export function useCoordinator(
       if (instrMode === 'piano' && engine) {
         engine.startLoadingSampler(instrMode);
       }
+
+      // While the loop is playing it owns the chord pad (via engine.playAt), so
+      // the coordinator must not touch it — the hand solos a melody lead instead.
+      if (loopPlayingRef?.current) {
+        if (sounding) { sounding = false; lastNoteIdx = -1; lastQualIdx = -1; }
+        if (leftInDial && engine) {
+          if (noteIdx !== melodyNote) {
+            engine.playMelody(melodyMidi(noteIdx, music));
+            melodyNote = noteIdx;
+          }
+        } else if (melodyNote !== -1 && engine) {
+          engine.silenceMelody();
+          melodyNote = -1;
+        }
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+      // Just exited loop mode — make sure the lead isn't left ringing.
+      if (melodyNote !== -1 && engine) { engine.silenceMelody(); melodyNote = -1; }
 
       // Sustain (hold): keep the current chord ringing without re-triggering it.
       // A fist toggles the hold — debounced so a flickering hand-shape detection
