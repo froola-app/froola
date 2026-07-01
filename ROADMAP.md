@@ -7,12 +7,15 @@ narrative master list. Items marked **(verified)** were reproduced (or confirmed
 fixed) in a headless-Chromium run this pass.
 
 ## ✅ Recently shipped
+- **Hold reworked into a sustain (no extra attack)** — holding a chord now keeps the *already-ringing* chord sounding instead of re-attacking a different one, fixing the audible "extra sound" on hold. Space = sustain pedal (blurs a focused HUD button so it isn't swallowed; buttons stay Enter-activatable); fist = debounced sustain toggle. _(verified headless: pedal held → no silence ramp; released → silences.)_
+- **Chord looper** — capture chords into ordered slots (max 8), play the progression back in tempo, and solo over it with the free hand (`LoopPanel`: +chord/undo/clear, bpm stepper, play/stop; Enter captures). Built on a new **TempoClock** (Web Audio lookahead scheduler, shared by future arpeggiation). _(verified headless: slots C-Em-G, active-bar highlight advances, chords scheduled exactly one bar apart at the set bpm.)_
+- **9th chords sound their 9th** — the synth was capped at 4 voices, so a 9th was truncated to the same 4 notes as a 7th; raised to 5 voices so the 9th actually sounds distinct.
 - **Single inline landing page** with remembered input choice (10-min TTL).
 - **Stable hand tracking** — reverted MediaPipe confidence to 0.5 (0.3 caused jitter + "stuck in the middle").
-- **Octave stepper** (−2…+2, ↑/↓ keys), also applied to latched chords.
+- **Octave stepper** (−2…+2, ↑/↓ keys), also applied to sustained chords.
 - **Replay playback (SP2)** — `/replay?d=…` links now actually play back, faithfully (recorder samples the angle-derived `selectedRef`, not raw cursor-x). Shared playback core: live vs recorded drive one pipeline via a pluggable signal source; shared wheel `geometry.ts` removes coordinator/renderer drift. _(record→share→replay loop verified end-to-end this pass.)_
 - **Key + scale selector** — 12 keys × {major, minor, dorian, mixolydian}; note-wheel labels follow the key.
-- **First-run gesture coaching** overlay (two wheels, right-fist latch, octave keys).
+- **First-run gesture coaching** overlay (two wheels, fist-to-sustain / Space pedal, octave keys).
 - **Mouse/touch mode now sounds (was the old P0)** — a left hand alone on the note wheel plays a plain triad without needing the right hand, so single-pointer mouse users hear the 7 diatonic triads. **(verified: cursor over the left wheel plays C-E-G.)**
 - **Mouse/touch can now reach the extension wheel** — the single pointer is labelled `left`/`right` by which half of the screen it's in, so dragging onto the right wheel dials an extension; in pointer modes the extension *sticks* (there's no second hand to hold it), so you dial a flavour on the right then play chords on the left. Camera mode is unchanged (lift the right hand → triad). **(verified: dialling the 7th then playing C sounds a Cmaj7, and the extension persists across notes.)**
 - **Lesson preview audio** — the "Listen to the target" phase now actually plays the target chord.
@@ -38,9 +41,9 @@ fixed) in a headless-Chromium run this pass.
 - **Audio export (WAV via OfflineAudioContext)** — deterministic offline render; shareable audio reaches further than a link. (M)
 
 **Musical expressiveness**
-- **Tempo + rhythmic arpeggiation** — latched chords currently just sustain; an arp/strum driven by hand height or a tempo control turns holding into playing. (M)
+- **Rhythmic arpeggiation** — the **TempoClock** now exists (shipped with the looper); build an arp/strum on it, driven by hand height or the tempo control, to turn a held chord into playing. (M)
 - **More instruments / finish the `vibe` system** — selectable timbres (warm/bright/dark/electric) reusing existing plumbing. (M)
-- _Done: key/scale selector._
+- _Done: key/scale selector; tempo clock + chord looper._
 
 **Mobile / touch**
 - **First-class touch UX** — touch already maps two fingers to the two wheels (better than mouse); promote it in landing copy. (S)
