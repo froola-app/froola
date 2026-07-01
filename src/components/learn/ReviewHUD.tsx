@@ -1,65 +1,53 @@
-import type { LessonPhase } from '../../engine/lessons/types';
+import type { ReviewPhase } from '../../engine/lessons/useReviewRunner';
+import { REVIEW_HOLD_MS } from '../../engine/lessons/useReviewRunner';
 
 type Props = {
-  phase: LessonPhase;
-  stepIndex: number;
-  totalSteps: number;
-  instruction: string;
-  hint?: string;
+  phase: ReviewPhase;
+  drillIndex: number;
+  totalDrills: number;
+  label: string;
   countdown: number;
-  stepScore: number;
+  liveScore: number;
   elapsed: number;
-  durationMs: number;
 };
 
-export default function LessonHUD({
+export default function ReviewHUD({
   phase,
-  stepIndex,
-  totalSteps,
-  instruction,
-  hint,
+  drillIndex,
+  totalDrills,
+  label,
   countdown,
-  stepScore,
+  liveScore,
   elapsed,
-  durationMs,
 }: Props) {
-  if (phase === 'preview') {
-    return (
-      <div className="lesson-hud lesson-hud--preview">
-        <p className="lesson-hud__listen">Listen to the target…</p>
-      </div>
-    );
-  }
-
   if (phase === 'countdown') {
     return (
       <div className="lesson-hud lesson-hud--countdown">
         <div className="lesson-countdown">{countdown === 0 ? 'Go!' : countdown}</div>
-        <p className="lesson-hud__instruction">{instruction}</p>
-        {hint && <p className="lesson-hud__hint">{hint}</p>}
+        <p className="lesson-hud__instruction">Play: {label}</p>
       </div>
     );
   }
 
   if (phase === 'attempt') {
-    const scorePct = Math.round(stepScore);
-    const timePct = Math.min((elapsed / durationMs) * 100, 100);
+    const scorePct = Math.round(liveScore);
+    const timePct = Math.min((elapsed / REVIEW_HOLD_MS) * 100, 100);
     const scoreColor = scorePct >= 70 ? '#22c55e' : scorePct >= 40 ? '#f59e0b' : '#ef4444';
 
     return (
       <div className="lesson-hud lesson-hud--attempt">
         <div className="lesson-hud__steps">
-          {Array.from({ length: totalSteps }, (_, i) => (
+          {Array.from({ length: totalDrills }, (_, i) => (
             <span
               key={i}
               className={
                 'lesson-hud__dot' +
-                (i === stepIndex ? ' is-active' : i < stepIndex ? ' is-done' : '')
+                (i === drillIndex ? ' is-active' : i < drillIndex ? ' is-done' : '')
               }
             />
           ))}
         </div>
-        <p className="lesson-hud__instruction">{instruction}</p>
+        <p className="lesson-hud__instruction">Play: {label}</p>
         <div className="lesson-hud__bars">
           <div className="lesson-hud__bar-row">
             <span className="lesson-hud__bar-label">score</span>

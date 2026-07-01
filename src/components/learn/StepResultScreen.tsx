@@ -39,8 +39,6 @@ export default function StepResultScreen({
   }, [result.score]);
 
   const passed = result.score >= minScore;
-  const noteScore = Math.min(result.score, 50);
-  const qualScore = Math.max(0, result.score - 50);
 
   return (
     <div className="step-result">
@@ -61,12 +59,14 @@ export default function StepResultScreen({
         <div className="step-result__breakdown">
           <div className="step-result__breakdown-row">
             <span>Note accuracy</span>
-            <span>{noteScore} / 50</span>
+            <span>{result.noteAccuracy}%</span>
           </div>
-          <div className="step-result__breakdown-row">
-            <span>Chord quality</span>
-            <span>{qualScore} / 50</span>
-          </div>
+          {result.scoresQuality && (
+            <div className="step-result__breakdown-row">
+              <span>Chord quality</span>
+              <span>{result.qualAccuracy}%</span>
+            </div>
+          )}
         </div>
 
         <div className="step-result__actions">
