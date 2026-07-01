@@ -103,47 +103,14 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
 
     async function startCamera() {
       const { HandLandmarker, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      if (cancelled) return;
 
-      const vision = await FilesetResolver.forVisionTasks(
+      // Kick off model loading and stream acquisition in parallel so the user
+      // sees their camera feed as soon as permission is granted instead of waiting
+      // for both MediaPipe models to download first.
+      const visionPromise = FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
       );
-
-      const landmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
-        numHands: 2,
-        // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
-        // held close to the camera) made it accept low-confidence/blurry hands:
-        // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
-        // registered as a fist, freezing the reported position at center
-        // ("stuck in the middle"). 0.5 restores stable tracking.
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-
-      const faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
-        numFaces: 1,
-        minFaceDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-
-      if (cancelled) { landmarker.close(); faceLandmarker.close(); return; }
-
-      const video = document.createElement('video');
-      video.playsInline = true;
-      video.muted = true;
-      videoRef.current = video;
 
       let stream: MediaStream;
       try {
@@ -153,13 +120,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       } catch {
         try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
         setMode('mouse');
-        landmarker.close();
-        faceLandmarker.close();
         return;
       }
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
 
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); landmarker.close(); faceLandmarker.close(); return; }
-
+      // Show camera feed immediately while models finish loading.
+      const video = document.createElement('video');
+      video.playsInline = true;
+      video.muted = true;
+      videoRef.current = video;
       video.srcObject = stream;
       video.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;transform:scaleX(-1);';
       document.body.appendChild(video);
@@ -167,8 +136,53 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       if (cancelled) {
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
+      const vision = await visionPromise;
+      if (cancelled) {
+        if (video.parentNode) video.parentNode.removeChild(video);
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+
+      // Load hand and face models in parallel rather than sequentially.
+      const [landmarker, faceLandmarker] = await Promise.all([
+        HandLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numHands: 2,
+          // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
+          // held close to the camera) made it accept low-confidence/blurry hands:
+          // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
+          // registered as a fist, freezing the reported position at center
+          // ("stuck in the middle"). 0.5 restores stable tracking.
+          minHandDetectionConfidence: 0.5,
+          minHandPresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        }),
+        FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath:
+              'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+            delegate: 'GPU',
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          minFaceDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        }),
+      ]);
+
+      if (cancelled) {
         landmarker.close();
         faceLandmarker.close();
+        if (video.parentNode) video.parentNode.removeChild(video);
+        stream.getTracks().forEach(t => t.stop());
         return;
       }
 
