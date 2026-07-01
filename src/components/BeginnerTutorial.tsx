@@ -33,17 +33,51 @@ interface Props {
   mode: InputMode;
 }
 
+/** Play a short two-note ascending ding using the Web Audio API. */
+function playSuccessSound() {
+  try {
+    const ac = new AudioContext();
+    const now = ac.currentTime;
+    // C5 then G5 — a pleasant perfect-fifth "done" sound
+    const notes: [number, number, number][] = [
+      [523, 0,    0.28],
+      [784, 0.14, 0.55],
+    ];
+    notes.forEach(([freq, start, stop]) => {
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + start);
+      gain.gain.linearRampToValueAtTime(0.3, now + start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + stop);
+      osc.start(now + start);
+      osc.stop(now + stop);
+    });
+    // Close context after last note finishes
+    setTimeout(() => { try { ac.close(); } catch { /* ignore */ } }, 700);
+  } catch { /* ignore — audio unavailable */ }
+}
+
 export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props) {
   const initialStep = mode === 'mouse' ? 1 : 0;
   const [step, setStep] = useState(initialStep);
   const [doneMessage, setDoneMessage] = useState(false);
   const [gone, setGone] = useState(false);
+  const [flashComplete, setFlashComplete] = useState(false);
   const visitedRef = useRef(new Set<number>());
+  // Prevents the interval from firing the advance logic more than once
+  // while the checkmark flash is playing.
+  const advancingRef = useRef(false);
 
   useEffect(() => {
     if (doneMessage || gone || step >= STEPS.length) return;
 
     const id = setInterval(() => {
+      if (advancingRef.current) return;
+
       const signals = signalRef.current;
       const { outerR, innerR, leftCx, rightCx, cy } = wheelGeometry(
         window.innerWidth,
@@ -73,14 +107,22 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
       }
 
       if (advance) {
-        const next = step + 1;
-        if (next >= STEPS.length) {
-          localStorage.setItem(TUTORIAL_KEY, 'true');
-          setDoneMessage(true);
-          setTimeout(() => setGone(true), 1500);
-        } else {
-          setStep(next);
-        }
+        advancingRef.current = true;
+        playSuccessSound();
+        setFlashComplete(true);
+
+        setTimeout(() => {
+          setFlashComplete(false);
+          const next = step + 1;
+          if (next >= STEPS.length) {
+            localStorage.setItem(TUTORIAL_KEY, 'true');
+            setDoneMessage(true);
+            setTimeout(() => setGone(true), 1500);
+          } else {
+            setStep(next);
+          }
+          advancingRef.current = false;
+        }, 800);
       }
     }, 100);
 
@@ -99,6 +141,16 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
       <div className="tutorial-overlay">
         <div className="tutorial-card">
           <h2 className="tutorial-headline">You're ready — have fun!</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (flashComplete) {
+    return (
+      <div className="tutorial-overlay">
+        <div className="tutorial-card tutorial-card--complete">
+          <span className="tutorial-checkmark">✓</span>
         </div>
       </div>
     );
