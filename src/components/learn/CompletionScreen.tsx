@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { Lesson, StepResult } from '../../engine/lessons/types';
+import ReviewBanner from './ReviewBanner';
 
 type Props = {
   lesson: Lesson;
@@ -52,6 +53,8 @@ export default function CompletionScreen({ lesson, stepResults, totalScore, onSa
             })}
           </tbody>
         </table>
+
+        <ReviewBanner />
 
         <div className="lesson-complete__actions">
           <button

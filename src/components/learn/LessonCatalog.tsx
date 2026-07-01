@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { CURRICULUM } from '../../engine/lessons/curriculum';
 import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
 import LessonCard from './LessonCard';
+import ReviewBanner from './ReviewBanner';
 
 export default function LessonCatalog() {
   const navigate = useNavigate();
@@ -18,6 +19,8 @@ export default function LessonCatalog() {
           <p className="learn-subtitle">Step-by-step lessons to build real musical intuition</p>
         </div>
       </header>
+
+      <ReviewBanner />
 
       <div className="lesson-grid">
         {CURRICULUM.map(lesson => (

@@ -27,6 +27,9 @@ export type StepResult = {
   score: number;
   passed: boolean;
   attemptMs: number;
+  noteAccuracy: number;
+  qualAccuracy: number;
+  scoresQuality: boolean;
 };
 
 export type LessonResult = {
@@ -40,6 +43,25 @@ export type LessonProgress = {
   bestScore: number;
   completedAt: number | null;
   attempts: number;
+};
+
+// A single reviewable chord, deduped out of the curriculum's target recordings.
+export type Drill = {
+  id: string; // `${keyOffset}:${scale}:${noteIdx}:${qualIdx}`
+  noteIdx: number;
+  qualIdx: number;
+  musicConfig: MusicConfig;
+  label: string;                 // e.g. "G7" — from diatonicChord(...).label
+  introducedByLessonId: string;  // first lesson (curriculum order) that teaches it
+};
+
+// Leitner-box spaced-repetition state for one drill, one user.
+export type DrillProgress = {
+  box: number;
+  dueAt: number;
+  reviewCount: number;
+  lastResult: boolean;
+  lastReviewedAt: number;
 };
 
 export type LessonPhase =

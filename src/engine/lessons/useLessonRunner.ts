@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal } from '../types';
 import type { DialSelection } from '../renderer';
 import { sampleEndTimes, sampleIndexAt, signalsAt } from '../recording/replayPlayer';
-import { scoreFrame, meanScore } from './scorer';
+import { scoreFrame, accuracy, combinedScore } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
 import type { AudioEngine } from '../audio';
 import { buildCommand } from '../music';
@@ -38,7 +38,8 @@ export function useLessonRunner(
   const [stepResults, setStepResults] = useState<StepResult[]>([]);
   const phaseRef = useRef<LessonPhase>('idle');
   const stepIndexRef = useRef(0);
-  const frameScoresRef = useRef<number[]>([]);
+  const noteHitsRef = useRef<boolean[]>([]);
+  const qualHitsRef = useRef<boolean[]>([]);
   const attemptStartRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -110,7 +111,8 @@ export function useLessonRunner(
     setPhase('preview');
     setCountdown(COUNTDOWN_SECS);
     setStepScore(0);
-    frameScoresRef.current = [];
+    noteHitsRef.current = [];
+    qualHitsRef.current = [];
 
     const step = lesson.steps[stepIdx];
     const previewStart = performance.now();
@@ -149,33 +151,27 @@ export function useLessonRunner(
   }, [lesson, canvasRef, clearTimers]);
 
   // ── Attempt phase ──────────────────────────────────────────────────────────
+  // No ghost, no hint — this is the graded window, so it has to test recall,
+  // not tracing a moving target.
   const startAttempt = useCallback((stepIdx: number) => {
     clearTimers();
     setPhase('attempt');
-    frameScoresRef.current = [];
+    noteHitsRef.current = [];
+    qualHitsRef.current = [];
+    ghostSignalsRef.current = [];
 
     const step = lesson.steps[stepIdx];
-    const ends = sampleEndTimes(step.targetRecording);
     const attemptStart = performance.now();
     attemptStartRef.current = attemptStart;
 
-    startGhostLoop(stepIdx, attemptStart);
+    // For fist-solo lessons only the note (left hand) is under the user's
+    // control — the chord quality is locked by the fist, so it isn't scored.
+    const isFistLesson = lesson.id === 'fist-solo';
 
     // Score each frame
     timerRef.current = setInterval(() => {
       const elapsed = performance.now() - attemptStart;
-      const canvas = canvasRef.current;
-      const w = canvas?.width ?? window.innerWidth;
-      const h = canvas?.height ?? window.innerHeight;
 
-      const targetSignals = signalsAt(step.targetRecording, ends, elapsed, w, h);
-      const targetLeft = targetSignals.find(s => s.handId === 'left');
-      const targetRight = targetSignals.find(s => s.handId === 'right');
-
-      // Derive target noteIdx / qualIdx from targetSignals position on the wheels
-      // We stored these via sliceToPoint so we can recover them by reading ghostSignalsRef
-      // positions through the same geometry. Simpler: store them directly in RecordingSample.
-      // Since signalsAt is designed for rendering (not scoring), we re-derive from the sample.
       const sampleIdx = Math.min(
         Math.floor(elapsed / SCORE_INTERVAL_MS),
         step.targetRecording.samples.length - 1,
@@ -183,37 +179,29 @@ export function useLessonRunner(
       const targetSample = step.targetRecording.samples[Math.max(0, sampleIdx)];
       const live = liveSelectedRef.current ?? { noteIdx: 0, qualIdx: 0 };
 
-      // For fist-solo lessons only check noteIdx (right hand is locked)
-      const isFistLesson = lesson.id === 'fist-solo';
-      let frame: number;
-      if (isFistLesson) {
-        frame = targetSample.noteIdx === live.noteIdx ? 100 : 0;
-      } else {
-        frame = scoreFrame(targetSample.noteIdx, targetSample.qualityIdx, live.noteIdx, live.qualIdx);
-      }
-      frameScoresRef.current.push(frame);
+      const { noteHit, qualHit } = scoreFrame(targetSample.noteIdx, targetSample.qualityIdx, live.noteIdx, live.qualIdx);
+      noteHitsRef.current.push(noteHit);
+      qualHitsRef.current.push(isFistLesson ? noteHit : qualHit);
 
-      const runningMean = meanScore(frameScoresRef.current);
-      setStepScore(runningMean);
-
-      // Ghost needs targetLeft / targetRight to be valid — if both exist, we're scoring.
-      // Just update ghost visuals (already handled by startGhostLoop).
-      void targetLeft; void targetRight;
+      setStepScore(combinedScore(accuracy(noteHitsRef.current), accuracy(qualHitsRef.current)));
 
       if (elapsed >= step.durationMs) {
         finishAttempt(stepIdx, step.durationMs);
       }
     }, SCORE_INTERVAL_MS);
-  }, [lesson, liveSelectedRef, canvasRef, clearTimers, startGhostLoop]);
+  }, [lesson, liveSelectedRef, ghostSignalsRef, clearTimers]);
 
   // ── Finish attempt ─────────────────────────────────────────────────────────
   const finishAttempt = useCallback((stepIdx: number, attemptMs: number) => {
     clearTimers();
     const step = lesson.steps[stepIdx];
-    const score = meanScore(frameScoresRef.current);
+    const noteAccuracy = accuracy(noteHitsRef.current);
+    const qualAccuracy = accuracy(qualHitsRef.current);
+    const score = combinedScore(noteAccuracy, qualAccuracy);
     const passed = score >= step.minScore;
+    const scoresQuality = lesson.id !== 'fist-solo';
 
-    const result: StepResult = { stepId: step.id, score, passed, attemptMs };
+    const result: StepResult = { stepId: step.id, score, passed, attemptMs, noteAccuracy, qualAccuracy, scoresQuality };
     setStepResults(prev => {
       const next = [...prev];
       next[stepIdx] = result;

@@ -1,16 +1,24 @@
-// Frame-by-frame scoring: 50 pts for note match + 50 pts for quality match.
-// Rewards sustaining the correct chord, not just touching it.
+// Frame-by-frame scoring: separate note-match and quality-match hits, so
+// accuracy can be reported (and reasoned about) independently for each.
+export type FrameHit = { noteHit: boolean; qualHit: boolean };
+
 export function scoreFrame(
   targetNoteIdx: number,
   targetQualIdx: number,
   liveNoteIdx: number,
   liveQualIdx: number,
-): number {
-  return (targetNoteIdx === liveNoteIdx ? 50 : 0) +
-         (targetQualIdx === liveQualIdx ? 50 : 0);
+): FrameHit {
+  return {
+    noteHit: targetNoteIdx === liveNoteIdx,
+    qualHit: targetQualIdx === liveQualIdx,
+  };
 }
 
-export function meanScore(frames: number[]): number {
-  if (frames.length === 0) return 0;
-  return Math.round(frames.reduce((s, v) => s + v, 0) / frames.length);
+export function accuracy(hits: boolean[]): number {
+  if (hits.length === 0) return 0;
+  return Math.round((hits.filter(Boolean).length / hits.length) * 100);
+}
+
+export function combinedScore(noteAccuracy: number, qualAccuracy: number): number {
+  return Math.round((noteAccuracy + qualAccuracy) / 2);
 }
