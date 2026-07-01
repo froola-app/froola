@@ -87,19 +87,22 @@ export function useCoordinator(
     // Melody lead note currently sounding while the loop plays (-1 = none).
     let melodyNote = -1;
 
-    // Space = sustain pedal. Ignore it while a form control / button is focused
-    // so it still activates them (and doesn't scroll the page).
-    const isTypingTarget = (t: EventTarget | null) =>
+    // Space = sustain pedal. It must not hijack Space inside a text field or a
+    // select (those use it natively), but over a focused *button* it blurs the
+    // button and takes Space for the pedal — otherwise clicking a HUD control
+    // (play, +chord, octave…) would swallow the pedal until you clicked away.
+    // Buttons stay Enter-activatable.
+    const editableTarget = (t: EventTarget | null) =>
       t instanceof HTMLElement &&
-      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
-        t.tagName === 'BUTTON' || t.isContentEditable);
+      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || e.repeat || isTypingTarget(e.target)) return;
+      if (e.code !== 'Space' || e.repeat || editableTarget(e.target)) return;
+      if (e.target instanceof HTMLElement && e.target.tagName === 'BUTTON') e.target.blur();
       e.preventDefault();
       spaceHeld = true;
     };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || isTypingTarget(e.target)) return;
+      if (e.code !== 'Space' || editableTarget(e.target)) return;
       spaceHeld = false;
     };
     window.addEventListener('keydown', onKeyDown);
