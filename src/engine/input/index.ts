@@ -224,8 +224,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
 
       const FACE_INTERVAL = 100;
       let lastFaceInferenceTime = 0;
-      let nodSmoothedY = 0.5;
-      let nodPrevY = 0.5;
+      // -1 = not yet seeded; seeded from actual nose position on first detection
+      // to avoid a false NODDING_UP transition from converging away from 0.5.
+      let nodSmoothedY = -1;
+      let nodPrevY = -1;
       let nodState: 'IDLE' | 'NODDING_DOWN' | 'NODDING_UP' = 'IDLE';
       let nodDebounceUntil = 0;
       const NOD_DOWN_THRESHOLD = 0.007;
@@ -308,22 +310,30 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
 
             if (faceResult.faceLandmarks.length > 0) {
               const noseTip = faceResult.faceLandmarks[0][1];
-              nodSmoothedY = FACE_SMOOTH * noseTip.y + (1 - FACE_SMOOTH) * nodSmoothedY;
-              const dy = nodSmoothedY - nodPrevY;
-              nodPrevY = nodSmoothedY;
+              if (nodSmoothedY < 0) {
+                // Seed EMA at actual nose position on first detection — same
+                // pattern as the hand EMA — so dy starts near zero instead of
+                // jumping from the 0.5 placeholder and false-triggering NODDING_UP.
+                nodSmoothedY = noseTip.y;
+                nodPrevY = noseTip.y;
+              } else {
+                nodSmoothedY = FACE_SMOOTH * noseTip.y + (1 - FACE_SMOOTH) * nodSmoothedY;
+                const dy = nodSmoothedY - nodPrevY;
+                nodPrevY = nodSmoothedY;
 
-              if (now > nodDebounceUntil) {
-                if (nodState === 'IDLE') {
-                  if (dy > NOD_DOWN_THRESHOLD) nodState = 'NODDING_DOWN';
-                  else if (dy < NOD_UP_THRESHOLD) nodState = 'NODDING_UP';
-                } else if (nodState === 'NODDING_DOWN' && dy < 0) {
-                  nodEventRef.current = 'down';
-                  nodState = 'IDLE';
-                  nodDebounceUntil = now + 750;
-                } else if (nodState === 'NODDING_UP' && dy > 0) {
-                  nodEventRef.current = 'up';
-                  nodState = 'IDLE';
-                  nodDebounceUntil = now + 750;
+                if (now > nodDebounceUntil) {
+                  if (nodState === 'IDLE') {
+                    if (dy > NOD_DOWN_THRESHOLD) nodState = 'NODDING_DOWN';
+                    else if (dy < NOD_UP_THRESHOLD) nodState = 'NODDING_UP';
+                  } else if (nodState === 'NODDING_DOWN' && dy < 0) {
+                    nodEventRef.current = 'down';
+                    nodState = 'IDLE';
+                    nodDebounceUntil = now + 750;
+                  } else if (nodState === 'NODDING_UP' && dy > 0) {
+                    nodEventRef.current = 'up';
+                    nodState = 'IDLE';
+                    nodDebounceUntil = now + 750;
+                  }
                 }
               }
             }
