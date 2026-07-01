@@ -9,7 +9,7 @@ type SampleNode = { stop(when?: number): void }
 // soundgo's chord pad = 4 triangle oscillators → gain → lowpass(1800Hz) → out,
 // with notes gliding over 0.12s and gentle gains. We mirror that chain here so
 // Froola's synth voice has the same warm, rounded, slightly muffled character.
-const VOICES = 4                 // soundgo pads every chord to 4 voices
+const VOICES = 5                 // soundgo used 4; we use 5 so a 9th chord's top note isn't dropped
 const SYNTH_LOWPASS_HZ = 1800    // soundgo chordFilter cutoff
 const CHORD_GLIDE = 0.12         // soundgo o.frequency.rampTo(freq, 0.12)
 const CHORD_GAIN_RAMP = 0.06     // soundgo chordGain.gain.rampTo(_, 0.06)
@@ -18,8 +18,8 @@ const SYNTH_VOICE_GAIN = SYNTH_TOTAL_GAIN / VOICES
 
 // Subtle per-voice detune (cents) + stereo spread give the pad analog warmth and
 // width instead of a flat, dead-center, perfectly-tuned image.
-const VOICE_DETUNE = [-7, 7, -4, 4]
-const VOICE_PAN = [-0.6, 0.6, -0.25, 0.25]
+const VOICE_DETUNE = [-7, 7, -4, 4, 0]
+const VOICE_PAN = [-0.6, 0.6, -0.25, 0.25, 0]
 
 // A short, soft room reverb mixed in lightly for a sense of space (soundgo is dry).
 const REVERB_SECONDS = 1.8
@@ -135,10 +135,17 @@ export class AudioEngine {
     return buffer
   }
 
-  // soundgo pads a 3-note triad to 4 voices by adding the root an octave up.
+  // Always return exactly VOICES notes so every oscillator is driven each chord
+  // (an undriven oscillator would keep sounding the previous chord's note). Short
+  // chords are padded by octave-doubling from the bottom — soundgo padded a triad
+  // to 4 voices the same way, by adding the root an octave up.
   private voicingFor(cmd: MusicalCommand): number[] {
-    if (cmd.voicing.length >= VOICES) return cmd.voicing.slice(0, VOICES)
-    return [...cmd.voicing, cmd.voicing[0] + 12]
+    const len = cmd.voicing.length
+    const out = cmd.voicing.slice(0, VOICES)
+    for (let i = len; i < VOICES; i++) {
+      out.push(cmd.voicing[i % len] + 12 * Math.floor(i / len))
+    }
+    return out
   }
 
   startLoadingSampler(mode: 'piano'): void {
