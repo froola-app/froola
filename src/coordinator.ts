@@ -37,6 +37,13 @@ export function useCoordinator(
   const signalRef = externalSignalRef ?? input.signalRef;
   const { mode, requestCamera, useMouse, cameraVideoRef, nodEventRef } = input;
 
+  // Pointer modes (mouse/touch) have a single pointer that can't hold the
+  // extension wheel while playing the note wheel, so the chosen extension has
+  // to stick. Camera mode keeps the two-hand behaviour (lift the right hand →
+  // triad). A ref because the hot-path rAF loop below reads it without re-running.
+  const stickyExtensionRef = useRef(mode === 'mouse');
+  useEffect(() => { stickyExtensionRef.current = mode === 'mouse'; }, [mode]);
+
   // Create AudioEngine once; resume on first user pointer event
   useEffect(() => {
     const engine = new AudioEngine();
@@ -145,9 +152,11 @@ export function useCoordinator(
       }
 
       // Left hand on its wheel = chord plays. Right hand on its wheel modifies
-      // the chord quality; if absent, a plain triad (qualIdx 0) is used.
+      // the chord quality. If the right hand is absent, camera mode falls back
+      // to a plain triad (qualIdx 0); pointer modes keep the last-dialled
+      // extension (stickyExtension) since there's no second hand to hold it.
       const touching = leftInDial;
-      const effectiveQualIdx = rightInDial ? qualIdx : 0;
+      const effectiveQualIdx = (rightInDial || stickyExtensionRef.current) ? qualIdx : 0;
       const nowMs = performance.now();
       if (touching) lastTouchMs = nowMs;
       // A brief loss of contact (crossing the centre hub between slices, a dropped
@@ -195,6 +204,7 @@ export function useCoordinator(
     undefined,
     musicRef,
     ghostSignalsRef,
+    stickyExtensionRef,
   );
 
   function preloadSampler(m: InstrumentMode) {

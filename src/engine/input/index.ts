@@ -6,6 +6,15 @@ export type InputMode = 'asking' | 'camera' | 'mouse';
 
 const INPUT_MODE_KEY = 'froola-input-mode';
 
+// A single mouse pointer can only be on one wheel at a time, so we label it by
+// which half of the screen it's in: the left wheel sits near the left edge and
+// the right (extension) wheel near the right edge, so a mid-screen split lets
+// the cursor drive either wheel. Without this the pointer is always 'left' and
+// the extension wheel is unreachable (mouse users are stuck on plain triads).
+export function pointerHandId(xNorm: number): 'left' | 'right' {
+  return xNorm < 0.5 ? 'left' : 'right';
+}
+
 function savedMode(): InputMode | null {
   try {
     const v = localStorage.getItem(INPUT_MODE_KEY);
@@ -46,11 +55,12 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
 
     function onMove(e: MouseEvent) {
+      const x = e.clientX / window.innerWidth;
       signalRef.current = [{
-        x: e.clientX / window.innerWidth,
+        x,
         y: e.clientY / window.innerHeight,
         present: true,
-        handId: 'left',
+        handId: pointerHandId(x),
       }];
     }
 
