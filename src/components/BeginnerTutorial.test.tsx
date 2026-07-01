@@ -60,8 +60,18 @@ describe('BeginnerTutorial', () => {
     );
     expect(screen.getByText('Hold your hands up')).toBeDefined();
 
+    // Trigger detection: the 100ms interval fires and sees a hand signal.
     signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
+
+    // Advance to t=150ms so the 100ms interval fires and sees the hand.
+    // This registers a 800ms flash-timeout (fires at t=900ms) and sets flashComplete.
     await act(async () => { vi.advanceTimersByTime(150); });
+    expect(screen.getByText('✓')).toBeDefined();
+
+    // Advance to t=910ms: fires the 800ms timeout (t=900ms) but stops before
+    // the next interval tick (t=1000ms) so the stale-closure can't re-detect.
+    // act() flushes React updates so the new step renders before we assert.
+    await act(async () => { vi.advanceTimersByTime(760); });
 
     expect(screen.getByText('Touch the left circle')).toBeDefined();
   });
