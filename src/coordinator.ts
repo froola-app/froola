@@ -33,6 +33,7 @@ export function useCoordinator(
   // When true, the chord looper drives the chord pad; the hand solos a melody
   // lead instead of triggering chords.
   loopPlayingRef?: RefObject<boolean>,
+  guardrailRef?: RefObject<boolean>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -239,6 +240,7 @@ export function useCoordinator(
     musicRef,
     ghostSignalsRef,
     stickyExtensionRef,
+    guardrailRef,
   );
 
   function preloadSampler(m: InstrumentMode) {

@@ -319,6 +319,24 @@ body {
   cursor: default;
 }
 
+.guardrail-toggle {
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(17, 17, 17, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.4rem 1.1rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.guardrail-toggle:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
 /* chord looper — frosted panel sitting above the bottom HUD row */
 .loop-panel {
   position: fixed;

@@ -29,13 +29,17 @@ export default function LearnShell() {
   // Owned here — shared between coordinator (renderer reads it) and lesson runner (writes it)
   const ghostSignalsRef = useRef<GestureSignal[]>([]);
 
+  const guardrailRef = useRef<boolean>(
+    (() => { try { return localStorage.getItem('froola.guardrail') !== 'false'; } catch { return true; } })()
+  );
+
   const {
     mode,
     requestCamera,
     useMouse,
     selectedRef,
     engineRef,
-  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, undefined, ghostSignalsRef);
+  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, undefined, ghostSignalsRef, undefined, undefined, guardrailRef);
 
   const runner = lesson
     // eslint-disable-next-line react-hooks/rules-of-hooks
