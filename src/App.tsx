@@ -1,7 +1,6 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './components/LandingPage';
-import PlayShell from './components/PlayShell';
 import ReplayShell from './components/ReplayShell';
 import SignInPage from './components/SignInPage';
 import OnboardingFlow from './components/onboarding/OnboardingFlow';
@@ -20,7 +19,6 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/play" element={<PlayShell />} />
         <Route path="/replay" element={<ReplayShell />} />
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
@@ -53,7 +51,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/play" element={<PlayShell />} />
       <Route path="/replay" element={<ReplayShell />} />
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />

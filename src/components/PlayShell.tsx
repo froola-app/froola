@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
@@ -58,12 +58,8 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
   );
 }
 
-export default function PlayShell({ initialInput: inputProp }: { initialInput?: InputMode } = {}) {
-  const location = useLocation();
+export default function PlayShell({ initialInput = 'asking' }: { initialInput?: InputMode } = {}) {
   const navigate = useNavigate();
-  // Input mode comes from the landing page — either passed directly as a prop
-  // (rendered inline) or via router state. Fall back to the prompt otherwise.
-  const initialInput = inputProp ?? ((location.state as { input?: InputMode } | null)?.input) ?? 'asking';
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
