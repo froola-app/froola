@@ -229,7 +229,7 @@ export function useCoordinator(
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [signalRef, modeRef, octaveRef]);
+  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, nodEventRef, onVolumeChange]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,
