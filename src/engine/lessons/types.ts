@@ -3,6 +3,14 @@ import type { MusicConfig } from '../music/keyScale';
 
 export type LessonDifficulty = 'beginner' | 'intermediate' | 'advanced';
 
+// 'technique' = abstract drill teaching a mechanic; 'song' = a real song's
+// chord progression, played over a synthesized backing track.
+export type LessonKind = 'technique' | 'song';
+
+// Groove preset for the synthesized backing track — picks the drum/bass
+// pattern so each song's accompaniment resembles the original's feel.
+export type BackingStyle = 'ballad' | 'pop' | 'rock' | 'soul' | 'doowop';
+
 export type LessonStep = {
   id: string;
   instruction: string;
@@ -16,10 +24,19 @@ export type Lesson = {
   id: string;
   title: string;
   subtitle: string;
+  kind: LessonKind;
   difficulty: LessonDifficulty;
   musicConfig: MusicConfig;
   steps: LessonStep[];
   tags: string[];
+  /** Song lessons only — credited artist, shown in the catalog. */
+  artist?: string;
+  /** Song lessons only — drives the backing track and chord pacing. */
+  bpm?: number;
+  /** Song lessons only — display chips for the loop, e.g. ['C','G','Am','F']. */
+  progression?: string[];
+  /** Song lessons only — backing-track groove preset (default 'pop'). */
+  backing?: BackingStyle;
 };
 
 export type StepResult = {
