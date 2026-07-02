@@ -117,7 +117,7 @@ export function useLessonRunner(
     if (!lesson.bpm || !engine) return;
     backingRef.current ??= engine.createBackingTrack();
     const step = lesson.steps[stepIdx];
-    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm);
+    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing);
   }, [lesson, engineRef]);
 
   // ── Preview phase ──────────────────────────────────────────────────────────

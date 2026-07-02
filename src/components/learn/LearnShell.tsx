@@ -63,13 +63,17 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
   // Owned here — shared between coordinator (renderer reads it) and lesson runner (writes it)
   const ghostSignalsRef = useRef<GestureSignal[]>([]);
 
+  // Re-tune the live wheel + audio to the lesson's key/scale, so what the user
+  // sees/hears matches the preview and the scored targets (e.g. A major songs).
+  const musicRef = useRef<MusicConfig>(lesson.musicConfig);
+
   const {
     mode,
     requestCamera,
     useMouse,
     selectedRef,
     engineRef,
-  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, undefined, ghostSignalsRef);
+  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef);
 
   const runner = useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef);
 
