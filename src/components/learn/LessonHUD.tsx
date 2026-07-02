@@ -17,6 +17,8 @@ type Props = {
   chordNext?: string;
   /** Whether a chord is currently fist-locked / space-held. */
   sustained?: boolean;
+  /** Warmup phase only: called when the user is ready to start the countdown. */
+  onReady?: () => void;
 };
 
 export default function LessonHUD({
@@ -33,6 +35,7 @@ export default function LessonHUD({
   chordNow,
   chordNext,
   sustained,
+  onReady,
 }: Props) {
   if (phase === 'preview') {
     return (
@@ -40,6 +43,19 @@ export default function LessonHUD({
         <p className="lesson-hud__preview-eyebrow">Watch &amp; listen</p>
         <p className="lesson-hud__listen">Here&apos;s what you&apos;re about to play</p>
         <p className="lesson-hud__preview-hint">Follow the glowing hands — your turn is next</p>
+      </div>
+    );
+  }
+
+  if (phase === 'warmup') {
+    return (
+      <div className="lesson-hud lesson-hud--warmup">
+        <p className="lesson-hud__preview-eyebrow">Find it first</p>
+        <p className="lesson-hud__listen">Try landing on the glowing target — no timer, no pressure</p>
+        {hint && <p className="lesson-hud__hint">{hint}</p>}
+        <button className="lesson-hud__ready-btn" onClick={onReady}>
+          I&apos;ve got it →
+        </button>
       </div>
     );
   }

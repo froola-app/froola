@@ -18,6 +18,8 @@ export type LessonRunnerAPI = {
   totalScore: number;
   start: () => void;
   retry: () => void;
+  /** Leaves the 'warmup' phase and starts the countdown. */
+  beginCountdown: () => void;
   next: () => void;
   exit: () => void;
 };
@@ -211,6 +213,24 @@ export function useLessonRunner(
     }, 1000);
   }, [lesson, canvasRef, ghostSignalsRef, clearTimers, startAttempt]);
 
+  // ── Warm-up phase ──────────────────────────────────────────────────────────
+  // Self-paced, no timer, no scoring — freezes the ghost at the target slice
+  // and waits for the user to say they're ready (beginCountdown, in the
+  // public API below). Only used before the very first step a brand-new
+  // user ever attempts (see startPreview) — total beginners land here
+  // straight from "hold C major for 3 seconds" with no chance to find the
+  // chord first.
+  const startWarmup = useCallback((stepIdx: number) => {
+    clearTimers();
+    setPhase('warmup');
+    const step = lesson.steps[stepIdx];
+    const ends = sampleEndTimes(step.targetRecording);
+    const canvas = canvasRef.current;
+    const w = canvas?.width ?? window.innerWidth;
+    const h = canvas?.height ?? window.innerHeight;
+    ghostSignalsRef.current = signalsAt(step.targetRecording, ends, 0, w, h);
+  }, [lesson, canvasRef, ghostSignalsRef, clearTimers]);
+
   // ── Preview phase ──────────────────────────────────────────────────────────
   const startPreview = useCallback((stepIdx: number) => {
     clearTimers();
@@ -226,11 +246,14 @@ export function useLessonRunner(
     startPreviewAudio(stepIdx, previewStart);
     startBacking(stepIdx);
 
-    // After the target recording finishes, move to countdown
+    // After the target recording finishes, move to warm-up (first-timers'
+    // very first step) or straight to countdown (everyone else).
+    const isFirstEverStep = lesson.id === 'first-chord' && stepIdx === 0;
     timerRef.current = setTimeout(() => {
-      startCountdown(stepIdx);
+      if (isFirstEverStep) startWarmup(stepIdx);
+      else startCountdown(stepIdx);
     }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
-  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking, startCountdown]);
+  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking, startCountdown, startWarmup]);
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -243,6 +266,11 @@ export function useLessonRunner(
   const retry = useCallback(() => {
     startPreview(stepIndexRef.current);
   }, [startPreview]);
+
+  // Leaves the warmup phase once the user says they're ready.
+  const beginCountdown = useCallback(() => {
+    startCountdown(stepIndexRef.current);
+  }, [startCountdown]);
 
   const next = useCallback(() => {
     const nextIdx = stepIndexRef.current + 1;
@@ -279,6 +307,7 @@ export function useLessonRunner(
     totalScore,
     start,
     retry,
+    beginCountdown,
     next,
     exit,
   };
