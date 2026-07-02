@@ -6,6 +6,9 @@ export type GestureSignal = {
   present: boolean; // is a hand/cursor actively tracked?
   handId: 'left' | 'right';
   fist?: boolean;   // true while hand is making a fist (chord lock)
+  // Camera mode only: is the palm oriented toward the camera, and if not, how
+  // is it off — rotated sideways ('turned') or fingers toward camera ('pitched')?
+  facing?: 'ok' | 'turned' | 'pitched';
 };
 
 export type NoteName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
