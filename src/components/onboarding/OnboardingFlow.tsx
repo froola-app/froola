@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserType } from '../../contexts/AuthContext';
@@ -11,11 +11,22 @@ type Step = 'user-type' | 'learning-curve' | 'pricing';
 
 const ORDER: Step[] = ['user-type', 'learning-curve', 'pricing'];
 
+// Minimum time a step stays on screen before its buttons/cards respond —
+// otherwise nothing stops someone from clicking through all 3 steps (and
+// the pricing comparison) without reading any of it.
+const STEP_COOLDOWN_MS = 1400;
+
 export default function OnboardingFlow() {
   const [step, setStep] = useState<Step>('user-type');
   const [selectedType, setSelectedType] = useState<UserType>(null);
   const { completeOnboarding } = useAuth();
   const navigate = useNavigate();
+
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), STEP_COOLDOWN_MS);
+    return () => { clearTimeout(t); setReady(false); };
+  }, [step]);
 
   async function handleUserTypeSelect(type: UserType) {
     setSelectedType(type);
@@ -50,7 +61,7 @@ export default function OnboardingFlow() {
         </div>
       </header>
 
-      <main className="onboarding-main">
+      <main className={'onboarding-main' + (ready ? '' : ' is-cooling-down')}>
         {step === 'user-type' && (
           <UserTypeStep onSelect={handleUserTypeSelect} />
         )}
