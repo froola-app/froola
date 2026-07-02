@@ -58,6 +58,16 @@ describe('ChordLooper — slot editing', () => {
     expect(h.looper.length).toBe(0)
   })
 
+  it('clear also resets bpm to the default', () => {
+    const h = harness()
+    h.looper.add(cmd('C'))
+    h.looper.setBpm(160)
+    expect(h.looper.getBpm()).toBe(160)
+    h.looper.clear()
+    expect(h.looper.getBpm()).toBe(DEFAULT_BPM)
+    expect(h.state?.bpm).toBe(DEFAULT_BPM)
+  })
+
   it('notifies onChange for edits', () => {
     const h = harness()
     h.looper.add(cmd('C'))
