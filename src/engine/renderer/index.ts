@@ -46,7 +46,12 @@ function drawWheel(
   active: boolean,
   getActiveColor: (i: number) => string,
   centerLabel: string,
-  bgColor: string
+  bgColor: string,
+  // Lesson ghost target on this wheel, if any — highlighted like a selected
+  // slice (in the ghost's own tint) so its label reads as "the orb is here,
+  // and here's its name" instead of a dashed ring floating with no label.
+  ghostIdx?: number,
+  ghostColor?: string,
 ) {
   const n = labels.length;
   const innerR = outerR * 0.36;
@@ -63,6 +68,7 @@ function drawWheel(
     const a0 = ((i - 0.5) / n) * Math.PI * 2 - Math.PI / 2;
     const a1 = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
     const isSelected = i === selectedIdx;
+    const isGhost = i === ghostIdx && !(isSelected && active);
 
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -70,7 +76,9 @@ function drawWheel(
     ctx.closePath();
     ctx.fillStyle = isSelected && active
       ? getActiveColor(i)
-      : `rgba(255,255,255,${active ? 0.06 : 0.03})`;
+      : isGhost && ghostColor
+        ? ghostColor
+        : `rgba(255,255,255,${active ? 0.06 : 0.03})`;
     if (isSelected && active) {
       ctx.shadowBlur = 18;
       ctx.shadowColor = getActiveColor(i);
@@ -81,9 +89,9 @@ function drawWheel(
     // Label
     const midA = (a0 + a1) / 2;
     const lr = outerR * 0.71;
-    ctx.font = (isSelected && active ? 'bold ' : '') +
-      Math.round((isSelected && active ? 15 : 12) * s) + 'px monospace';
-    ctx.fillStyle = isSelected && active ? '#fff' : `rgba(255,255,255,${active ? 0.45 : 0.2})`;
+    const emphasize = (isSelected && active) || isGhost;
+    ctx.font = (emphasize ? 'bold ' : '') + Math.round((emphasize ? 15 : 12) * s) + 'px monospace';
+    ctx.fillStyle = isSelected && active ? '#fff' : isGhost ? '#fff' : `rgba(255,255,255,${active ? 0.45 : 0.2})`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(labels[i], cx + Math.cos(midA) * lr, cy + Math.sin(midA) * lr);
@@ -291,6 +299,13 @@ export function useRenderer(
       const noteLabels = scaleNotes(music.keyOffset, music.scale).map(n => n.label);
       const chordName = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale).label;
 
+      // Ghost orb target slices — read before drawing the wheels so each one
+      // can highlight its own ghost's slice, connecting the dashed ring to
+      // the label sitting under it instead of leaving the orb unlabeled.
+      const ghostSignals = ghostSignalsRef?.current ?? [];
+      const leftGhost = ghostSignals.find(gs => gs.present && gs.handId === 'left');
+      const rightGhost = ghostSignals.find(gs => gs.present && gs.handId === 'right');
+
       // Left wheel — chord root (its major/minor quality comes from the scale)
       const leftCenterLabel = (bothActive || leftInDial) ? chordName : 'NOTE';
       drawWheel(
@@ -298,7 +313,9 @@ export function useRenderer(
         noteLabels, noteIdx, leftInDial,
         () => 'rgba(245,158,11,0.60)',
         leftCenterLabel,
-        bgColor
+        bgColor,
+        leftGhost?.sliceIdx,
+        'rgba(180,220,255,0.55)',
       );
 
       // Right wheel — chord extension (triad / 7th / sus / …)
@@ -308,14 +325,15 @@ export function useRenderer(
         qualIdx, rightInDial,
         (i) => extensionColor(i, EXTENSIONS.length, 0.60),
         rightInDial ? EXTENSIONS[qualIdx].label : 'CHORD',
-        bgColor
+        bgColor,
+        rightGhost?.sliceIdx,
+        'rgba(255,220,140,0.55)',
       );
 
       // Publish slice selection so the coordinator can drive audio
       selectedRef.current = { noteIdx, qualIdx };
 
       // Ghost orbs (lesson target) drawn first so live hands appear on top
-      const ghostSignals = ghostSignalsRef?.current ?? [];
       for (const gs of ghostSignals) {
         if (!gs.present) continue;
         drawOrb(ctx, gs, w, h, 0, true);

@@ -54,7 +54,7 @@ export function signalsAt(
   const right = sliceToPoint(sample.qualityIdx, QUALITIES.length, rightCx, cy, outerR, w, h);
 
   return [
-    { x: left.x, y: left.y, present: true, handId: 'left' },
-    { x: right.x, y: right.y, present: true, handId: 'right' },
+    { x: left.x, y: left.y, present: true, handId: 'left', sliceIdx: sample.noteIdx },
+    { x: right.x, y: right.y, present: true, handId: 'right', sliceIdx: sample.qualityIdx },
   ];
 }
