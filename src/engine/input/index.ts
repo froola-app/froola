@@ -209,6 +209,17 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
       };
 
+      // Compare z-spread to xy-spread across the knuckle line (index MCP → pinky MCP).
+      // When palm faces camera, xySpan is large and zSpan near zero; as the hand
+      // tilts sideways zSpan grows while xySpan shrinks, so their ratio is
+      // scale-independent. Threshold 0.45 ≈ tan(24°) → guardrail shows past ~24° tilt.
+      function isFacingCamera(lm: { x: number; y: number; z: number }[]): boolean {
+        const xySpan = Math.hypot(lm[17].x - lm[5].x, lm[17].y - lm[5].y);
+        if (xySpan < 0.01) return true; // hand too small/close to judge
+        const zSpan = Math.abs(lm[17].z - lm[5].z);
+        return zSpan / xySpan < 0.22;
+      }
+
       function isFist(lm: { x: number; y: number; z: number }[]): boolean {
         const wrist = lm[0];
         const tipIdx = [8, 12, 16, 20];
@@ -305,6 +316,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
                 present: true,
                 handId,
                 fist,
+                facingCamera: isFacingCamera(lm),
               });
             }
             signalRef.current = signals;
