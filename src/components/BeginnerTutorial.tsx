@@ -127,7 +127,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
     }, 100);
 
     return () => clearInterval(id);
-  }, [step, doneMessage, gone]);
+  }, [step, doneMessage, gone, signalRef, selectedRef]);
 
   function skip() {
     localStorage.setItem(TUTORIAL_KEY, 'true');
