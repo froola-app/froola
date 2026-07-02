@@ -10,11 +10,9 @@ export default function LessonCatalog() {
 
   const isComplete = (id: string) => allProgress[id]?.completedAt != null;
 
-  // Sequential unlock: the first lesson is always open; each one after opens
-  // when the previous is complete. (Progress loads async — until it arrives,
-  // only lesson 1 shows unlocked, then the list fills in.)
-  const unlocked = LEARNING_PATH.map((_, i) => i === 0 || isComplete(LEARNING_PATH[i - 1].id));
-  const upNextIndex = LEARNING_PATH.findIndex((l, i) => unlocked[i] && !isComplete(l.id));
+  // Every lesson is playable — the path order is a recommendation, and the
+  // first uncompleted lesson gets an "up next" nudge rather than a gate.
+  const upNextIndex = LEARNING_PATH.findIndex(l => !isComplete(l.id));
 
   const completedCount = LEARNING_PATH.filter(l => isComplete(l.id)).length;
   const starCount = LEARNING_PATH.reduce((sum, l) => {
@@ -34,7 +32,7 @@ export default function LessonCatalog() {
             From zero to <em>Wonderwall.</em>
           </h1>
           <p className="learn-subtitle">
-            A guided path of real songs — each technique you learn unlocks the song that uses it.
+            A guided path of real songs — follow it in order, or jump straight to one you love.
           </p>
           <div className="learn-progress">
             <span className="learn-progress__count">
@@ -53,7 +51,6 @@ export default function LessonCatalog() {
               lesson={lesson}
               progress={allProgress[lesson.id] ?? null}
               index={i}
-              locked={!unlocked[i]}
               isNext={i === upNextIndex}
             />
           ))}
