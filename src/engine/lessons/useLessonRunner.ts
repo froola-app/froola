@@ -49,6 +49,9 @@ export function useLessonRunner(
   const previewAudioRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backingRef = useRef<SongBackingTrack | null>(null);
   const melodyRef = useRef<MelodyNote[] | undefined>(undefined);
+  const audioBytesRef = useRef<ArrayBuffer | null>(null);
+  const audioBufRef = useRef<AudioBuffer | null>(null);
+  const audioTokenRef = useRef(0);
 
   // Optional locally-generated melody data (gitignored runtime asset — a 404
   // is fine and simply means the backing plays without a lead line).
@@ -56,10 +59,24 @@ export function useLessonRunner(
     melodyRef.current = undefined;
     if (!lesson.melodyAsset) return;
     let cancelled = false;
-    fetch(lesson.melodyAsset)
+    fetch(lesson.melodyAsset, { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : undefined))
       .then(notes => { if (!cancelled && Array.isArray(notes)) melodyRef.current = notes; })
       .catch(() => { /* no melody file */ });
+    return () => { cancelled = true; };
+  }, [lesson]);
+
+  // Optional real-audio backing (also a gitignored local asset; 404 = fall
+  // back to the synth arrangement). Decoded lazily once the engine exists.
+  useEffect(() => {
+    audioBytesRef.current = null;
+    audioBufRef.current = null;
+    if (!lesson.audioBackingAsset) return;
+    let cancelled = false;
+    fetch(lesson.audioBackingAsset, { cache: 'no-store' })
+      .then(r => (r.ok ? r.arrayBuffer() : null))
+      .then(bytes => { if (!cancelled) audioBytesRef.current = bytes; })
+      .catch(() => { /* no audio backing file */ });
     return () => { cancelled = true; };
   }, [lesson]);
 
@@ -75,6 +92,7 @@ export function useLessonRunner(
       previewAudioRef.current = null;
       engineRef.current?.silence('synth');
     }
+    audioTokenRef.current += 1; // cancel any in-flight audio-backing decode
     backingRef.current?.stop();
   }, [engineRef]);
 
@@ -133,7 +151,25 @@ export function useLessonRunner(
     if (!lesson.bpm || !engine) return;
     backingRef.current ??= engine.createBackingTrack();
     const step = lesson.steps[stepIdx];
-    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing, melodyRef.current);
+    // Section-length assets only fit the step they were prepared against —
+    // anywhere else they'd play over the wrong chords.
+    const isSectionStep = step.id === lesson.melodyStepId;
+
+    // Real-audio backing takes precedence over the synth band when present.
+    const bytes = isSectionStep ? audioBytesRef.current : null;
+    if (bytes) {
+      const token = ++audioTokenRef.current;
+      const decoded = audioBufRef.current
+        ? Promise.resolve(audioBufRef.current)
+        : engine.decodeAudio(bytes.slice(0)).then(buf => (audioBufRef.current = buf));
+      decoded
+        .then(buf => { if (audioTokenRef.current === token) backingRef.current?.startAudio(buf); })
+        .catch(() => { /* undecodable file — stay silent rather than misfire */ });
+      return;
+    }
+
+    const melody = isSectionStep ? melodyRef.current : undefined;
+    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing, melody);
   }, [lesson, engineRef]);
 
   // The phase callbacks below are declared in reverse calling order

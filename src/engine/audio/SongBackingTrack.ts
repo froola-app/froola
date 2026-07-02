@@ -180,18 +180,36 @@ export class SongBackingTrack {
   private padFilter: BiquadFilterNode
   private clock: TempoClock | null = null
   private noise: AudioBuffer | null = null
+  private audioSource: AudioBufferSourceNode | null = null
+  private audioGain: GainNode
 
   constructor(ctx: AudioContext, destination: AudioNode) {
     this.ctx = ctx
     this.out = ctx.createGain()
     this.out.gain.value = BACKING_GAIN
     this.out.connect(destination)
+    // Real-audio backing (the app owner's own local file) bypasses the quiet
+    // synth bus — it IS the accompaniment, so it sits at near-full level.
+    this.audioGain = ctx.createGain()
+    this.audioGain.gain.value = 0.75
+    this.audioGain.connect(destination)
     // Shared lowpass keeps the pad/arp voice mellow so it never masks the
     // user's own synth.
     this.padFilter = ctx.createBiquadFilter()
     this.padFilter.type = 'lowpass'
     this.padFilter.frequency.value = 1500
     this.padFilter.connect(this.out)
+  }
+
+  /** Play a real audio buffer (e.g. the owner's locally-separated instrumental)
+   *  as the backing instead of the synth arrangement. One-shot, from t=0. */
+  startAudio(buffer: AudioBuffer): void {
+    this.stop()
+    const src = this.ctx.createBufferSource()
+    src.buffer = buffer
+    src.connect(this.audioGain)
+    src.start()
+    this.audioSource = src
   }
 
   /** Start (or restart) the arrangement. Loops past the end of the chord
@@ -252,6 +270,10 @@ export class SongBackingTrack {
   stop(): void {
     this.clock?.stop()
     this.clock = null
+    if (this.audioSource) {
+      try { this.audioSource.stop() } catch { /* already stopped */ }
+      this.audioSource = null
+    }
   }
 
   private chordAt(sequence: BackingChord[], elapsedMs: number): BackingChord {

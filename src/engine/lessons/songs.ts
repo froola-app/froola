@@ -205,6 +205,8 @@ const loveYourself: Lesson = {
   // Locally-generated melody data (gitignored; see tools/melody-extract).
   // When the file exists, the verse step plays the lead line over the groove.
   melodyAsset: '/melodies/love-yourself.json',
+  audioBackingAsset: '/melodies/love-yourself-backing.wav',
+  melodyStepId: 'ly-s3',
   progression: ['E', 'B', 'C#m', 'A'],
   steps: [
     step(

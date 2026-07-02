@@ -50,6 +50,14 @@ export type Lesson = {
   /** Song lessons only — URL of a locally-generated melody data file
    *  (see tools/melody-extract). Optional: absent file = no melody voice. */
   melodyAsset?: string;
+  /** Which step id the section-length assets (melody / audio backing) play on
+   *  — they span the full section, so they only fit the step whose chord
+   *  timeline they were prepared against. */
+  melodyStepId?: string;
+  /** URL of a locally-provided real-audio backing file (e.g. an instrumental
+   *  prepared with tools/melody-extract/make_backing.py from the app owner's
+   *  licensed audio). Plays on melodyStepId's step instead of the synth band. */
+  audioBackingAsset?: string;
 };
 
 export type StepResult = {

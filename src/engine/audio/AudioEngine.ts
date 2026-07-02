@@ -338,6 +338,12 @@ export class AudioEngine {
     return new SongBackingTrack(this.ctx, this.masterGain)
   }
 
+  /** Decode compressed audio (e.g. a locally-provided backing file) into a
+   *  buffer playable on this engine's context. */
+  decodeAudio(data: ArrayBuffer): Promise<AudioBuffer> {
+    return this.ctx.decodeAudioData(data)
+  }
+
   // Creates a MediaStream mixing the instrument output with the given mic stream.
   // Both are routed through this AudioContext so they are combined before export.
   createRecordingStream(micStream: MediaStream): { stream: MediaStream; stop: () => void } {
