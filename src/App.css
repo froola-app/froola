@@ -1313,11 +1313,19 @@ body {
    canvas. */
 
 .learn-page {
-  min-height: 100vh;
+  /* body is overflow:hidden/touch-action:none for the play canvas —
+     the catalog scrolls itself instead */
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  user-select: text;
+  -webkit-user-select: text;
   background: #F5F1EA;
   color: #141414;
   font-family: 'DM Sans', system-ui, sans-serif;
   padding: 3rem 1.5rem 5rem;
+  box-sizing: border-box;
 }
 
 .learn-page__inner {
