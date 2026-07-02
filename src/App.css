@@ -1032,6 +1032,13 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  transition: opacity 0.2s;
+}
+
+/* Brief read-before-you-click gate — see STEP_COOLDOWN_MS in OnboardingFlow. */
+.onboarding-main.is-cooling-down {
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 .onboarding-step {
@@ -1288,7 +1295,7 @@ body {
 }
 
 .learn-page__inner {
-  max-width: 620px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -1394,10 +1401,22 @@ body {
 /* ── Learn sections ─── shared with the landing page's editorial rhythm:
    uppercase label, generous top border/spacing between sections. */
 
-.learn-section {
+.learn-columns {
   border-top: 1px solid rgba(20,20,20,0.1);
   padding-top: 2.5rem;
   margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .learn-columns { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+}
+
+.learn-column {
+  min-width: 0; /* grid track shrink guard — see .technique-grid note below */
 }
 
 .learn-section__label {
@@ -1425,23 +1444,17 @@ body {
   white-space: nowrap;
 }
 
-/* ── Technique drills — compact grid, echoes the landing page's
-   numbered "How it works" step grid rather than a table row. ─── */
+/* ── Technique drills — one card per row within its column (the
+   technique/songs split is now the two-column layout itself, so this no
+   longer needs its own internal 2-up grid). ─── */
 
 .technique-grid {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  /* minmax(0, 1fr), not bare 1fr — a bare 1fr track won't shrink below its
-     content's min-content width, so one long word/title can force the whole
-     grid (and the page) wider than the viewport. */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-}
-
-@media (max-width: 640px) {
-  .technique-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .technique-card__btn {
