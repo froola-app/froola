@@ -94,6 +94,9 @@ export type DrillProgress = {
 export type LessonPhase =
   | 'idle'
   | 'preview'
+  // Self-paced practice with no timer or scoring, inserted only before the
+  // very first step a brand-new user ever attempts (see useLessonRunner).
+  | 'warmup'
   | 'countdown'
   | 'attempt'
   | 'step-result'
