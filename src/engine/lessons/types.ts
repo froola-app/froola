@@ -7,9 +7,19 @@ export type LessonDifficulty = 'beginner' | 'intermediate' | 'advanced';
 // chord progression, played over a synthesized backing track.
 export type LessonKind = 'technique' | 'song';
 
-// Groove preset for the synthesized backing track — picks the drum/bass
-// pattern so each song's accompaniment resembles the original's feel.
-export type BackingStyle = 'ballad' | 'pop' | 'rock' | 'soul' | 'doowop';
+// Arrangement key for the synthesized backing track. Song lessons get a
+// bespoke per-song arrangement (drums, bassline rhythm, chord/arpeggio voice)
+// defined in SongBackingTrack.ts; 'pop' is the generic fallback.
+export type BackingStyle =
+  | 'let-it-be'
+  | 'stand-by-me'
+  | 'best-part'
+  | 'someone-like-you'
+  | 'love-yourself'
+  | 'zombie'
+  | 'hallelujah'
+  | 'wonderwall'
+  | 'pop';
 
 export type LessonStep = {
   id: string;
