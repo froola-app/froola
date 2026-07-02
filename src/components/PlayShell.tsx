@@ -4,6 +4,7 @@ import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
 import { ChordLooper, DEFAULT_BPM, type LooperState } from '../engine/looper';
+import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
@@ -86,6 +87,12 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     slots: [], playing: false, bpm: DEFAULT_BPM, currentSlot: -1,
   });
 
+  // Arpeggiator: turns a sustained chord into a repeating pattern. Defaults
+  // on; the toggle button is an escape hatch back to a plain sustained pad.
+  const arpRef = useRef<Arpeggiator | null>(null);
+  const arpEnabledRef = useRef(true);
+  const [arpEnabled, setArpEnabled] = useState(true);
+
   const changeOctave = useCallback((delta: number) => {
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
@@ -109,7 +116,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
 
   const [showTutorial] = useState(
     () => !localStorage.getItem('froola.tutorialSeen')
@@ -128,6 +135,27 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     setLooper(l);
     return () => l.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Create the arpeggiator after mount, same pattern as the looper above.
+  useEffect(() => {
+    const a = new Arpeggiator({
+      createClock: (cb, opts) => engineRef.current!.createClock(cb, opts),
+      playNoteAt: (midi, when) => engineRef.current!.playNoteAt(midi, when),
+      silence: () => engineRef.current!.silenceMelody(),
+    });
+    arpRef.current = a;
+    return () => a.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleArp = useCallback(() => {
+    setArpEnabled(v => {
+      const next = !v;
+      arpEnabledRef.current = next;
+      if (!next) arpRef.current?.stop();
+      return next;
+    });
   }, []);
 
   // Capture the currently-selected chord as a new loop slot.
@@ -233,6 +261,15 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
             +
           </button>
         </div>
+        <button
+          className="octave-btn"
+          onClick={toggleArp}
+          aria-pressed={arpEnabled}
+          aria-label="Toggle arpeggiator"
+          title="When held, arpeggiate the sustained chord instead of a static pad"
+        >
+          arp {arpEnabled ? 'on' : 'off'}
+        </button>
       </div>
     </>
   );

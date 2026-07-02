@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../../engine/types';
 import type { GestureSignal } from '../../engine/types';
 import type { InputMode } from '../../engine/input';
 import { useCoordinator } from '../../coordinator';
-import { lessonById } from '../../engine/lessons/curriculum';
+import { lessonById, nextLessonAfter } from '../../engine/lessons/curriculum';
+import type { Lesson, LessonStep } from '../../engine/lessons/types';
+import { diatonicChord, type MusicConfig } from '../../engine/music/keyScale';
 import { useLessonRunner } from '../../engine/lessons/useLessonRunner';
 import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
 import LessonHUD from './LessonHUD';
@@ -12,6 +14,28 @@ import StepResultScreen from './StepResultScreen';
 import CompletionScreen from './CompletionScreen';
 
 const INITIAL_INPUT: InputMode = 'asking';
+
+// Chord-change timeline of a step's target recording, for the "now / next"
+// prompts shown during song attempts.
+type ChordSegment = { startMs: number; label: string };
+
+function chordSegments(step: LessonStep, music: MusicConfig): ChordSegment[] {
+  const segments: ChordSegment[] = [];
+  let t = 0;
+  let last = '';
+  for (const sample of step.targetRecording.samples) {
+    const key = `${sample.noteIdx}:${sample.qualityIdx}`;
+    if (key !== last) {
+      last = key;
+      segments.push({
+        startMs: t,
+        label: diatonicChord(sample.noteIdx, sample.qualityIdx, music.keyOffset, music.scale).label,
+      });
+    }
+    t += sample.dt;
+  }
+  return segments;
+}
 
 export default function LearnShell() {
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -23,6 +47,16 @@ export default function LearnShell() {
     if (!lesson) navigate('/learn', { replace: true });
   }, [lesson, navigate]);
 
+  if (!lesson) return null;
+
+  // Keyed so navigating between lessons (e.g. the completion screen's
+  // "Next lesson" button) remounts the session with fresh runner state.
+  return <LessonSession key={lesson.id} lesson={lesson} />;
+}
+
+function LessonSession({ lesson }: { lesson: Lesson }) {
+  const navigate = useNavigate();
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modeRef = useRef<InstrumentMode>('synth');
 
@@ -33,25 +67,26 @@ export default function LearnShell() {
     (() => { try { return localStorage.getItem('froola.guardrail') !== 'false'; } catch { return true; } })()
   );
 
+  // Re-tune the live wheel + audio to the lesson's key/scale, so what the user
+  // sees/hears matches the preview and the scored targets (e.g. A major songs).
+  const musicRef = useRef<MusicConfig>(lesson.musicConfig);
+
   const {
     mode,
     requestCamera,
     useMouse,
     selectedRef,
     engineRef,
-  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, undefined, ghostSignalsRef, undefined, undefined, guardrailRef);
+  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef, undefined, undefined, undefined, undefined, guardrailRef);
 
-  const runner = lesson
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    ? useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef)
-    : null;
+  const runner = useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef);
 
   const [elapsed, setElapsed] = useState(0);
   const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptStartRef = useRef(0);
 
   useEffect(() => {
-    if (runner?.phase !== 'attempt') return;
+    if (runner.phase !== 'attempt') return;
     attemptStartRef.current = performance.now();
     const tick = () => setElapsed(performance.now() - attemptStartRef.current);
     // Seed the first frame via rAF (async) so the bar starts at ~0 without a
@@ -65,12 +100,11 @@ export default function LearnShell() {
         elapsedIntervalRef.current = null;
       }
     };
-  }, [runner?.phase]);
+  }, [runner.phase]);
 
-  const { save } = useLessonProgress(lesson?.id);
+  const { save } = useLessonProgress(lesson.id);
 
   const handleSave = useCallback(() => {
-    if (!runner || !lesson) return;
     save({
       lessonId: lesson.id,
       stepResults: runner.stepResults,
@@ -80,13 +114,33 @@ export default function LearnShell() {
   }, [runner, lesson, save]);
 
   const handleExit = useCallback(() => {
-    runner?.exit();
+    runner.exit();
     navigate('/learn');
   }, [runner, navigate]);
 
-  if (!lesson || !runner) return null;
-
   const currentStep = lesson.steps[runner.stepIndex];
+
+  const segments = useMemo(
+    () => (currentStep ? chordSegments(currentStep, lesson.musicConfig) : []),
+    [currentStep, lesson],
+  );
+
+  // Song lessons show the target chord (and the upcoming one) during countdown
+  // and attempt — playing along with named changes is how the song sticks.
+  // Technique drills stay prompt-free: they test recall.
+  let chordNow: string | undefined;
+  let chordNext: string | undefined;
+  if (lesson.kind === 'song' && segments.length > 0) {
+    if (runner.phase === 'attempt') {
+      let i = 0;
+      while (i + 1 < segments.length && segments[i + 1].startMs <= elapsed) i++;
+      chordNow = segments[i].label;
+      chordNext = segments[i + 1]?.label;
+    } else if (runner.phase === 'countdown') {
+      chordNow = segments[0].label;
+      chordNext = segments[1]?.label;
+    }
+  }
 
   return (
     <>
@@ -109,15 +163,28 @@ export default function LearnShell() {
         <button className="lesson-exit-btn" onClick={handleExit}>✕ Exit</button>
       )}
 
-      {runner.phase === 'idle' && (
+      {/* Input choice first — the start card would sit on top of it otherwise */}
+      {mode !== 'asking' && runner.phase === 'idle' && (
         <div className="lesson-start-screen">
           <div className="lesson-start-card">
-            <p className="lesson-start__eyebrow">{lesson.difficulty}</p>
+            <p className="lesson-start__eyebrow">
+              {lesson.kind === 'song' ? lesson.artist : `Technique · ${lesson.difficulty}`}
+            </p>
             <h2 className="lesson-start__title">{lesson.title}</h2>
             <p className="lesson-start__subtitle">{lesson.subtitle}</p>
+
+            {lesson.kind === 'song' && lesson.progression && (
+              <div className="lesson-start__progression">
+                {lesson.progression.map((c, i) => (
+                  <span key={i} className="chord-chip">{c}</span>
+                ))}
+                {lesson.bpm && <span className="lesson-start__bpm">{lesson.bpm} bpm</span>}
+              </div>
+            )}
+
             <ul className="lesson-start__steps">
               {lesson.steps.map((s, i) => (
-                <li key={s.id}><span>{i + 1}.</span> {s.instruction}</li>
+                <li key={s.id}><span>{i + 1}</span> {s.instruction}</li>
               ))}
             </ul>
             <button className="lesson-start__btn" onClick={runner.start}>
@@ -138,6 +205,8 @@ export default function LearnShell() {
           stepScore={runner.stepScore}
           elapsed={runner.phase === 'attempt' ? elapsed : 0}
           durationMs={currentStep?.durationMs ?? 1}
+          chordNow={chordNow}
+          chordNext={chordNext}
         />
       )}
 
@@ -158,6 +227,7 @@ export default function LearnShell() {
           lesson={lesson}
           stepResults={runner.stepResults}
           totalScore={runner.totalScore}
+          nextLesson={nextLessonAfter(lesson.id)}
           onSave={handleSave}
         />
       )}
