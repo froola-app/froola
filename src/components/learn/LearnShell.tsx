@@ -205,6 +205,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
           stepScore={runner.stepScore}
           elapsed={runner.phase === 'attempt' ? elapsed : 0}
           durationMs={currentStep?.durationMs ?? 1}
+          minScore={currentStep?.minScore ?? 60}
           chordNow={chordNow}
           chordNext={chordNext}
         />

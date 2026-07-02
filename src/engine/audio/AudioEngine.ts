@@ -43,7 +43,7 @@ export class AudioEngine {
   private melodyOsc: OscillatorNode
   private melodyGain: GainNode
   private samplers: Partial<Record<'piano', Player>> = {}
-  private samplerLoading = new Set<'piano'>()
+  private samplerLoadPromises: Partial<Record<'piano', Promise<void>>> = {}
   private activeSampleNodes: SampleNode[] = []
 
   constructor() {
@@ -150,15 +150,21 @@ export class AudioEngine {
     return out
   }
 
-  startLoadingSampler(mode: 'piano'): void {
-    if (this.samplers[mode] || this.samplerLoading.has(mode)) return
-    this.samplerLoading.add(mode)
-    import('soundfont-player')
+  /** Resolves once `mode`'s sampler is ready. Safe to call repeatedly —
+   *  concurrent callers share the same in-flight load. */
+  startLoadingSampler(mode: 'piano'): Promise<void> {
+    if (this.samplers[mode]) return Promise.resolve()
+    if (this.samplerLoadPromises[mode]) return this.samplerLoadPromises[mode]!
+    const promise = import('soundfont-player')
       .then(({ default: SF }) => SF.instrument(this.ctx, 'acoustic_grand_piano', { destination: this.samplerGain }))
-      .then(player => {
-        this.samplers[mode] = player
-        this.samplerLoading.delete(mode)
-      })
+      .then(player => { this.samplers[mode] = player })
+    this.samplerLoadPromises[mode] = promise
+    return promise
+  }
+
+  /** True once `mode`'s sampler has finished downloading and is playable. */
+  isSamplerReady(mode: 'piano'): boolean {
+    return !!this.samplers[mode]
   }
 
   play(cmd: MusicalCommand, mode: InstrumentMode = 'synth'): void {

@@ -10,6 +10,8 @@ type Props = {
   stepScore: number;
   elapsed: number;
   durationMs: number;
+  /** 0–100 score required to pass this step — shown before the attempt starts. */
+  minScore: number;
   /** Song lessons: the chord to play right now / coming up next. */
   chordNow?: string;
   chordNext?: string;
@@ -25,6 +27,7 @@ export default function LessonHUD({
   stepScore,
   elapsed,
   durationMs,
+  minScore,
   chordNow,
   chordNext,
 }: Props) {
@@ -50,6 +53,7 @@ export default function LessonHUD({
         ) : (
           hint && <p className="lesson-hud__hint">{hint}</p>
         )}
+        <p className="lesson-hud__target">Score {minScore}%+ to pass</p>
       </div>
     );
   }

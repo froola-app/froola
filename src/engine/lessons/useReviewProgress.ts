@@ -67,5 +67,14 @@ export function useReviewProgress() {
     } catch { /* firebase not available */ }
   }, [allProgress, user, firebaseReady]);
 
-  return { allProgress, dueDrills, dueCount: dueDrills.length, recordResult };
+  return {
+    allProgress,
+    dueDrills,
+    dueCount: dueDrills.length,
+    // Whether review is a meaningful feature to surface yet — false until
+    // the user has learned at least one reviewable chord, even if nothing
+    // happens to be due right now.
+    hasEligibleDrills: eligibleDrills.length > 0,
+    recordResult,
+  };
 }
