@@ -11,7 +11,6 @@ import VideoRecordButton from './VideoRecordButton';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
-import HandGuardrail from './HandGuardrail';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -98,17 +97,6 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     volumeTimerRef.current = setTimeout(() => setVolumeDisplay(null), 1500);
   }, []);
 
-  const [guardrailOn, setGuardrailOn] = useState(() => {
-    try { return localStorage.getItem('froola.guardrail') !== 'false'; } catch { return true; }
-  });
-  const guardrailRef = useRef(guardrailOn);
-  guardrailRef.current = guardrailOn;
-
-  function toggleGuardrail() {
-    const next = !guardrailOn;
-    setGuardrailOn(next);
-    try { localStorage.setItem('froola.guardrail', String(next)); } catch {}
-  }
 
   // Arrow keys are a quick shortcut for the on-screen octave stepper.
   useEffect(() => {
@@ -120,7 +108,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, guardrailRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef);
 
   const [showTutorial] = useState(
     () => !localStorage.getItem('froola.tutorialSeen')
@@ -165,9 +153,6 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
-      {(mode === 'camera' || mode === 'mouse') && (
-        <HandGuardrail signalRef={signalRef} guardrailRef={guardrailRef} />
-      )}
       {showTutorial && mode !== 'asking' && (
         <BeginnerTutorial
           signalRef={signalRef}
@@ -246,14 +231,6 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
             +
           </button>
         </div>
-        <button
-          className="guardrail-toggle"
-          onClick={toggleGuardrail}
-          aria-label={guardrailOn ? 'Hide hand guides' : 'Show hand guides'}
-          title={guardrailOn ? 'Hide hand guides' : 'Show hand guides'}
-        >
-          {guardrailOn ? 'guide: on' : 'guide: off'}
-        </button>
       </div>
     </>
   );
