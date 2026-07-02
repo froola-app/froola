@@ -46,35 +46,37 @@ export default function LessonCatalog() {
 
         <ReviewBanner />
 
-        <section className="learn-section">
-          <h2 className="learn-section__label">Technique drills</h2>
-          <ol className="technique-grid">
-            {TECHNIQUE_PATH.map((lesson, i) => (
-              <TechniqueCard
-                key={lesson.id}
-                lesson={lesson}
-                progress={allProgress[lesson.id] ?? null}
-                index={i}
-                isNext={lesson.id === upNextId}
-              />
-            ))}
-          </ol>
-        </section>
+        <div className="learn-columns">
+          <section className="learn-column">
+            <h2 className="learn-section__label">Technique drills</h2>
+            <ol className="technique-grid">
+              {TECHNIQUE_PATH.map((lesson, i) => (
+                <TechniqueCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  progress={allProgress[lesson.id] ?? null}
+                  index={i}
+                  isNext={lesson.id === upNextId}
+                />
+              ))}
+            </ol>
+          </section>
 
-        <section className="learn-section">
-          <h2 className="learn-section__label">Songs</h2>
-          <ol className="song-list">
-            {SONG_PATH.map((lesson, i) => (
-              <SongCard
-                key={lesson.id}
-                lesson={lesson}
-                progress={allProgress[lesson.id] ?? null}
-                index={i}
-                isNext={lesson.id === upNextId}
-              />
-            ))}
-          </ol>
-        </section>
+          <section className="learn-column">
+            <h2 className="learn-section__label">Songs</h2>
+            <ol className="song-list">
+              {SONG_PATH.map((lesson, i) => (
+                <SongCard
+                  key={lesson.id}
+                  lesson={lesson}
+                  progress={allProgress[lesson.id] ?? null}
+                  index={i}
+                  isNext={lesson.id === upNextId}
+                />
+              ))}
+            </ol>
+          </section>
+        </div>
       </div>
     </div>
   );
