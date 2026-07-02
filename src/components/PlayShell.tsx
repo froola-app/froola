@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
-import type { InputMode } from '../engine/input';
+import { storeInputMode, type InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
 import { ChordLooper, DEFAULT_BPM, type LooperState } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
@@ -113,6 +113,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+
+  // Keep the persisted choice in sync with the live mode — covers a manual
+  // in-session switch (mouse ↔ camera) and the automatic camera-denied
+  // fallback, not just the initial choice made on the landing page.
+  useEffect(() => {
+    if (mode === 'camera' || mode === 'mouse') storeInputMode(mode);
+  }, [mode]);
 
   const [showTutorial] = useState(
     () => !localStorage.getItem('froola.tutorialSeen')
