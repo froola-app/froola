@@ -239,7 +239,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       let nodState: 'IDLE' | 'NODDING_DOWN' | 'NODDING_UP' = 'IDLE';
       let nodDebounceUntil = 0;
       const NOD_DOWN_THRESHOLD = 0.007;
-      const NOD_UP_THRESHOLD = -0.007;
+      // Smaller magnitude than the down threshold: nodding the head back/up is
+      // a physically smaller motion than nodding forward/down for most people,
+      // so a symmetric threshold under-triggers the "increase volume" gesture.
+      const NOD_UP_THRESHOLD = -0.005;
       const FACE_SMOOTH = 0.4;
 
       function loop() {
