@@ -58,12 +58,12 @@ export default function StepResultScreen({
 
         <div className="step-result__breakdown">
           <div className="step-result__breakdown-row">
-            <span>Note accuracy</span>
+            <span>Left hand (chord)</span>
             <span>{result.noteAccuracy}%</span>
           </div>
           {result.scoresQuality && (
             <div className="step-result__breakdown-row">
-              <span>Chord quality</span>
+              <span>Right hand (color)</span>
               <span>{result.qualAccuracy}%</span>
             </div>
           )}

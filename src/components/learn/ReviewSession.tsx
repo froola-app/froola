@@ -128,11 +128,11 @@ export default function ReviewSession() {
             </p>
             <div className="step-result__breakdown">
               <div className="step-result__breakdown-row">
-                <span>Note accuracy</span>
+                <span>Left hand (chord)</span>
                 <span>{lastResult.noteAccuracy}%</span>
               </div>
               <div className="step-result__breakdown-row">
-                <span>Chord quality</span>
+                <span>Right hand (color)</span>
                 <span>{lastResult.qualAccuracy}%</span>
               </div>
             </div>
