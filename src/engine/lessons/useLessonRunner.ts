@@ -83,7 +83,7 @@ export function useLessonRunner(
       rafRef.current = requestAnimationFrame(loop);
     }
     loop();
-  }, [lesson, canvasRef]);
+  }, [lesson, canvasRef, ghostSignalsRef]);
 
   // ── Preview audio ──────────────────────────────────────────────────────────
   // Runs only during preview. Sounds the target recording's chords as the
@@ -120,51 +120,29 @@ export function useLessonRunner(
     backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing);
   }, [lesson, engineRef]);
 
-  // ── Preview phase ──────────────────────────────────────────────────────────
-  const startPreview = useCallback((stepIdx: number) => {
+  // The phase callbacks below are declared in reverse calling order
+  // (finishAttempt → startAttempt → startCountdown → startPreview) so each
+  // only references callbacks declared above it.
+
+  // ── Finish attempt ─────────────────────────────────────────────────────────
+  const finishAttempt = useCallback((stepIdx: number, attemptMs: number) => {
     clearTimers();
-    setPhase('preview');
-    setCountdown(COUNTDOWN_SECS);
-    setStepScore(0);
-    noteHitsRef.current = [];
-    qualHitsRef.current = [];
-
     const step = lesson.steps[stepIdx];
-    const previewStart = performance.now();
-    startGhostLoop(stepIdx, previewStart);
-    startPreviewAudio(stepIdx, previewStart);
-    startBacking(stepIdx);
+    const noteAccuracy = accuracy(noteHitsRef.current);
+    const qualAccuracy = accuracy(qualHitsRef.current);
+    const score = combinedScore(noteAccuracy, qualAccuracy);
+    const passed = score >= step.minScore;
+    const scoresQuality = lesson.id !== 'fist-solo';
 
-    // After the target recording finishes, move to countdown
-    timerRef.current = setTimeout(() => {
-      startCountdown(stepIdx);
-    }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
-  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking]);
-
-  // ── Countdown phase ────────────────────────────────────────────────────────
-  const startCountdown = useCallback((stepIdx: number) => {
-    clearTimers();
-    setPhase('countdown');
-    setCountdown(COUNTDOWN_SECS);
-
-    // Show ghost frozen on first frame during countdown
-    const step = lesson.steps[stepIdx];
-    const ends = sampleEndTimes(step.targetRecording);
-    const canvas = canvasRef.current;
-    const w = canvas?.width ?? window.innerWidth;
-    const h = canvas?.height ?? window.innerHeight;
-    ghostSignalsRef.current = signalsAt(step.targetRecording, ends, 0, w, h);
-
-    let remaining = COUNTDOWN_SECS;
-    timerRef.current = setInterval(() => {
-      remaining -= 1;
-      setCountdown(remaining);
-      if (remaining <= 0) {
-        clearTimers();
-        startAttempt(stepIdx);
-      }
-    }, 1000);
-  }, [lesson, canvasRef, clearTimers]);
+    const result: StepResult = { stepId: step.id, score, passed, attemptMs, noteAccuracy, qualAccuracy, scoresQuality };
+    setStepResults(prev => {
+      const next = [...prev];
+      next[stepIdx] = result;
+      return next;
+    });
+    setStepScore(score);
+    setPhase('step-result');
+  }, [lesson, clearTimers]);
 
   // ── Attempt phase ──────────────────────────────────────────────────────────
   // No ghost, no hint — this is the graded window, so it has to test recall,
@@ -206,27 +184,53 @@ export function useLessonRunner(
         finishAttempt(stepIdx, step.durationMs);
       }
     }, SCORE_INTERVAL_MS);
-  }, [lesson, liveSelectedRef, ghostSignalsRef, clearTimers, startBacking]);
+  }, [lesson, liveSelectedRef, ghostSignalsRef, clearTimers, startBacking, finishAttempt]);
 
-  // ── Finish attempt ─────────────────────────────────────────────────────────
-  const finishAttempt = useCallback((stepIdx: number, attemptMs: number) => {
+  // ── Countdown phase ────────────────────────────────────────────────────────
+  const startCountdown = useCallback((stepIdx: number) => {
     clearTimers();
-    const step = lesson.steps[stepIdx];
-    const noteAccuracy = accuracy(noteHitsRef.current);
-    const qualAccuracy = accuracy(qualHitsRef.current);
-    const score = combinedScore(noteAccuracy, qualAccuracy);
-    const passed = score >= step.minScore;
-    const scoresQuality = lesson.id !== 'fist-solo';
+    setPhase('countdown');
+    setCountdown(COUNTDOWN_SECS);
 
-    const result: StepResult = { stepId: step.id, score, passed, attemptMs, noteAccuracy, qualAccuracy, scoresQuality };
-    setStepResults(prev => {
-      const next = [...prev];
-      next[stepIdx] = result;
-      return next;
-    });
-    setStepScore(score);
-    setPhase('step-result');
-  }, [lesson, clearTimers]);
+    // Show ghost frozen on first frame during countdown
+    const step = lesson.steps[stepIdx];
+    const ends = sampleEndTimes(step.targetRecording);
+    const canvas = canvasRef.current;
+    const w = canvas?.width ?? window.innerWidth;
+    const h = canvas?.height ?? window.innerHeight;
+    ghostSignalsRef.current = signalsAt(step.targetRecording, ends, 0, w, h);
+
+    let remaining = COUNTDOWN_SECS;
+    timerRef.current = setInterval(() => {
+      remaining -= 1;
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        clearTimers();
+        startAttempt(stepIdx);
+      }
+    }, 1000);
+  }, [lesson, canvasRef, ghostSignalsRef, clearTimers, startAttempt]);
+
+  // ── Preview phase ──────────────────────────────────────────────────────────
+  const startPreview = useCallback((stepIdx: number) => {
+    clearTimers();
+    setPhase('preview');
+    setCountdown(COUNTDOWN_SECS);
+    setStepScore(0);
+    noteHitsRef.current = [];
+    qualHitsRef.current = [];
+
+    const step = lesson.steps[stepIdx];
+    const previewStart = performance.now();
+    startGhostLoop(stepIdx, previewStart);
+    startPreviewAudio(stepIdx, previewStart);
+    startBacking(stepIdx);
+
+    // After the target recording finishes, move to countdown
+    timerRef.current = setTimeout(() => {
+      startCountdown(stepIdx);
+    }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
+  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking, startCountdown]);
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -250,7 +254,7 @@ export function useLessonRunner(
       setStepIndex(nextIdx);
       startPreview(nextIdx);
     }
-  }, [lesson, clearTimers, startPreview]);
+  }, [lesson, clearTimers, startPreview, ghostSignalsRef]);
 
   const exit = useCallback(() => {
     clearTimers();
@@ -260,7 +264,7 @@ export function useLessonRunner(
     setStepResults([]);
     setStepScore(0);
     setCountdown(COUNTDOWN_SECS);
-  }, [clearTimers]);
+  }, [clearTimers, ghostSignalsRef]);
 
   const totalScore = stepResults.length > 0
     ? Math.round(stepResults.reduce((s, r) => s + r.score, 0) / stepResults.length)

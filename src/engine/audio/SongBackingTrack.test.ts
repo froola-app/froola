@@ -18,14 +18,14 @@ describe('backingSequence', () => {
 
   it('drops roots two octaves below the wheel register', () => {
     const seq = backingSequence(rec([[0, 0, 100]]), { keyOffset: 0, scale: 'major' })
-    // Wheel tonic is C5 (midi 72) → bass C3 (midi 48)
-    expect(seq[0].rootMidi).toBe(48)
+    // Wheel tonic is C4 (midi 60) → bass C2 (midi 36)
+    expect(seq[0].rootMidi).toBe(36)
   })
 
   it('follows the lesson key and scale', () => {
-    // Degree 0 in E minor (keyOffset 4) → E, bass midi 72+4-24 = 52
+    // Degree 0 in E minor (keyOffset 4) → E, bass midi 60+4-24 = 40
     const seq = backingSequence(rec([[0, 0, 100]]), { keyOffset: 4, scale: 'minor' })
-    expect(seq[0].rootMidi).toBe(52)
+    expect(seq[0].rootMidi).toBe(40)
   })
 
   it('splits on quality changes so the pad voicing follows the extension', () => {
@@ -38,7 +38,7 @@ describe('backingSequence', () => {
 
   it('carries the chord voicing an octave below the wheel register', () => {
     const seq = backingSequence(rec([[0, 0, 100]]), { keyOffset: 0, scale: 'major' })
-    // C major triad at octave -1: C4 E4 G4
-    expect(seq[0].voicing).toEqual([60, 64, 67])
+    // C major triad at octave -1: C3 E3 G3
+    expect(seq[0].voicing).toEqual([48, 52, 55])
   })
 })

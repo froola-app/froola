@@ -43,6 +43,7 @@ export function useCoordinator(
   // to a plain sustained pad (today's pre-feature behaviour).
   arpRef?: RefObject<Arpeggiator | null>,
   arpEnabledRef?: RefObject<boolean>,
+  guardrailRef?: RefObject<boolean>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -261,9 +262,12 @@ export function useCoordinator(
       cancelAnimationFrame(rafId);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      // Stopping the arp on teardown is intentional even if the ref has been
+      // reassigned — it's a singleton owned by the shell, not a React node.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       arpRef?.current?.stop();
     };
-  }, [signalRef, modeRef, octaveRef]);
+  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, nodEventRef, onVolumeChange, arpRef, arpEnabledRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,
@@ -274,6 +278,7 @@ export function useCoordinator(
     musicRef,
     ghostSignalsRef,
     stickyExtensionRef,
+    guardrailRef,
   );
 
   function preloadSampler(m: InstrumentMode) {
