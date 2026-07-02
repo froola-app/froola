@@ -5,7 +5,8 @@ import type { DialSelection } from '../renderer';
 import { sampleEndTimes, sampleIndexAt, signalsAt } from '../recording/replayPlayer';
 import { scoreFrame, accuracy, combinedScore } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
-import type { AudioEngine } from '../audio';
+import type { AudioEngine, SongBackingTrack } from '../audio';
+import { backingSequence } from '../audio';
 import { buildCommand } from '../music';
 
 export type LessonRunnerAPI = {
@@ -44,6 +45,7 @@ export function useLessonRunner(
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
   const previewAudioRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const backingRef = useRef<SongBackingTrack | null>(null);
 
   // Keep refs in sync with state so callbacks always read current values
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -57,6 +59,7 @@ export function useLessonRunner(
       previewAudioRef.current = null;
       engineRef.current?.silence('synth');
     }
+    backingRef.current?.stop();
   }, [engineRef]);
 
   useEffect(() => clearTimers, [clearTimers]);
@@ -105,6 +108,18 @@ export function useLessonRunner(
     previewAudioRef.current = setInterval(tick, 50);
   }, [lesson, engineRef]);
 
+  // ── Backing track ──────────────────────────────────────────────────────────
+  // Song lessons only (lesson.bpm set): a quiet synthesized bass + hi-hat groove
+  // follows the step's chord roots during preview and attempt, so the step feels
+  // like playing along with a band. Stopped wherever clearTimers() runs.
+  const startBacking = useCallback((stepIdx: number) => {
+    const engine = engineRef.current;
+    if (!lesson.bpm || !engine) return;
+    backingRef.current ??= engine.createBackingTrack();
+    const step = lesson.steps[stepIdx];
+    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing);
+  }, [lesson, engineRef]);
+
   // The phase callbacks below are declared in reverse calling order
   // (finishAttempt → startAttempt → startCountdown → startPreview) so each
   // only references callbacks declared above it.
@@ -142,6 +157,7 @@ export function useLessonRunner(
     const step = lesson.steps[stepIdx];
     const attemptStart = performance.now();
     attemptStartRef.current = attemptStart;
+    startBacking(stepIdx);
 
     // For fist-solo lessons only the note (left hand) is under the user's
     // control — the chord quality is locked by the fist, so it isn't scored.
@@ -168,7 +184,7 @@ export function useLessonRunner(
         finishAttempt(stepIdx, step.durationMs);
       }
     }, SCORE_INTERVAL_MS);
-  }, [lesson, liveSelectedRef, ghostSignalsRef, clearTimers, finishAttempt]);
+  }, [lesson, liveSelectedRef, ghostSignalsRef, clearTimers, startBacking, finishAttempt]);
 
   // ── Countdown phase ────────────────────────────────────────────────────────
   const startCountdown = useCallback((stepIdx: number) => {
@@ -208,12 +224,13 @@ export function useLessonRunner(
     const previewStart = performance.now();
     startGhostLoop(stepIdx, previewStart);
     startPreviewAudio(stepIdx, previewStart);
+    startBacking(stepIdx);
 
     // After the target recording finishes, move to countdown
     timerRef.current = setTimeout(() => {
       startCountdown(stepIdx);
     }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
-  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startCountdown]);
+  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking, startCountdown]);
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -237,7 +254,7 @@ export function useLessonRunner(
       setStepIndex(nextIdx);
       startPreview(nextIdx);
     }
-  }, [lesson, clearTimers, ghostSignalsRef, startPreview]);
+  }, [lesson, clearTimers, startPreview, ghostSignalsRef]);
 
   const exit = useCallback(() => {
     clearTimers();

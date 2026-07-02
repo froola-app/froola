@@ -1,4 +1,5 @@
 export { AudioEngine } from './AudioEngine'
+export { SongBackingTrack, backingSequence, type BackingChord } from './SongBackingTrack'
 export {
   TempoClock,
   MIN_BPM,

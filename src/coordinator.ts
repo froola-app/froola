@@ -1,12 +1,13 @@
 // src/coordinator.ts
 import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
-import type { GestureSignal, InstrumentMode } from './engine/types';
+import type { GestureSignal, InstrumentMode, MusicalCommand } from './engine/types';
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
 import { buildCommand, melodyMidi, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
+import type { Arpeggiator } from './engine/arp';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
 // How long a chord keeps ringing after both hands briefly leave the wheels, so
@@ -15,6 +16,10 @@ const SILENCE_GRACE_MS = 140;
 // A fist must hold steady this long before it toggles sustain, so a flickering
 // hand-shape detection can't stutter the hold on and off.
 const FIST_DEBOUNCE_MS = 120;
+// Hand height (0 = top, 1 = bottom) maps to arp rate — higher hand plays faster.
+const ARP_MIN_BPM = 60;
+const ARP_MAX_BPM = 240;
+const mapYToArpBpm = (y: number) => ARP_MAX_BPM - y * (ARP_MAX_BPM - ARP_MIN_BPM);
 
 export function useCoordinator(
   canvasRef: RefObject<HTMLCanvasElement | null>,
@@ -33,6 +38,11 @@ export function useCoordinator(
   // When true, the chord looper drives the chord pad; the hand solos a melody
   // lead instead of triggering chords.
   loopPlayingRef?: RefObject<boolean>,
+  // Turns a sustained chord into a repeating arpeggio instead of a static
+  // drone. Rate follows hand height; disabled via arpEnabledRef falls back
+  // to a plain sustained pad (today's pre-feature behaviour).
+  arpRef?: RefObject<Arpeggiator | null>,
+  arpEnabledRef?: RefObject<boolean>,
   guardrailRef?: RefObject<boolean>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
@@ -75,6 +85,9 @@ export function useCoordinator(
     let lastOctave = 0;
     let lastMusicKey = '';
     let sounding = false;
+    // The most recently built chord command, kept around after the hand
+    // leaves the wheel so a sustained chord still knows what it's holding.
+    let lastCmd: MusicalCommand | null = null;
     let lastTouchMs = -Infinity;
     // Sustain (hold) state. `spaceHeld` is the keyboard pedal; `sustainToggle`
     // is flipped by a debounced fist (the camera equivalent). While sustained,
@@ -204,9 +217,13 @@ export function useCoordinator(
         // changing the dropdown mid-hold does nothing until the next note).
         const musicKey = `${music.keyOffset}:${music.scale}`;
         const musicChanged = musicKey !== lastMusicKey;
+        // Built every touching frame (cheap, pure) so a sustained arp always
+        // knows the wheel's current chord, even on frames that don't re-attack.
+        const cmd = buildCommand(noteIdx, effectiveQualIdx, y, octave, music);
+        lastCmd = cmd;
 
         if (!sounding || selChanged || yChanged || octChanged || musicChanged) {
-          engine.play(buildCommand(noteIdx, effectiveQualIdx, y, octave, music), instrMode);
+          engine.play(cmd, instrMode);
           lastNoteIdx = noteIdx;
           lastQualIdx = effectiveQualIdx;
           lastY = y;
@@ -220,6 +237,23 @@ export function useCoordinator(
         sounding = false;
       }
 
+      // Rhythmic arpeggiation: turns a sustained chord into a repeating
+      // pattern instead of a static drone. Only ever engages while the chord
+      // is actually sustained (fist-hold or Space pedal) — plain gesture play
+      // and loop mode (already returned above) are untouched. Hand height
+      // sets the rate; the escape-hatch toggle falls back to a static pad.
+      const arp = arpRef?.current;
+      if (arp) {
+        if (sustained && sounding && lastCmd && arpEnabledRef?.current !== false) {
+          const rateY = left?.present ? left.y : (right?.y ?? lastY);
+          arp.setChord(lastCmd.voicing);
+          arp.setRate(mapYToArpBpm(rateY));
+          if (!arp.running) arp.start();
+        } else if (arp.running) {
+          arp.stop();
+        }
+      }
+
       rafId = requestAnimationFrame(tick);
     }
 
@@ -228,8 +262,12 @@ export function useCoordinator(
       cancelAnimationFrame(rafId);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      // Stopping the arp on teardown is intentional even if the ref has been
+      // reassigned — it's a singleton owned by the shell, not a React node.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      arpRef?.current?.stop();
     };
-  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, nodEventRef, onVolumeChange]);
+  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, nodEventRef, onVolumeChange, arpRef, arpEnabledRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,
