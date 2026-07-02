@@ -199,14 +199,18 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       {mode === 'mouse' && (
         <MouseModeBadge onSwitch={requestCamera} />
       )}
+      {/* The permission screen (mode 'asking') is a full-viewport layer below
+          the HUD's z-index, so hide the HUD until an input mode is chosen. */}
+      {mode !== 'asking' && <>
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
+      </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
       )}
-      <div className="hud-bottom">
+      {mode !== 'asking' && <div className="hud-bottom">
         <select
           className="instrument-select"
           value={instrumentMode}
@@ -270,7 +274,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
         >
           arp {arpEnabled ? 'on' : 'off'}
         </button>
-      </div>
+      </div>}
     </>
   );
 }
