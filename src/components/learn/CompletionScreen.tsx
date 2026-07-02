@@ -85,7 +85,7 @@ export default function CompletionScreen({ lesson, stepResults, totalScore, next
           ) : (
             <button
               className="lesson-complete__btn lesson-complete__btn--primary"
-              onClick={() => navigate('/play')}
+              onClick={() => navigate('/')}
             >
               Play freely →
             </button>

@@ -5,7 +5,7 @@ export default function ShareButton() {
   const [label, setLabel] = useState<'Share' | 'Copied!' | 'Failed'>('Share');
 
   async function handleShare() {
-    const ok = await copyToClipboard(window.location.origin + '/play');
+    const ok = await copyToClipboard(window.location.origin + '/');
     setLabel(ok ? 'Copied!' : 'Failed');
     setTimeout(() => setLabel('Share'), 1500);
   }

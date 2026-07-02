@@ -24,7 +24,7 @@ export default function LessonCatalog() {
     <div className="learn-page">
       <div className="learn-page__inner">
         <header className="learn-header">
-          <button className="learn-back-btn" onClick={() => navigate('/play')}>
+          <button className="learn-back-btn" onClick={() => navigate('/')}>
             ← back to play
           </button>
           <p className="learn-eyebrow">froola lessons</p>
