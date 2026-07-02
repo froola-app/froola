@@ -58,23 +58,26 @@ export default function StepResultScreen({
 
         <div className="step-result__breakdown">
           <div className="step-result__breakdown-row">
-            <span>Note accuracy</span>
+            <span>Left hand (chord)</span>
             <span>{result.noteAccuracy}%</span>
           </div>
           {result.scoresQuality && (
             <div className="step-result__breakdown-row">
-              <span>Chord quality</span>
+              <span>Right hand (color)</span>
               <span>{result.qualAccuracy}%</span>
             </div>
           )}
         </div>
 
         <div className="step-result__actions">
-          <button className="step-result__btn step-result__btn--retry" onClick={onRetry}>
+          <button
+            className={`step-result__btn ${passed ? 'step-result__btn--ghost' : 'step-result__btn--primary'}`}
+            onClick={onRetry}
+          >
             Retry
           </button>
           <button
-            className="step-result__btn step-result__btn--next"
+            className={`step-result__btn ${passed ? 'step-result__btn--primary' : 'step-result__btn--ghost'}`}
             onClick={onNext}
           >
             {passed ? (isLast ? 'Finish' : 'Next') : (isLast ? 'Finish anyway' : 'Skip')} →

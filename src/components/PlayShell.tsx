@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
-import type { InputMode } from '../engine/input';
+import { storeInputMode, type InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
 import { ChordLooper, DEFAULT_BPM, type LooperState } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
@@ -36,6 +36,9 @@ function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: ()
           Froola turns your hand movements into music. MediaPipe runs entirely on
           your device — no video is ever transmitted or stored.
         </p>
+        <p className="permission-hint">
+          You&apos;ll move both hands over two wheels — left picks the chord, right shapes it.
+        </p>
         <p className="permission-privacy">Your camera never leaves your device.</p>
         <div className="permission-buttons">
           <button onClick={onCamera} className="permission-btn-primary">Enable camera</button>
@@ -66,6 +69,11 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
+  // The piano sampler downloads on first use — play() goes silent until it's
+  // ready, which otherwise just looks broken. Poll while it's loading so the
+  // select can say so instead.
+  const [pianoLoading, setPianoLoading] = useState(false);
+
   const [octave, setOctave] = useState(0);
   const octaveRef = useRef(octave);
   useEffect(() => { octaveRef.current = octave; }, [octave]);
@@ -95,10 +103,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
 
   const [volumeDisplay, setVolumeDisplay] = useState<number | null>(null);
   const volumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Nod-to-volume is otherwise invisible — there's no control for it on the
+  // wheel, just a head gesture. Show a small hint until the user's first nod
+  // actually changes the volume, then never again.
+  const [showNodHint, setShowNodHint] = useState(
+    () => !localStorage.getItem('froola.nodHintSeen')
+  );
   const handleVolumeChange = useCallback((v: number) => {
     setVolumeDisplay(Math.round(v * 100));
     if (volumeTimerRef.current) clearTimeout(volumeTimerRef.current);
     volumeTimerRef.current = setTimeout(() => setVolumeDisplay(null), 1500);
+    try { localStorage.setItem('froola.nodHintSeen', '1'); } catch { /* private mode */ }
+    setShowNodHint(false);
   }, []);
 
 
@@ -113,6 +129,25 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+
+  // Track the piano sampler download so the select can say it's loading
+  // instead of silently doing nothing. preloadSampler de-dupes concurrent
+  // calls, so it's safe to call again here even if the select's onChange
+  // already kicked one off.
+  useEffect(() => {
+    if (instrumentMode !== 'piano' || engineRef.current?.isSamplerReady('piano')) return;
+    let cancelled = false;
+    setPianoLoading(true);
+    preloadSampler('piano').then(() => { if (!cancelled) setPianoLoading(false); });
+    return () => { cancelled = true; };
+  }, [instrumentMode, engineRef, preloadSampler]);
+
+  // Keep the persisted choice in sync with the live mode — covers a manual
+  // in-session switch (mouse ↔ camera) and the automatic camera-denied
+  // fallback, not just the initial choice made on the landing page.
+  useEffect(() => {
+    if (mode === 'camera' || mode === 'mouse') storeInputMode(mode);
+  }, [mode]);
 
   const [showTutorial] = useState(
     () => !localStorage.getItem('froola.tutorialSeen')
@@ -189,6 +224,9 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {volumeDisplay !== null && (
         <div className="volume-badge">vol {volumeDisplay}%</div>
       )}
+      {mode === 'camera' && showNodHint && volumeDisplay === null && (
+        <div className="nod-hint">nod ↕ your head to change volume</div>
+      )}
       {mode === 'asking' && (
         <CameraPrompt onCamera={requestCamera} onMouse={useMouse} />
       )}
@@ -210,16 +248,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         <select
           className="instrument-select"
           value={instrumentMode}
-          onChange={e => {
-            const m = e.target.value as InstrumentMode;
-            setInstrumentMode(m);
-            preloadSampler(m);
-          }}
+          onChange={e => setInstrumentMode(e.target.value as InstrumentMode)}
         >
           {MODES.map(m => (
             <option key={m.value} value={m.value}>{m.label}</option>
           ))}
         </select>
+        {pianoLoading && <span className="instrument-loading">loading piano…</span>}
         <select
           className="instrument-select"
           value={keyOffset}

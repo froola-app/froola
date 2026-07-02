@@ -77,6 +77,8 @@ export class ChordLooper {
 
   clear(): void {
     this.slots = []
+    this.bpm = DEFAULT_BPM
+    this.clock?.setBpm(this.bpm)
     if (this.playing) this.stop()
     else this.emit()
   }

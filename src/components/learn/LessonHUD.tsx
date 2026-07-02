@@ -10,9 +10,15 @@ type Props = {
   stepScore: number;
   elapsed: number;
   durationMs: number;
+  /** 0–100 score required to pass this step — shown before the attempt starts. */
+  minScore: number;
   /** Song lessons: the chord to play right now / coming up next. */
   chordNow?: string;
   chordNext?: string;
+  /** Whether a chord is currently fist-locked / space-held. */
+  sustained?: boolean;
+  /** Warmup phase only: called when the user is ready to start the countdown. */
+  onReady?: () => void;
 };
 
 export default function LessonHUD({
@@ -25,8 +31,11 @@ export default function LessonHUD({
   stepScore,
   elapsed,
   durationMs,
+  minScore,
   chordNow,
   chordNext,
+  sustained,
+  onReady,
 }: Props) {
   if (phase === 'preview') {
     return (
@@ -34,6 +43,19 @@ export default function LessonHUD({
         <p className="lesson-hud__preview-eyebrow">Watch &amp; listen</p>
         <p className="lesson-hud__listen">Here&apos;s what you&apos;re about to play</p>
         <p className="lesson-hud__preview-hint">Follow the glowing hands — your turn is next</p>
+      </div>
+    );
+  }
+
+  if (phase === 'warmup') {
+    return (
+      <div className="lesson-hud lesson-hud--warmup">
+        <p className="lesson-hud__preview-eyebrow">Find it first</p>
+        <p className="lesson-hud__listen">Try landing on the glowing target — no timer, no pressure</p>
+        {hint && <p className="lesson-hud__hint">{hint}</p>}
+        <button className="lesson-hud__ready-btn" onClick={onReady}>
+          I&apos;ve got it →
+        </button>
       </div>
     );
   }
@@ -50,6 +72,7 @@ export default function LessonHUD({
         ) : (
           hint && <p className="lesson-hud__hint">{hint}</p>
         )}
+        <p className="lesson-hud__target">Score {minScore}%+ to pass</p>
       </div>
     );
   }
@@ -74,6 +97,8 @@ export default function LessonHUD({
           </div>
           <p className="lesson-hud__instruction">{instruction}</p>
         </div>
+
+        {sustained && <p className="lesson-hud__lock">🔒 Chord locked</p>}
 
         {chordNow && (
           <div className="lesson-hud__chords">

@@ -180,6 +180,12 @@ export const LEARNING_PATH: Lesson[] = [
   byId('song-wonderwall'),      // finale: 7ths + sus4 in mixolydian
 ];
 
+// Technique drills and songs, in LEARNING_PATH order, for the catalog's
+// two-section layout. Gating/progress logic still reads LEARNING_PATH as a
+// whole — these are presentational groupings only.
+export const TECHNIQUE_PATH: Lesson[] = LEARNING_PATH.filter(l => l.kind === 'technique');
+export const SONG_PATH: Lesson[] = LEARNING_PATH.filter(l => l.kind === 'song');
+
 export function lessonById(id: string): Lesson | undefined {
   return LEARNING_PATH.find(l => l.id === id);
 }

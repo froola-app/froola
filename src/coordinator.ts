@@ -49,6 +49,9 @@ export function useCoordinator(
   const analyserRef = useRef<AnalyserNode | null>(null);
   const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
   const volumeRef = useRef(1.0);
+  // Written every hot-loop frame; read by UI that wants to show a fist-lock /
+  // sustain indicator without re-rendering on every frame itself.
+  const sustainedRef = useRef(false);
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
@@ -183,6 +186,7 @@ export function useCoordinator(
         if (fistStable) sustainToggle = !sustainToggle; // fist fully closed → toggle hold
       }
       const sustained = spaceHeld || sustainToggle;
+      sustainedRef.current = sustained;
 
       // Nod gesture → discrete volume step
       const nod = nodEventRef.current;
@@ -281,10 +285,11 @@ export function useCoordinator(
     guardrailRef,
   );
 
-  function preloadSampler(m: InstrumentMode) {
+  function preloadSampler(m: InstrumentMode): Promise<void> {
     if (m === 'piano' && engineRef.current) {
-      engineRef.current.startLoadingSampler(m);
+      return engineRef.current.startLoadingSampler(m);
     }
+    return Promise.resolve();
   }
 
   return {
@@ -299,5 +304,6 @@ export function useCoordinator(
     vibe: 'warm' as string,
     cameraVideoRef,
     engineRef,
+    sustainedRef,
   };
 }

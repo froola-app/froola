@@ -9,6 +9,10 @@ export type GestureSignal = {
   // Camera mode only: is the palm oriented toward the camera, and if not, how
   // is it off — rotated sideways ('turned') or fingers toward camera ('pitched')?
   facing?: 'ok' | 'turned' | 'pitched';
+  // Ghost (lesson target) signals only — the wheel slice this orb sits on, so
+  // the renderer can highlight that slice's own label instead of drawing a
+  // second disconnected label next to the orb.
+  sliceIdx?: number;
 };
 
 export type NoteName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
