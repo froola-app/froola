@@ -8,10 +8,10 @@ import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
-import GestureCoach from './GestureCoach';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
+import HandGuardrail from './HandGuardrail';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -165,6 +165,9 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {(mode === 'camera' || mode === 'mouse') && (
+        <HandGuardrail signalRef={signalRef} guardrailRef={guardrailRef} />
+      )}
       {showTutorial && mode !== 'asking' && (
         <BeginnerTutorial
           signalRef={signalRef}
@@ -185,7 +188,6 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
-      {(mode === 'camera' || mode === 'mouse') && <GestureCoach mode={mode} />}
       {looper && (mode === 'camera' || mode === 'mouse') && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
       )}

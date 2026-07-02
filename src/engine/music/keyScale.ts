@@ -16,8 +16,8 @@ export const SCALE_NAMES = Object.keys(SCALES) as ScaleName[];
 // Pitch-class names; index doubles as the semitone offset above C used for `keyOffset`.
 export const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-// C5 — keeps the original default register (C-major from C5 ascending).
-const TONIC_MIDI = 72;
+// C4 — base register; octave 0 plays from C4, +1 from C5, etc.
+const TONIC_MIDI = 60;
 
 export type ScaleNote = { label: string; midi: number };
 

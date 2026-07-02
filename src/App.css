@@ -337,6 +337,39 @@ body {
   border-color: rgba(255, 255, 255, 0.45);
 }
 
+/* hand guardrail overlay — two hand silhouettes shown when no hands detected */
+.hand-guardrail {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  pointer-events: none;
+  padding: 0 4vw;
+  animation: guardrail-pulse 2s ease-in-out infinite;
+}
+
+@keyframes guardrail-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.75; }
+}
+
+.hand-guardrail__hand {
+  width: 38vw;
+  max-width: 320px;
+  filter: drop-shadow(0 0 16px rgba(255,255,255,0.5));
+}
+
+.hand-guardrail__hand img {
+  width: 100%;
+  height: auto;
+}
+
+.hand-guardrail__hand--right {
+  transform: scaleX(-1);
+}
+
 /* chord looper — frosted panel sitting above the bottom HUD row */
 .loop-panel {
   position: fixed;

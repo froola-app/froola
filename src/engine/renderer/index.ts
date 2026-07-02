@@ -5,7 +5,6 @@ import { NOTES } from '../types';
 import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
-import { drawGuardrail } from './guardrail';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
 
@@ -230,9 +229,6 @@ export function useRenderer(
       // Clear only — let the raw camera feed show through with no tint
       ctx.clearRect(0, 0, w, h);
 
-      // Compute once — used below for guardrail and particle spawn position.
-      const handsPresent = signals.some(s => s.present);
-
       // Audio amplitude
       let amplitude = 0;
       if (analyser && freqData) {
@@ -317,13 +313,6 @@ export function useRenderer(
 
       // Publish slice selection so the coordinator can drive audio
       selectedRef.current = { noteIdx, qualIdx };
-
-      // Guardrail: pulsing dashed rings drawn AFTER the wheels so they appear
-      // on top of the dark backing circles instead of being buried underneath.
-      // Disappears the moment any hand is detected.
-      if (!handsPresent && (guardrailRef?.current ?? true)) {
-        drawGuardrail(ctx, w, h, performance.now());
-      }
 
       // Ghost orbs (lesson target) drawn first so live hands appear on top
       const ghostSignals = ghostSignalsRef?.current ?? [];
