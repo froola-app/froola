@@ -29,10 +29,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(firebaseConfigured);
 
   useEffect(() => {
-    if (!firebaseConfigured || !auth) {
-      setLoading(false);
-      return;
-    }
+    // loading is initialized to firebaseConfigured, and auth is only null when
+    // Firebase isn't configured — so loading is already false here.
+    if (!firebaseConfigured || !auth) return;
     return onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser && db) {
@@ -77,6 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Context + hook intentionally live together; a hook export is fine to lose
+// fast-refresh state over, and splitting files would force exporting the raw
+// context (which this rule also flags).
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');

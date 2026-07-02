@@ -67,17 +67,17 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
   const modeRef = useRef<InstrumentMode>(instrumentMode);
-  modeRef.current = instrumentMode;
+  useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
   const [octave, setOctave] = useState(0);
   const octaveRef = useRef(octave);
-  octaveRef.current = octave;
+  useEffect(() => { octaveRef.current = octave; }, [octave]);
 
   // Key (tonic, 0–11 semitones above C) + scale select the 7 wheel notes.
   const [keyOffset, setKeyOffset] = useState(0);
   const [scale, setScale] = useState<ScaleName>('major');
   const musicRef = useRef<MusicConfig>({ keyOffset, scale });
-  musicRef.current = { keyOffset, scale };
+  useEffect(() => { musicRef.current = { keyOffset, scale }; }, [keyOffset, scale]);
 
   // Chord looper: drives the chord pad while the hand solos over it. The ref
   // lets the coordinator's hot loop know when the loop owns the pad.

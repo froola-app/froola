@@ -51,20 +51,19 @@ export default function LearnShell() {
   const attemptStartRef = useRef(0);
 
   useEffect(() => {
-    if (runner?.phase === 'attempt') {
-      attemptStartRef.current = performance.now();
-      elapsedIntervalRef.current = setInterval(() => {
-        setElapsed(performance.now() - attemptStartRef.current);
-      }, 50);
-    } else {
+    if (runner?.phase !== 'attempt') return;
+    attemptStartRef.current = performance.now();
+    const tick = () => setElapsed(performance.now() - attemptStartRef.current);
+    // Seed the first frame via rAF (async) so the bar starts at ~0 without a
+    // synchronous setState in the effect body.
+    const raf = requestAnimationFrame(tick);
+    elapsedIntervalRef.current = setInterval(tick, 50);
+    return () => {
+      cancelAnimationFrame(raf);
       if (elapsedIntervalRef.current) {
         clearInterval(elapsedIntervalRef.current);
         elapsedIntervalRef.current = null;
       }
-      setElapsed(0);
-    }
-    return () => {
-      if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     };
   }, [runner?.phase]);
 
@@ -137,7 +136,7 @@ export default function LearnShell() {
           hint={currentStep?.hint}
           countdown={runner.countdown}
           stepScore={runner.stepScore}
-          elapsed={elapsed}
+          elapsed={runner.phase === 'attempt' ? elapsed : 0}
           durationMs={currentStep?.durationMs ?? 1}
         />
       )}
