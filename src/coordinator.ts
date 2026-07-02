@@ -281,10 +281,11 @@ export function useCoordinator(
     guardrailRef,
   );
 
-  function preloadSampler(m: InstrumentMode) {
+  function preloadSampler(m: InstrumentMode): Promise<void> {
     if (m === 'piano' && engineRef.current) {
-      engineRef.current.startLoadingSampler(m);
+      return engineRef.current.startLoadingSampler(m);
     }
+    return Promise.resolve();
   }
 
   return {

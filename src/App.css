@@ -80,6 +80,13 @@ body {
   margin-top: -0.25rem;
 }
 
+.permission-hint {
+  color: #141414;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
 .permission-privacy {
   font-size: 0.78rem;
   color: #D4500A;
@@ -271,6 +278,14 @@ body {
 .instrument-select option {
   background: #111111;
   color: #ffffff;
+}
+
+.instrument-loading {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 0 0.2rem;
+  white-space: nowrap;
 }
 
 /* octave stepper — frosted pill matching the other HUD controls */
@@ -1212,79 +1227,6 @@ body {
   .pricing-cards { grid-template-columns: 1fr; }
 }
 
-/* ── Gesture coach (first-run overlay) ──────────────────────── */
-
-.coach-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgba(10, 14, 26, 0.55);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.coach-card {
-  width: 100%;
-  max-width: 420px;
-  background: rgba(17, 17, 17, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  padding: 1.6rem 1.6rem 1.4rem;
-  color: #ffffff;
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-
-.coach-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin-bottom: 1rem;
-}
-
-.coach-tips {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  margin-bottom: 1.4rem;
-}
-
-.coach-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.8rem;
-  font-size: 0.95rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.coach-tip__icon {
-  font-size: 1.25rem;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-
-.coach-btn {
-  width: 100%;
-  padding: 0.8rem;
-  border-radius: 2px;
-  border: none;
-  background: #D4500A;
-  color: #ffffff;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
 /* ── Lesson system ─────────────────────────────────────────── */
 
 /* Learn button in PlayShell HUD */
@@ -1872,6 +1814,15 @@ body {
   margin: 0.25rem 0 0;
   max-width: 40ch;
 }
+.lesson-hud__target {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f59e0b;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.6);
+  margin: 0.6rem 0 0;
+}
 
 /* Song lessons: the chord to play right now, dead centre */
 .lesson-hud__chords {
@@ -2037,17 +1988,23 @@ body {
   cursor: pointer;
   transition: background 0.15s, color 0.15s, opacity 0.15s;
 }
-.step-result__btn--retry {
+/* --ghost/--primary swap which action reads as "the recommended one":
+   Retry on failure, Next/Finish on success. --next stays as a plain alias
+   for screens with a single action and no failure state (review drills). */
+.step-result__btn--ghost {
   background: none;
   border: 1px solid rgba(20,20,20,0.25);
   color: #141414;
 }
-.step-result__btn--retry:hover { border-color: #141414; }
+.step-result__btn--ghost:hover { border-color: #141414; }
+.step-result__btn--primary,
 .step-result__btn--next {
   background: #141414;
   color: #FAFAF8;
 }
+.step-result__btn--primary:hover:not(:disabled),
 .step-result__btn--next:hover:not(:disabled) { background: #D4500A; }
+.step-result__btn--primary:disabled,
 .step-result__btn--next:disabled { opacity: 0.3; cursor: default; }
 
 /* ── Completion screen ─── */
@@ -2178,8 +2135,6 @@ body {
 }
 .lesson-complete__btn--primary:hover { background: #D4500A; }
 
-.coach-btn:hover { background: #b8440a; }
-
 .volume-badge {
   position: fixed;
   top: 1rem;
@@ -2193,6 +2148,26 @@ body {
   font-weight: 600;
   letter-spacing: 0.04em;
   padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* Persistent until the first nod actually changes the volume — same slot as
+   .volume-badge (only one is ever shown at a time) so it doesn't compete for
+   attention with the HUD or the hand-tilt popup. */
+.nod-hint {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(20, 20, 30, 0.7);
+  color: rgba(229, 231, 235, 0.85);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 0.3rem 0.85rem;
   border-radius: 999px;
   pointer-events: none;
 }

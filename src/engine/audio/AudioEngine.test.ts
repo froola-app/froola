@@ -4,6 +4,10 @@ import { AudioEngine } from './AudioEngine'
 import { midiToHz } from '../music/scales'
 import type { MusicalCommand } from '../types'
 
+vi.mock('soundfont-player', () => ({
+  default: { instrument: vi.fn(() => Promise.resolve({ play: vi.fn(), stop: vi.fn() })) },
+}))
+
 // chord gain (0.2) spread over its 5 voices (soundgo used 4; we use 5 so a
 // 9th chord's top note isn't dropped)
 const SYNTH_VOICE_GAIN = 0.2 / 5
@@ -278,5 +282,15 @@ describe('AudioEngine — setVolume', () => {
       0.0,
       expect.any(Number),
     )
+  })
+})
+
+describe('AudioEngine — sampler loading', () => {
+  it('reports the piano sampler as not ready until it finishes loading', async () => {
+    const engine = new AudioEngine()
+    expect(engine.isSamplerReady('piano')).toBe(false)
+    engine.startLoadingSampler('piano')
+    expect(engine.isSamplerReady('piano')).toBe(false)
+    await vi.waitFor(() => expect(engine.isSamplerReady('piano')).toBe(true))
   })
 })
