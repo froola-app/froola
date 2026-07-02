@@ -27,7 +27,7 @@ const letItBe: Lesson = {
   difficulty: 'beginner',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: LIB,
-  backing: 'pop',
+  backing: 'let-it-be',
   progression: ['C', 'G', 'Am', 'F'],
   steps: [
     step(
@@ -74,7 +74,7 @@ const standByMe: Lesson = {
   difficulty: 'beginner',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: SBM,
-  backing: 'doowop',
+  backing: 'stand-by-me',
   progression: ['C', 'Am', 'F', 'G'],
   steps: [
     step(
@@ -119,7 +119,7 @@ const bestPart: Lesson = {
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: BP,
-  backing: 'soul',
+  backing: 'best-part',
   progression: ['F7', 'Em7', 'Dm7', 'C7'],
   steps: [
     step(
@@ -160,7 +160,7 @@ const someoneLikeYou: Lesson = {
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 9, scale: 'major' },
   bpm: SLY,
-  backing: 'ballad',
+  backing: 'someone-like-you',
   progression: ['A', 'E', 'F#m', 'D'],
   steps: [
     step(
@@ -201,7 +201,7 @@ const loveYourself: Lesson = {
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 4, scale: 'major' },
   bpm: LY,
-  backing: 'pop',
+  backing: 'love-yourself',
   progression: ['E', 'B', 'C#m', 'A'],
   steps: [
     step(
@@ -242,7 +242,7 @@ const zombie: Lesson = {
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 4, scale: 'minor' },
   bpm: ZOM,
-  backing: 'rock',
+  backing: 'zombie',
   progression: ['Em', 'C', 'G', 'D'],
   steps: [
     step(
@@ -283,7 +283,7 @@ const hallelujah: Lesson = {
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: HAL,
-  backing: 'ballad',
+  backing: 'hallelujah',
   progression: ['C', 'Am', 'F', 'G'],
   steps: [
     step(
@@ -331,7 +331,7 @@ const wonderwall: Lesson = {
   difficulty: 'advanced',
   musicConfig: { keyOffset: 9, scale: 'mixolydian' },
   bpm: WW,
-  backing: 'rock',
+  backing: 'wonderwall',
   progression: ['Em7', 'G', 'Dsus4', 'Asus4'],
   steps: [
     step(

@@ -28,10 +28,17 @@ describe('backingSequence', () => {
     expect(seq[0].rootMidi).toBe(52)
   })
 
-  it('ignores quality changes — only the root drives the bass', () => {
+  it('splits on quality changes so the pad voicing follows the extension', () => {
     const recording = rec([[0, 0, 100], [0, 2, 100]])
     const seq = backingSequence(recording, { keyOffset: 0, scale: 'major' })
-    expect(seq).toHaveLength(1)
-    expect(seq[0].durationMs).toBe(200)
+    expect(seq).toHaveLength(2)
+    expect(seq[0].rootMidi).toBe(seq[1].rootMidi)
+    expect(seq[1].voicing.length).toBeGreaterThan(seq[0].voicing.length) // 7th adds a note
+  })
+
+  it('carries the chord voicing an octave below the wheel register', () => {
+    const seq = backingSequence(rec([[0, 0, 100]]), { keyOffset: 0, scale: 'major' })
+    // C major triad at octave -1: C4 E4 G4
+    expect(seq[0].voicing).toEqual([60, 64, 67])
   })
 })
