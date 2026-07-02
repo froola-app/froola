@@ -14,6 +14,16 @@ import type { BackingStyle } from '../lessons/types'
 
 export type BackingChord = { rootMidi: number; voicing: number[]; durationMs: number }
 
+// A one-shot lead line rendered as an instrument voice on top of the groove.
+// Loaded at runtime from a per-song data file (public/melodies/*.json,
+// gitignored — generated locally by tools/melody-extract from the app owner's
+// licensed audio); steps are absolute 16th positions from the step's start.
+export type MelodyNote = { step: number; midi: number; dur: number }
+
+// Lift the lead above the pad voicings so it reads as the tune, not a chord tone.
+const MELODY_TRANSPOSE = 12
+const MELODY_GAIN = 0.6
+
 const BACKING_GAIN = 0.2
 
 // One repeating pattern of a song's arrangement, on a step grid.
@@ -186,7 +196,7 @@ export class SongBackingTrack {
 
   /** Start (or restart) the arrangement. Loops past the end of the chord
    *  sequence until stopped. */
-  start(sequence: BackingChord[], bpm: number, style: BackingStyle = 'pop'): void {
+  start(sequence: BackingChord[], bpm: number, style: BackingStyle = 'pop', melody?: MelodyNote[]): void {
     this.stop()
     if (sequence.length === 0) return
     const arr = ARRANGEMENTS[style] ?? ARRANGEMENTS.pop
@@ -195,6 +205,15 @@ export class SongBackingTrack {
     const stepSec = stepMs / 1000
     const swingShift = ((arr.swing ?? 0.5) - 0.5) * 2 * stepSec
     const g = arr.gains ?? {}
+    // Melody data is authored on a 16th grid; remap if the arrangement runs
+    // on a different step resolution.
+    const melodyByStep = new Map<number, MelodyNote[]>()
+    for (const n of melody ?? []) {
+      const at = Math.round((n.step * arr.stepsPerBeat) / 4)
+      const list = melodyByStep.get(at) ?? []
+      list.push(n)
+      melodyByStep.set(at, list)
+    }
 
     this.clock = new TempoClock(this.ctx, ({ time, step }) => {
       const barStep = step % arr.patternLen
@@ -209,6 +228,11 @@ export class SongBackingTrack {
       const bassHit = arr.bass.find(b => b.step === barStep)
       if (bassHit) {
         this.playBass(chord.rootMidi + bassHit.interval, when, arr.bassDecay, arr.bassWave ?? 'triangle', g.bass ?? 1)
+      }
+
+      for (const n of melodyByStep.get(step) ?? []) {
+        const durSec = Math.max(1, n.dur) * (60 / bpm / 4)
+        this.playMelodyNote(n.midi + MELODY_TRANSPOSE, when, durSec)
       }
 
       const padHit = arr.pad?.find(p => p.step === barStep)
@@ -266,6 +290,21 @@ export class SongBackingTrack {
     gain.connect(this.padFilter)
     osc.start(when)
     osc.stop(when + decay + 0.05)
+  }
+
+  private playMelodyNote(midi: number, when: number, durSec: number): void {
+    const osc = this.ctx.createOscillator()
+    osc.type = 'triangle'
+    osc.frequency.value = midiToHz(midi)
+    const gain = this.ctx.createGain()
+    gain.gain.setValueAtTime(0, when)
+    gain.gain.linearRampToValueAtTime(MELODY_GAIN, when + 0.02)
+    gain.gain.setValueAtTime(MELODY_GAIN, when + Math.max(0.02, durSec - 0.06))
+    gain.gain.linearRampToValueAtTime(0.0001, when + durSec + 0.05)
+    osc.connect(gain)
+    gain.connect(this.out)
+    osc.start(when)
+    osc.stop(when + durSec + 0.1)
   }
 
   private playKick(when: number, gainMul: number): void {

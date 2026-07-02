@@ -202,6 +202,9 @@ const loveYourself: Lesson = {
   musicConfig: { keyOffset: 4, scale: 'major' },
   bpm: LY,
   backing: 'love-yourself',
+  // Locally-generated melody data (gitignored; see tools/melody-extract).
+  // When the file exists, the verse step plays the lead line over the groove.
+  melodyAsset: '/melodies/love-yourself.json',
   progression: ['E', 'B', 'C#m', 'A'],
   steps: [
     step(
@@ -218,12 +221,15 @@ const loveYourself: Lesson = {
     ),
     step(
       'ly-s3',
-      'The verse loop, song speed',
+      'The verse, with the melody',
+      // 7 times through the loop (~34s) — sized to carry the full 30s verse
+      // melody when the local melody file is present.
       seq(
-        chord(0, 0, 2, LY), chord(4, 0, 2, LY), chord(5, 0, 2, LY), chord(3, 0, 2, LY),
-        chord(0, 0, 2, LY), chord(4, 0, 2, LY), chord(5, 0, 2, LY), chord(3, 0, 2, LY),
+        ...Array.from({ length: 7 }, () => [
+          chord(0, 0, 2, LY), chord(4, 0, 2, LY), chord(5, 0, 2, LY), chord(3, 0, 2, LY),
+        ]).flat(),
       ),
-      { hint: 'Two beats per chord over a tight pop groove — stay minimal, like the record', minScore: 65 },
+      { hint: 'Two beats per chord under the lead line — stay minimal, like the record', minScore: 65 },
     ),
   ],
   tags: ['song', 'I-V-vi-IV', 'E major'],

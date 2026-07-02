@@ -47,6 +47,9 @@ export type Lesson = {
   progression?: string[];
   /** Song lessons only — backing-track groove preset (default 'pop'). */
   backing?: BackingStyle;
+  /** Song lessons only — URL of a locally-generated melody data file
+   *  (see tools/melody-extract). Optional: absent file = no melody voice. */
+  melodyAsset?: string;
 };
 
 export type StepResult = {

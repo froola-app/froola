@@ -31,3 +31,6 @@ CLAUDE.md
 CLAUDE.track-b.md
 # Internal docs — keep off GitHub
 docs/
+
+# Licensed melody data — generated locally by tools/melody-extract, never committed
+public/melodies/

@@ -5,7 +5,7 @@ import type { DialSelection } from '../renderer';
 import { sampleEndTimes, sampleIndexAt, signalsAt } from '../recording/replayPlayer';
 import { scoreFrame, accuracy, combinedScore } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
-import type { AudioEngine, SongBackingTrack } from '../audio';
+import type { AudioEngine, SongBackingTrack, MelodyNote } from '../audio';
 import { backingSequence } from '../audio';
 import { buildCommand } from '../music';
 
@@ -46,6 +46,20 @@ export function useLessonRunner(
   const rafRef = useRef<number | null>(null);
   const previewAudioRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backingRef = useRef<SongBackingTrack | null>(null);
+  const melodyRef = useRef<MelodyNote[] | undefined>(undefined);
+
+  // Optional locally-generated melody data (gitignored runtime asset — a 404
+  // is fine and simply means the backing plays without a lead line).
+  useEffect(() => {
+    melodyRef.current = undefined;
+    if (!lesson.melodyAsset) return;
+    let cancelled = false;
+    fetch(lesson.melodyAsset)
+      .then(r => (r.ok ? r.json() : undefined))
+      .then(notes => { if (!cancelled && Array.isArray(notes)) melodyRef.current = notes; })
+      .catch(() => { /* no melody file */ });
+    return () => { cancelled = true; };
+  }, [lesson]);
 
   // Keep refs in sync with state so callbacks always read current values
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -117,7 +131,7 @@ export function useLessonRunner(
     if (!lesson.bpm || !engine) return;
     backingRef.current ??= engine.createBackingTrack();
     const step = lesson.steps[stepIdx];
-    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing);
+    backingRef.current.start(backingSequence(step.targetRecording, lesson.musicConfig), lesson.bpm, lesson.backing, melodyRef.current);
   }, [lesson, engineRef]);
 
   // The phase callbacks below are declared in reverse calling order
