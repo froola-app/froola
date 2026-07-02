@@ -24,7 +24,7 @@ export default function StepResultScreen({
 
   // Animate score count-up
   useEffect(() => {
-    setDisplayed(0);
+    // No synchronous reset needed: the first rAF tick lands at p≈0 within a frame.
     const target = result.score;
     const duration = 600;
     const start = performance.now();

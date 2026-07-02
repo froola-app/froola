@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Lesson, StepResult } from '../../engine/lessons/types';
 import ReviewBanner from './ReviewBanner';
@@ -20,12 +21,13 @@ function grade(score: number): string {
 export default function CompletionScreen({ lesson, stepResults, totalScore, onSave }: Props) {
   const navigate = useNavigate();
 
-  // Trigger save once on mount
-  const savedRef = { current: false };
-  if (!savedRef.current) {
+  // Trigger save once after mount
+  const savedRef = useRef(false);
+  useEffect(() => {
+    if (savedRef.current) return;
     savedRef.current = true;
     onSave?.();
-  }
+  }, [onSave]);
 
   return (
     <div className="lesson-complete">
