@@ -29,6 +29,13 @@ const L1_S3 = step(
   { hint: 'The I–V–vi–IV progression — the backbone of thousands of songs', minScore: 55 },
 );
 
+const L1_S4 = step(
+  'l1-s4',
+  'Right hand time: C → Csus4 → C',
+  seq(hold(0, 0, 2000), hold(0, 6, 2000), hold(0, 0, 2000)),
+  { hint: 'Keep your left hand on C — swing your right hand to sus4 and back to hear the chord change colour', minScore: 55 },
+);
+
 // ── Lesson 2: Around the Wheel ────────────────────────────────
 
 const L2_S1 = step(
@@ -68,19 +75,7 @@ const L3_S3 = step(
   { hint: 'A minor gets a melancholy seventh — feel the colour change', minScore: 60 },
 );
 
-// ── Lesson 4: I–V–vi–IV Smooth ───────────────────────────────
-
-const L4_S1 = step(
-  'l4-s1',
-  'I–V–vi–IV, twice through — stay smooth',
-  seq(
-    hold(0, 0, 2000), hold(4, 0, 2000), hold(5, 0, 2000), hold(3, 0, 2000),
-    hold(0, 0, 2000), hold(4, 0, 2000), hold(5, 0, 2000), hold(3, 0, 2000),
-  ),
-  { hint: 'No pauses between chords — anticipate the next position', minScore: 70 },
-);
-
-// ── Lesson 5: Fist Solo ───────────────────────────────────────
+// ── Lesson 4: Fist Solo ───────────────────────────────────────
 // Right hand makes a fist (chord lock), left hand plays a melody.
 // In the target recording qualIdx stays 0 (triad), but during playback
 // the coordinator will see the fist flag and engage chord-lock mode.
@@ -120,12 +115,12 @@ export const CURRICULUM: Lesson[] = [
   {
     id: 'first-chord',
     title: 'Your First Chord',
-    subtitle: 'Learn to land on any chord in the C major scale',
+    subtitle: 'Land chords with your left hand, colour them with your right',
     kind: 'technique',
     difficulty: 'beginner',
     musicConfig: { keyOffset: 0, scale: 'major' },
-    steps: [L1_S1, L1_S2, L1_S3],
-    tags: ['chords', 'basics', 'C major'],
+    steps: [L1_S1, L1_S2, L1_S3, L1_S4],
+    tags: ['chords', 'basics', 'both wheels'],
   },
   {
     id: 'around-the-wheel',
@@ -146,16 +141,6 @@ export const CURRICULUM: Lesson[] = [
     musicConfig: { keyOffset: 0, scale: 'major' },
     steps: [L3_S1, L3_S2, L3_S3],
     tags: ['extensions', 'right wheel', 'colour'],
-  },
-  {
-    id: 'four-chord-smooth',
-    title: 'I–V–vi–IV Smooth',
-    subtitle: 'Play the most common progression in pop music without hesitating',
-    kind: 'technique',
-    difficulty: 'intermediate',
-    musicConfig: { keyOffset: 0, scale: 'major' },
-    steps: [L4_S1],
-    tags: ['progression', 'I-V-vi-IV', 'fluency'],
   },
   {
     id: 'fist-solo',
@@ -181,14 +166,14 @@ const byId = (id: string): Lesson => {
 // technique lesson prepares the song(s) that follow it.
 
 export const LEARNING_PATH: Lesson[] = [
-  byId('first-chord'),          // land on a chord, hold it
+  byId('first-chord'),          // land a chord; first taste of the right wheel
   byId('song-let-it-be'),       // first real song with those chords
   byId('around-the-wheel'),     // navigate all 7 degrees
   byId('song-stand-by-me'),     // reordered loop, faster changes
-  byId('song-riptide'),         // starting on the minor vi
-  byId('four-chord-smooth'),    // fluency check before leaving C major
+  byId('extensions'),           // right-wheel colours in depth
+  byId('song-best-part'),       // whole song on 7th chords
   byId('song-someone-like-you'),// same shape, new key (A major)
-  byId('extensions'),           // right-wheel colours
+  byId('song-love-yourself'),   // another key (E major), song-speed changes
   byId('song-zombie'),          // minor-key mode
   byId('song-hallelujah'),      // longer form, slow control
   byId('fist-solo'),            // chord lock + melody
