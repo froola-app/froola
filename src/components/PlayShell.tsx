@@ -11,6 +11,7 @@ import VideoRecordButton from './VideoRecordButton';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
+import HandTiltPopup from './HandTiltPopup';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -153,6 +154,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
       {showTutorial && mode !== 'asking' && (
         <BeginnerTutorial
           signalRef={signalRef}

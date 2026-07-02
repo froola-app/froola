@@ -1,6 +1,7 @@
 // src/engine/input/index.ts
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
+import { classifyHandFacing } from './handFacing';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -305,6 +306,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
                 present: true,
                 handId,
                 fist,
+                facing: classifyHandFacing(lm),
               });
             }
             signalRef.current = signals;
