@@ -77,6 +77,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
     useMouse,
     selectedRef,
     engineRef,
+    sustainedRef,
   } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef, undefined, undefined, undefined, undefined, guardrailRef);
 
   const runner = useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef);
@@ -101,6 +102,15 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
       }
     };
   }, [runner.phase]);
+
+  // Fist-lock has no visible feedback otherwise — confirm the lock registered
+  // (lesson 5 relies on it, but it's harmless to surface for any lesson).
+  const [sustained, setSustained] = useState(false);
+  useEffect(() => {
+    if (runner.phase !== 'attempt') return;
+    const id = setInterval(() => setSustained(sustainedRef.current), 100);
+    return () => { clearInterval(id); setSustained(false); };
+  }, [runner.phase, sustainedRef]);
 
   const { save } = useLessonProgress(lesson.id);
 
@@ -208,6 +218,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
           minScore={currentStep?.minScore ?? 60}
           chordNow={chordNow}
           chordNext={chordNext}
+          sustained={sustained}
         />
       )}
 

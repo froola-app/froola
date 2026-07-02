@@ -1806,6 +1806,15 @@ body {
   text-shadow: 0 2px 12px rgba(0,0,0,0.7);
   margin: 0;
 }
+.lesson-hud__lock {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #f59e0b;
+  background: rgba(20,16,10,0.7);
+  border-radius: 999px;
+  padding: 0.25rem 0.8rem;
+  margin: 0.5rem 0 0;
+}
 .lesson-hud__hint {
   font-size: 0.85rem;
   color: rgba(255,255,255,0.6);
