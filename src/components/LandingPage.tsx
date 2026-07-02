@@ -63,9 +63,27 @@ function WaveVisual() {
   );
 }
 
+// Remembered per tab so leaving for /learn and coming back drops the user
+// straight into the instrument instead of the landing hero.
+const INPUT_MODE_KEY = 'froola.inputMode';
+
+const storedInputMode = (): InputMode | null => {
+  try {
+    const v = sessionStorage.getItem(INPUT_MODE_KEY);
+    return v === 'camera' || v === 'mouse' ? v : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function LandingPage() {
-  const [input, setInput] = useState<InputMode | null>(null);
+  const [input, setInput] = useState<InputMode | null>(storedInputMode);
   const touch = isTouchDevice();
+
+  const chooseInput = (mode: InputMode) => {
+    try { sessionStorage.setItem(INPUT_MODE_KEY, mode); } catch { /* private mode */ }
+    setInput(mode);
+  };
 
   if (input) return <PlayShell initialInput={input} />;
 
@@ -89,10 +107,10 @@ export default function LandingPage() {
         </div>
 
         <div className="lp3__actions">
-          <button className="lp3__btn-primary" onClick={() => setInput('camera')}>
+          <button className="lp3__btn-primary" onClick={() => chooseInput('camera')}>
             Enable camera
           </button>
-          <button className="lp3__btn-secondary" onClick={() => setInput('mouse')}>
+          <button className="lp3__btn-secondary" onClick={() => chooseInput('mouse')}>
             {touch ? 'Use touch instead' : 'Use mouse instead'}
           </button>
         </div>
@@ -139,10 +157,10 @@ export default function LandingPage() {
           </p>
           <a className="lp3__email" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
           <div className="lp3__actions lp3__actions--contact">
-            <button className="lp3__btn-primary" onClick={() => setInput('camera')}>
+            <button className="lp3__btn-primary" onClick={() => chooseInput('camera')}>
               Enable camera
             </button>
-            <button className="lp3__btn-secondary" onClick={() => setInput('mouse')}>
+            <button className="lp3__btn-secondary" onClick={() => chooseInput('mouse')}>
               {touch ? 'Use touch instead' : 'Use mouse instead'}
             </button>
           </div>

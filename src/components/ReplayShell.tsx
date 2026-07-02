@@ -78,7 +78,7 @@ export default function ReplayShell() {
       <div className="landing-screen">
         <h1>Replay</h1>
         <p>This replay link is invalid.</p>
-        <button className="btn-primary" onClick={() => navigate('/play')}>
+        <button className="btn-primary" onClick={() => navigate('/')}>
           Play yourself →
         </button>
       </div>
@@ -102,7 +102,7 @@ export default function ReplayShell() {
         <div className="replay-progress" aria-hidden>
           <div className="replay-progress-fill" style={{ width: `${progress * 100}%` }} />
         </div>
-        <button className="link-btn" onClick={() => navigate('/play')}>
+        <button className="link-btn" onClick={() => navigate('/')}>
           Play yourself →
         </button>
       </div>

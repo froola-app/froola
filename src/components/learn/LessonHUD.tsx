@@ -31,10 +31,9 @@ export default function LessonHUD({
   if (phase === 'preview') {
     return (
       <div className="lesson-hud lesson-hud--preview">
-        <p className="lesson-hud__listen">
-          <span className="lesson-hud__listen-dot" />
-          Watch &amp; listen…
-        </p>
+        <p className="lesson-hud__preview-eyebrow">Watch &amp; listen</p>
+        <p className="lesson-hud__listen">Here&apos;s what you&apos;re about to play</p>
+        <p className="lesson-hud__preview-hint">Follow the glowing hands — your turn is next</p>
       </div>
     );
   }
