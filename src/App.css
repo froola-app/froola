@@ -1437,97 +1437,28 @@ body {
   white-space: nowrap;
 }
 
-/* ── The learning path ─── */
+/* ── Learn sections ─── shared with the landing page's editorial rhythm:
+   uppercase label, generous top border/spacing between sections. */
 
-.lesson-path {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.learn-section {
   border-top: 1px solid rgba(20,20,20,0.1);
+  padding-top: 2.5rem;
+  margin-top: 2.5rem;
 }
 
-.lesson-row {
-  border-bottom: 1px solid rgba(20,20,20,0.1);
-  position: relative;
-}
-
-.lesson-row__btn {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  width: 100%;
-  background: none;
-  border: none;
-  font-family: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  padding: 1.15rem 0.5rem;
-  transition: background 0.15s;
-}
-.lesson-row__btn:hover { background: rgba(212,80,10,0.05); }
-
-/* Locked rows are plain <li>s — mirror the button's layout */
-.lesson-row.is-locked {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 1.15rem 0.5rem;
-  opacity: 0.42;
-}
-
-.lesson-row.is-next .lesson-row__btn {
-  box-shadow: inset 3px 0 0 #D4500A;
-}
-
-.lesson-row__index {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: rgba(20,20,20,0.22);
-  letter-spacing: 0.02em;
-  width: 1.9rem;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
-.lesson-row.is-next .lesson-row__index { color: #D4500A; }
-
-.lesson-row__main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.28rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.lesson-row__eyebrow {
-  font-size: 0.68rem;
+.learn-section__label {
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: #8A8578;
-}
-.lesson-row--song .lesson-row__eyebrow { color: #D4500A; }
-
-.lesson-row__title {
-  font-weight: 900;
-  letter-spacing: -0.015em;
-  color: #141414;
-}
-.lesson-row--song .lesson-row__title { font-size: 1.35rem; }
-.lesson-row--technique .lesson-row__title { font-size: 1.02rem; }
-
-.lesson-row__subtitle {
-  font-size: 0.82rem;
-  color: #8A8578;
-  line-height: 1.4;
+  letter-spacing: 0.22em;
+  color: #D4500A;
+  margin: 0 0 1.5rem;
 }
 
-.lesson-row__progression {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.15rem;
-}
+/* Shared star rating, used by both card types */
+.lesson-card__stars { display: flex; gap: 0.1rem; font-size: 0.95rem; }
+.lesson-card__star { color: rgba(20,20,20,0.15); }
+.lesson-card__star.is-earned { color: #D4500A; }
 
 .chord-chip {
   font-size: 0.74rem;
@@ -1539,27 +1470,167 @@ body {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
-.chord-chip + .chord-chip { position: relative; }
 
-.lesson-row__status {
+/* ── Technique drills — compact grid, echoes the landing page's
+   numbered "How it works" step grid rather than a table row. ─── */
+
+.technique-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .technique-grid { grid-template-columns: 1fr; }
+}
+
+.technique-card__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  height: 100%;
+  background: none;
+  border: 1px solid rgba(20,20,20,0.12);
+  border-radius: 6px;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 1.1rem 1.2rem;
+  box-sizing: border-box;
+  transition: background 0.15s, border-color 0.15s;
+}
+.technique-card__btn:hover { background: rgba(212,80,10,0.05); border-color: rgba(212,80,10,0.3); }
+
+.technique-card.is-next .technique-card__btn { border-color: #D4500A; }
+
+.technique-card__num {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(20,20,20,0.35);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+.technique-card.is-next .technique-card__num { color: #D4500A; }
+
+.technique-card__title {
+  font-weight: 900;
+  font-size: 1.02rem;
+  letter-spacing: -0.015em;
+  color: #141414;
+}
+
+.technique-card__subtitle {
+  font-size: 0.82rem;
+  color: #8A8578;
+  line-height: 1.4;
+}
+
+.technique-card__status { margin-top: 0.3rem; }
+
+.technique-card__cta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8A8578;
+}
+.technique-card.is-next .technique-card__cta {
+  color: #D4500A;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
+/* ── Songs — the headline content, more visual weight: real card
+   boundaries, bigger title, artist eyebrow. ─── */
+
+.song-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.song-card__btn {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  background: none;
+  border: 1px solid rgba(20,20,20,0.12);
+  border-radius: 6px;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 1.15rem 1.3rem;
+  box-sizing: border-box;
+  transition: background 0.15s, border-color 0.15s;
+}
+.song-card__btn:hover { background: rgba(212,80,10,0.05); border-color: rgba(212,80,10,0.3); }
+
+.song-card.is-next .song-card__btn { border-color: #D4500A; }
+
+.song-card__num {
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: rgba(20,20,20,0.22);
+  letter-spacing: 0.02em;
+  width: 1.9rem;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.song-card.is-next .song-card__num { color: #D4500A; }
+
+.song-card__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.song-card__artist {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #D4500A;
+}
+
+.song-card__title {
+  font-weight: 900;
+  font-size: 1.35rem;
+  letter-spacing: -0.015em;
+  color: #141414;
+}
+
+.song-card__progression {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.song-card__status {
   flex-shrink: 0;
   display: flex;
   align-items: center;
 }
 
-.lesson-row__lock { color: rgba(20,20,20,0.5); display: flex; }
-
-.lesson-row__stars { display: flex; gap: 0.1rem; font-size: 0.95rem; }
-.lesson-row__star { color: rgba(20,20,20,0.15); }
-.lesson-row__star.is-earned { color: #D4500A; }
-
-.lesson-row__cta {
+.song-card__cta {
   font-size: 0.8rem;
   font-weight: 700;
   color: #8A8578;
   white-space: nowrap;
 }
-.lesson-row.is-next .lesson-row__cta {
+.song-card.is-next .song-card__cta {
   color: #D4500A;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1567,8 +1638,8 @@ body {
 }
 
 @media (max-width: 480px) {
-  .lesson-row__btn, .lesson-row.is-locked { gap: 0.8rem; }
-  .lesson-row--song .lesson-row__title { font-size: 1.15rem; }
+  .song-card__btn { gap: 0.8rem; }
+  .song-card__title { font-size: 1.15rem; }
 }
 
 /* ── In-lesson: start screen ─── */
