@@ -20,6 +20,7 @@ fixed) in a headless-Chromium run this pass.
 - **Mouse/touch can now reach the extension wheel** — the single pointer is labelled `left`/`right` by which half of the screen it's in, so dragging onto the right wheel dials an extension; in pointer modes the extension *sticks* (there's no second hand to hold it), so you dial a flavour on the right then play chords on the left. Camera mode is unchanged (lift the right hand → triad). **(verified: dialling the 7th then playing C sounds a Cmaj7, and the extension persists across notes.)**
 - **Lesson preview audio** — the "Listen to the target" phase now actually plays the target chord.
 - **Lessons test real recall** — the graded attempt phase no longer shows the ghost/hint; results show real independent note vs. chord-quality accuracy; a Leitner-box spaced-repetition review re-tests completed chords cold (`/learn/review`).
+- **Rhythmic arpeggiation** — sustaining a chord (fist-hold or Space pedal) now cycles through its voicing as a repeating pattern instead of a static drone, driven by a new `Arpeggiator` on its own `TempoClock`; hand height sets the rate (60–240bpm), and an "arp on/off" HUD toggle falls back to the plain sustained pad. Non-sustained play and loop mode are unaffected. _(verified headless: 0.968s/step at hand-low ≈ 60bpm, 0.252s/step at hand-high ≈ 240bpm; stops immediately on release; silent during loop playback and with the toggle off.)_
 
 ## 🐞 Open fixes
 | Pri | Item | Where |
@@ -41,9 +42,8 @@ fixed) in a headless-Chromium run this pass.
 - **Audio export (WAV via OfflineAudioContext)** — deterministic offline render; shareable audio reaches further than a link. (M)
 
 **Musical expressiveness**
-- **Rhythmic arpeggiation** — the **TempoClock** now exists (shipped with the looper); build an arp/strum on it, driven by hand height or the tempo control, to turn a held chord into playing. (M)
 - **More instruments / finish the `vibe` system** — selectable timbres (warm/bright/dark/electric) reusing existing plumbing. (M)
-- _Done: key/scale selector; tempo clock + chord looper._
+- _Done: key/scale selector; tempo clock + chord looper; rhythmic arpeggiation._
 
 **Mobile / touch**
 - **First-class touch UX** — touch already maps two fingers to the two wheels (better than mouse); promote it in landing copy. (S)
