@@ -53,7 +53,7 @@ export default function StepResultScreen({
         </div>
 
         <p className={`step-result__verdict ${passed ? 'step-result__verdict--pass' : 'step-result__verdict--fail'}`}>
-          {passed ? 'Nice work!' : `Need ${minScore} to pass — keep trying`}
+          {passed ? 'Nice work!' : `${minScore} clears it — retry, or skip ahead`}
         </p>
 
         <div className="step-result__breakdown">
@@ -76,9 +76,8 @@ export default function StepResultScreen({
           <button
             className="step-result__btn step-result__btn--next"
             onClick={onNext}
-            disabled={!passed}
           >
-            {isLast ? 'Finish' : 'Next'} →
+            {passed ? (isLast ? 'Finish' : 'Next') : (isLast ? 'Finish anyway' : 'Skip')} →
           </button>
         </div>
       </div>
