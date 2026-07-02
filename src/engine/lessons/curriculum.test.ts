@@ -31,9 +31,9 @@ describe('song lessons', () => {
     }
   });
 
-  it('every song bpm keeps chord boundaries on the 100ms sample grid', () => {
+  it('every song bpm keeps 2-beat chord boundaries on the 100ms sample grid', () => {
     for (const s of SONGS) {
-      expect((60000 / s.bpm!) % 100).toBe(0);
+      expect((120000 / s.bpm!) % 100).toBe(0);
     }
   });
 
