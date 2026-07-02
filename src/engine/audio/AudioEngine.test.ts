@@ -192,6 +192,30 @@ describe('AudioEngine — playMelody() / silenceMelody()', () => {
   })
 })
 
+describe('AudioEngine — playNoteAt()', () => {
+  const melodyOsc = () => mockAudioContext.createOscillator.mock.results[5].value
+
+  it('schedules the melody oscillator pitch and gain attack at the given time', () => {
+    const engine = new AudioEngine()
+    engine.playNoteAt(69, 5) // A4 at t=5
+    const call = melodyOsc().frequency.setValueAtTime.mock.calls.at(-1)
+    expect(call?.[0]).toBeCloseTo(440, 1)
+    expect(call?.[1]).toBe(5)
+    const attackRamp = mockAudioContext.createGain.mock.results
+      .flatMap(r => r.value.gain.linearRampToValueAtTime.mock.calls)
+      .some(([val, time]: [number, number]) => val > 0.1 && val < 0.2 && time === 5 + 0.012)
+    expect(attackRamp).toBe(true)
+  })
+
+  it('does not retrigger the chord pad', () => {
+    const engine = new AudioEngine()
+    engine.playNoteAt(72, 3)
+    mockAudioContext.createOscillator.mock.results.slice(0, 4).forEach(r => {
+      expect(r.value.frequency.setValueAtTime).not.toHaveBeenCalled()
+    })
+  })
+})
+
 describe('AudioEngine — getAnalyser()', () => {
   it('returns the AnalyserNode created at construction', () => {
     const engine = new AudioEngine()
