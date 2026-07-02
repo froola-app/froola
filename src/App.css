@@ -353,6 +353,17 @@ body {
   color: #ffffff;
 }
 
+/* At narrow widths .hud-bottom's 5 pills wrap to 3 rows, growing well past
+   the 4.6rem this offset assumes for a single-row desktop layout — pushing
+   loop-panel down onto it. Clear the taller wrapped stack instead. */
+@media (max-width: 480px) {
+  .loop-panel { bottom: 9.5rem; }
+  /* Supplementary hint text, not a control — rather than stack it above an
+     already-tall control cluster on a small screen, drop it here. The
+     camera-mode switch is still reachable from the landing page. */
+  .mode-badge { display: none; }
+}
+
 .loop-slots {
   display: flex;
   align-items: center;
@@ -1314,6 +1325,7 @@ body {
   line-height: 1.02;
   margin: 0;
   color: #141414;
+  overflow-wrap: break-word;
 }
 .learn-title em {
   font-style: normal;
@@ -1421,12 +1433,15 @@ body {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* minmax(0, 1fr), not bare 1fr — a bare 1fr track won't shrink below its
+     content's min-content width, so one long word/title can force the whole
+     grid (and the page) wider than the viewport. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
 @media (max-width: 640px) {
-  .technique-grid { grid-template-columns: 1fr; }
+  .technique-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .technique-card__btn {
