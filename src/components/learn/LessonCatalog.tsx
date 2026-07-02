@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { LEARNING_PATH, starsForScore } from '../../engine/lessons/curriculum';
+import { LEARNING_PATH, TECHNIQUE_PATH, SONG_PATH, starsForScore } from '../../engine/lessons/curriculum';
 import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
-import LessonCard from './LessonCard';
+import { TechniqueCard, SongCard } from './LessonCard';
 import ReviewBanner from './ReviewBanner';
 
 export default function LessonCatalog() {
@@ -12,7 +12,9 @@ export default function LessonCatalog() {
 
   // Every lesson is playable — the path order is a recommendation, and the
   // first uncompleted lesson gets an "up next" nudge rather than a gate.
-  const upNextIndex = LEARNING_PATH.findIndex(l => !isComplete(l.id));
+  // The nudge is computed over the combined pedagogical order even though
+  // the two sections render separately below.
+  const upNextId = LEARNING_PATH.find(l => !isComplete(l.id))?.id;
 
   const completedCount = LEARNING_PATH.filter(l => isComplete(l.id)).length;
   const starCount = LEARNING_PATH.reduce((sum, l) => {
@@ -44,17 +46,35 @@ export default function LessonCatalog() {
 
         <ReviewBanner />
 
-        <ol className="lesson-path">
-          {LEARNING_PATH.map((lesson, i) => (
-            <LessonCard
-              key={lesson.id}
-              lesson={lesson}
-              progress={allProgress[lesson.id] ?? null}
-              index={i}
-              isNext={i === upNextIndex}
-            />
-          ))}
-        </ol>
+        <section className="learn-section">
+          <h2 className="learn-section__label">Technique drills</h2>
+          <ol className="technique-grid">
+            {TECHNIQUE_PATH.map((lesson, i) => (
+              <TechniqueCard
+                key={lesson.id}
+                lesson={lesson}
+                progress={allProgress[lesson.id] ?? null}
+                index={i}
+                isNext={lesson.id === upNextId}
+              />
+            ))}
+          </ol>
+        </section>
+
+        <section className="learn-section">
+          <h2 className="learn-section__label">Songs</h2>
+          <ol className="song-list">
+            {SONG_PATH.map((lesson, i) => (
+              <SongCard
+                key={lesson.id}
+                lesson={lesson}
+                progress={allProgress[lesson.id] ?? null}
+                index={i}
+                isNext={lesson.id === upNextId}
+              />
+            ))}
+          </ol>
+        </section>
       </div>
     </div>
   );

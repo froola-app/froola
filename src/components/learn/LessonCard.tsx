@@ -5,54 +5,70 @@ import { starsForScore } from '../../engine/lessons/curriculum';
 type Props = {
   lesson: Lesson;
   progress: LessonProgress | null;
-  index: number;   // position in the learning path (0-based)
-  isNext: boolean; // the first uncompleted lesson — recommended next
+  index: number;   // position within this section (0-based)
+  isNext: boolean; // the first uncompleted lesson overall — recommended next
 };
 
-export default function LessonCard({ lesson, progress, index, isNext }: Props) {
-  const navigate = useNavigate();
+function Stars({ stars }: { stars: number }) {
+  return (
+    <span className="lesson-card__stars" aria-label={`${stars} of 3 stars`}>
+      {[1, 2, 3].map(n => (
+        <span key={n} className={'lesson-card__star' + (n <= stars ? ' is-earned' : '')}>★</span>
+      ))}
+    </span>
+  );
+}
 
+export function TechniqueCard({ lesson, progress, index, isNext }: Props) {
+  const navigate = useNavigate();
   const completed = progress?.completedAt != null;
   const stars = completed ? starsForScore(progress.bestScore) : 0;
-  const isSong = lesson.kind === 'song';
 
-  const className = [
-    'lesson-row',
-    isSong ? 'lesson-row--song' : 'lesson-row--technique',
-    isNext && 'is-next',
-    completed && 'is-complete',
-  ].filter(Boolean).join(' ');
+  const className = ['technique-card', isNext && 'is-next', completed && 'is-complete']
+    .filter(Boolean).join(' ');
 
   return (
     <li className={className}>
-      <button className="lesson-row__btn" onClick={() => navigate(`/learn/${lesson.id}`)}>
-        <span className="lesson-row__index">{String(index + 1).padStart(2, '0')}</span>
+      <button className="technique-card__btn" onClick={() => navigate(`/learn/${lesson.id}`)}>
+        <span className="technique-card__num">{String(index + 1).padStart(2, '0')}</span>
+        <span className="technique-card__title">{lesson.title}</span>
+        <span className="technique-card__subtitle">{lesson.subtitle}</span>
+        <span className="technique-card__status">
+          {completed ? <Stars stars={stars} /> : (
+            <span className="technique-card__cta">{isNext ? 'up next' : 'play'} →</span>
+          )}
+        </span>
+      </button>
+    </li>
+  );
+}
 
-        <span className="lesson-row__main">
-          <span className="lesson-row__eyebrow">
-            {isSong ? lesson.artist : 'technique'}
-          </span>
-          <span className="lesson-row__title">{lesson.title}</span>
-          {isSong && lesson.progression ? (
-            <span className="lesson-row__progression">
+export function SongCard({ lesson, progress, index, isNext }: Props) {
+  const navigate = useNavigate();
+  const completed = progress?.completedAt != null;
+  const stars = completed ? starsForScore(progress.bestScore) : 0;
+
+  const className = ['song-card', isNext && 'is-next', completed && 'is-complete']
+    .filter(Boolean).join(' ');
+
+  return (
+    <li className={className}>
+      <button className="song-card__btn" onClick={() => navigate(`/learn/${lesson.id}`)}>
+        <span className="song-card__num">{String(index + 1).padStart(2, '0')}</span>
+        <span className="song-card__main">
+          <span className="song-card__artist">{lesson.artist}</span>
+          <span className="song-card__title">{lesson.title}</span>
+          {lesson.progression && (
+            <span className="song-card__progression">
               {lesson.progression.map((c, i) => (
                 <span key={i} className="chord-chip">{c}</span>
               ))}
             </span>
-          ) : (
-            <span className="lesson-row__subtitle">{lesson.subtitle}</span>
           )}
         </span>
-
-        <span className="lesson-row__status">
-          {completed ? (
-            <span className="lesson-row__stars" aria-label={`${stars} of 3 stars`}>
-              {[1, 2, 3].map(n => (
-                <span key={n} className={'lesson-row__star' + (n <= stars ? ' is-earned' : '')}>★</span>
-              ))}
-            </span>
-          ) : (
-            <span className="lesson-row__cta">{isNext ? 'up next' : 'play'} →</span>
+        <span className="song-card__status">
+          {completed ? <Stars stars={stars} /> : (
+            <span className="song-card__cta">{isNext ? 'up next' : 'play'} →</span>
           )}
         </span>
       </button>
