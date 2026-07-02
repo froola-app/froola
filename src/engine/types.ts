@@ -5,8 +5,7 @@ export type GestureSignal = {
   y: number;        // 0–1, vertical position (top = 0, bottom = 1)
   present: boolean; // is a hand/cursor actively tracked?
   handId: 'left' | 'right';
-  fist?: boolean;       // true while hand is making a fist (chord lock)
-  facingCamera?: boolean; // true when palm is oriented toward the camera (tilt < ~55°)
+  fist?: boolean;   // true while hand is making a fist (chord lock)
 };
 
 export type NoteName = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
