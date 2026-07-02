@@ -5,7 +5,25 @@ import { classifyHandFacing, handFacingAngles } from './handFacing';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
-const INPUT_MODE_KEY = 'froola-input-mode';
+// Single persistence mechanism for the user's camera/mouse choice, shared by
+// LandingPage (decides whether to skip the hero on mount) and PlayShell
+// (keeps it in sync when the mode changes after mount — a manual switch or
+// an automatic camera-denied fallback). sessionStorage, not localStorage: the
+// choice should survive the /learn round trip within a tab, not outlive it.
+const INPUT_MODE_KEY = 'froola.inputMode';
+
+export function storedInputMode(): InputMode | null {
+  try {
+    const v = sessionStorage.getItem(INPUT_MODE_KEY);
+    return v === 'camera' || v === 'mouse' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function storeInputMode(mode: 'camera' | 'mouse'): void {
+  try { sessionStorage.setItem(INPUT_MODE_KEY, mode); } catch { /* private mode */ }
+}
 
 // A single mouse pointer can only be on one wheel at a time, so we label it by
 // which half of the screen it's in: the left wheel sits near the left edge and
@@ -14,13 +32,6 @@ const INPUT_MODE_KEY = 'froola-input-mode';
 // the extension wheel is unreachable (mouse users are stuck on plain triads).
 export function pointerHandId(xNorm: number): 'left' | 'right' {
   return xNorm < 0.5 ? 'left' : 'right';
-}
-
-function savedMode(): InputMode | null {
-  try {
-    const v = localStorage.getItem(INPUT_MODE_KEY);
-    return v === 'camera' || v === 'mouse' ? v : null;
-  } catch { return null; }
 }
 
 export function useGestureInput(initialMode: InputMode = 'asking'): {
@@ -32,21 +43,19 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   nodEventRef: React.RefObject<'up' | 'down' | null>;
 } {
   const signalRef = useRef<GestureSignal[]>([]);
-  // Restore persisted choice so the user isn't re-prompted on every navigation
-  const [mode, setMode] = useState<InputMode>(() =>
-    initialMode === 'asking' ? (savedMode() ?? 'asking') : initialMode
-  );
+  // The input-mode choice itself is persisted one layer up, in LandingPage
+  // (sessionStorage) — this hook always receives an explicit initialMode from
+  // its caller and just tracks it as live state.
+  const [mode, setMode] = useState<InputMode>(initialMode);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const nodEventRef = useRef<'up' | 'down' | null>(null);
 
   function switchToMouse() {
-    try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
     setMode('mouse');
   }
 
   function requestCamera() {
-    try { localStorage.setItem(INPUT_MODE_KEY, 'camera'); } catch { /* ignore */ }
     setMode('camera');
   }
 
@@ -129,7 +138,8 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
         });
       } catch {
-        try { localStorage.setItem(INPUT_MODE_KEY, 'mouse'); } catch { /* ignore */ }
+        // Persisting this fallback is PlayShell's job (it syncs `mode` on
+        // every change) — the hook itself only tracks live state.
         setMode('mouse');
         return;
       }

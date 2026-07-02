@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { InputMode } from '../engine/input';
+import { storedInputMode, storeInputMode, type InputMode } from '../engine/input';
 import FroolaLogo from './FroolaLogo';
 import PlayShell from './PlayShell';
 
@@ -63,25 +63,14 @@ function WaveVisual() {
   );
 }
 
-// Remembered per tab so leaving for /learn and coming back drops the user
-// straight into the instrument instead of the landing hero.
-const INPUT_MODE_KEY = 'froola.inputMode';
-
-const storedInputMode = (): InputMode | null => {
-  try {
-    const v = sessionStorage.getItem(INPUT_MODE_KEY);
-    return v === 'camera' || v === 'mouse' ? v : null;
-  } catch {
-    return null;
-  }
-};
-
 export default function LandingPage() {
+  // Remembered per tab so leaving for /learn and coming back drops the user
+  // straight into the instrument instead of the landing hero.
   const [input, setInput] = useState<InputMode | null>(storedInputMode);
   const touch = isTouchDevice();
 
-  const chooseInput = (mode: InputMode) => {
-    try { sessionStorage.setItem(INPUT_MODE_KEY, mode); } catch { /* private mode */ }
+  const chooseInput = (mode: 'camera' | 'mouse') => {
+    storeInputMode(mode);
     setInput(mode);
   };
 
