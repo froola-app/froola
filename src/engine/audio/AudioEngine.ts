@@ -1,6 +1,7 @@
 import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
 import { TempoClock, type StepCallback, type TempoClockOptions } from './TempoClock'
+import { SongBackingTrack } from './SongBackingTrack'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
@@ -264,6 +265,18 @@ export class AudioEngine {
     this.melodyGain.gain.linearRampToValueAtTime(MELODY_GAIN, now + 0.012)
   }
 
+  /** Schedule a single note at AudioContext time `when` on the melody lead
+   *  voice. Used by the arpeggiator to step through a held chord's voicing
+   *  one note at a time. */
+  playNoteAt(midi: number, when: number): void {
+    const hz = midiToHz(midi)
+    this.melodyOsc.frequency.cancelScheduledValues(when)
+    this.melodyOsc.frequency.setValueAtTime(hz, when)
+    this.melodyGain.gain.cancelScheduledValues(when)
+    this.melodyGain.gain.setValueAtTime(0, when)
+    this.melodyGain.gain.linearRampToValueAtTime(MELODY_GAIN, when + 0.012)
+  }
+
   /** Fade the melody lead out (chord, if latched, keeps sounding). */
   silenceMelody(): void {
     const now = this.ctx.currentTime
@@ -311,6 +324,12 @@ export class AudioEngine {
   // schedule sound in the callback against each step's `time`.
   createClock(cb: StepCallback, opts?: TempoClockOptions): TempoClock {
     return new TempoClock(this.ctx, cb, opts)
+  }
+
+  // Synthesized bass+hi-hat groove for song lessons, routed through its own
+  // low-gain bus into master so it stays underneath the user's playing.
+  createBackingTrack(): SongBackingTrack {
+    return new SongBackingTrack(this.ctx, this.masterGain)
   }
 
   // Creates a MediaStream mixing the instrument output with the given mic stream.
