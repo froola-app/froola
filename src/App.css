@@ -205,11 +205,11 @@ body {
   position: fixed;
   top: 1rem;
   right: 1rem;
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: #ffffff;
-  background: rgba(17, 17, 17, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 0.4rem 1rem;
   cursor: pointer;
@@ -221,7 +221,8 @@ body {
 }
 
 .share-btn:hover {
-  background: rgba(17, 17, 17, 0.9);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
@@ -241,11 +242,11 @@ body {
 }
 
 .instrument-select {
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: #ffffff;
-  background: rgba(17, 17, 17, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 0.4rem 1.1rem;
   cursor: pointer;
@@ -260,8 +261,9 @@ body {
 }
 
 .instrument-select:hover {
-  background: rgba(17, 17, 17, 0.9);
-  border-color: rgba(255, 255, 255, 0.32);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
@@ -276,11 +278,11 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: #ffffff;
-  background: rgba(17, 17, 17, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 0.25rem 0.45rem;
   backdrop-filter: blur(8px);
@@ -305,7 +307,7 @@ body {
   border: none;
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 1.05rem;
   line-height: 1;
   cursor: pointer;
@@ -332,7 +334,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   max-width: calc(100vw - 2rem);
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   color: #ffffff;
 }
 
@@ -376,8 +378,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(17, 17, 17, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 0.3rem 0.5rem;
   backdrop-filter: blur(8px);
@@ -386,18 +388,18 @@ body {
 }
 
 .loop-btn {
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.8rem;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 
-.loop-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.26); }
+.loop-btn:hover:not(:disabled) { color: #ffffff; background: rgba(255, 255, 255, 0.25); }
 
 .loop-btn:disabled {
   opacity: 0.35;
@@ -430,7 +432,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
   border-radius: 999px;
   padding: 0.4rem 1rem;
@@ -461,14 +463,15 @@ body {
 /* idle = frosted clear glass with a white dot; no red so it never reads
    as "currently recording" */
 .record-btn--idle {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .record-btn--idle:hover {
-  background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* recording = the whole button shifts to a red shade (static); the dot
@@ -530,7 +533,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
   border-radius: 999px;
   padding: 0.4rem 1rem;
@@ -549,14 +552,15 @@ body {
 }
 
 .vid-record-btn--idle {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .vid-record-btn--idle:hover {
-  background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .vid-record-btn--requesting {
@@ -1288,11 +1292,11 @@ body {
   position: fixed;
   top: 6rem;
   left: 1rem;
-  font-family: monospace;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 0.4rem 1rem;
   cursor: pointer;
@@ -1300,11 +1304,12 @@ body {
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 2px 10px rgba(0,0,0,0.35);
   z-index: 20;
-  transition: background 0.2s, border-color 0.2s;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
 .learn-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.24);
-  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* ── /learn catalog ─── */
@@ -1885,8 +1890,9 @@ body {
   inset: 0;
   z-index: 50;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   padding-top: 8rem;
   background: transparent;
   pointer-events: none;
@@ -1895,9 +1901,7 @@ body {
 }
 
 .tutorial-skip {
-  position: fixed;
-  top: 1.5rem;
-  right: 1.5rem;
+  margin-top: 0.75rem;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: rgba(255, 255, 255, 0.8);

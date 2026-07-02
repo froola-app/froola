@@ -15,11 +15,11 @@ export type HandFacing = 'ok' | 'turned' | 'pitched';
 
 type Landmark = { x: number; y: number; z: number };
 
-// Generous thresholds: the popup is a nudge for hands that have drifted well
-// off-plane, not a precision meter. Pitch gets extra slack because relaxed
-// hands naturally lean back a little.
-export const TURN_THRESHOLD_DEG = 35;
-export const PITCH_THRESHOLD_DEG = 45;
+// Strict-ish thresholds: nudge as soon as the hand meaningfully leaves the
+// camera plane. Pitch gets a little extra slack because relaxed hands
+// naturally lean back.
+export const TURN_THRESHOLD_DEG = 25;
+export const PITCH_THRESHOLD_DEG = 30;
 
 function outOfPlaneDeg(a: Landmark, b: Landmark): number {
   const dx = b.x - a.x;

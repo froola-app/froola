@@ -159,7 +159,6 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
   const current = STEPS[step];
   return (
     <div className="tutorial-overlay">
-      <button className="tutorial-skip" onClick={skip}>Skip tutorial</button>
       <div className="tutorial-card">
         <p className="tutorial-step-count">{step + 1} / {STEPS.length}</p>
         <h2 className="tutorial-headline">{current.headline}</h2>
@@ -173,6 +172,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
           ))}
         </div>
       </div>
+      <button className="tutorial-skip" onClick={skip}>Skip tutorial</button>
     </div>
   );
 }
