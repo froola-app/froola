@@ -1,7 +1,7 @@
 // src/engine/input/index.ts
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
-import { classifyHandFacing } from './handFacing';
+import { classifyHandFacing, handFacingAngles } from './handFacing';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -223,6 +223,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return curled >= 3;
       }
 
+      // Set localStorage 'froola.debugFacing' = '1' to log per-hand tilt
+      // angles (for tuning the tilt-popup thresholds against a real camera).
+      const facingDebug = (() => {
+        try { return localStorage.getItem('froola.debugFacing') === '1'; } catch { return false; }
+      })();
+      let lastFacingLogMs = 0;
+
       const FACE_INTERVAL = 100;
       let lastFaceInferenceTime = 0;
       // -1 = not yet seeded; seeded from actual nose position on first detection
@@ -251,6 +258,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             const signals: GestureSignal[] = [];
             for (let i = 0; i < result.landmarks.length; i++) {
               const lm = result.landmarks[i];
+              // World landmarks (metric 3D) — required for facing angles;
+              // normalized landmarks give distorted out-of-plane angles.
+              const worldLm = result.worldLandmarks[i];
               const tip = lm[8]; // index fingertip
               const rawHandedness = result.handednesses[i][0].categoryName;
               const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
@@ -300,13 +310,20 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
               const reportX = s.frozenX ?? s.x;
               const reportY = s.frozenY ?? s.y;
 
+              const facing = classifyHandFacing(worldLm);
+              if (facingDebug && now - lastFacingLogMs > 500) {
+                lastFacingLogMs = now;
+                const a = handFacingAngles(worldLm);
+                console.log(`[facing] ${handId} turn=${a.turn.toFixed(0)}° pitch=${a.pitch.toFixed(0)}° → ${facing}`);
+              }
+
               signals.push({
                 x: Math.max(0, Math.min(1, reportX)),
                 y: Math.max(0, Math.min(1, reportY)),
                 present: true,
                 handId,
                 fist,
-                facing: classifyHandFacing(lm),
+                facing,
               });
             }
             signalRef.current = signals;
