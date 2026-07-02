@@ -15,6 +15,8 @@ type Props = {
   /** Song lessons: the chord to play right now / coming up next. */
   chordNow?: string;
   chordNext?: string;
+  /** Whether a chord is currently fist-locked / space-held. */
+  sustained?: boolean;
 };
 
 export default function LessonHUD({
@@ -30,6 +32,7 @@ export default function LessonHUD({
   minScore,
   chordNow,
   chordNext,
+  sustained,
 }: Props) {
   if (phase === 'preview') {
     return (
@@ -78,6 +81,8 @@ export default function LessonHUD({
           </div>
           <p className="lesson-hud__instruction">{instruction}</p>
         </div>
+
+        {sustained && <p className="lesson-hud__lock">🔒 Chord locked</p>}
 
         {chordNow && (
           <div className="lesson-hud__chords">
