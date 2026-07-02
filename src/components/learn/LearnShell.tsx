@@ -63,6 +63,10 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
   // Owned here — shared between coordinator (renderer reads it) and lesson runner (writes it)
   const ghostSignalsRef = useRef<GestureSignal[]>([]);
 
+  const guardrailRef = useRef<boolean>(
+    (() => { try { return localStorage.getItem('froola.guardrail') !== 'false'; } catch { return true; } })()
+  );
+
   // Re-tune the live wheel + audio to the lesson's key/scale, so what the user
   // sees/hears matches the preview and the scored targets (e.g. A major songs).
   const musicRef = useRef<MusicConfig>(lesson.musicConfig);
@@ -73,7 +77,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
     useMouse,
     selectedRef,
     engineRef,
-  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef);
+  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef, undefined, undefined, undefined, undefined, guardrailRef);
 
   const runner = useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef);
 
@@ -82,20 +86,19 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
   const attemptStartRef = useRef(0);
 
   useEffect(() => {
-    if (runner.phase === 'attempt') {
-      attemptStartRef.current = performance.now();
-      elapsedIntervalRef.current = setInterval(() => {
-        setElapsed(performance.now() - attemptStartRef.current);
-      }, 50);
-    } else {
+    if (runner.phase !== 'attempt') return;
+    attemptStartRef.current = performance.now();
+    const tick = () => setElapsed(performance.now() - attemptStartRef.current);
+    // Seed the first frame via rAF (async) so the bar starts at ~0 without a
+    // synchronous setState in the effect body.
+    const raf = requestAnimationFrame(tick);
+    elapsedIntervalRef.current = setInterval(tick, 50);
+    return () => {
+      cancelAnimationFrame(raf);
       if (elapsedIntervalRef.current) {
         clearInterval(elapsedIntervalRef.current);
         elapsedIntervalRef.current = null;
       }
-      setElapsed(0);
-    }
-    return () => {
-      if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     };
   }, [runner.phase]);
 
@@ -200,7 +203,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
           hint={currentStep?.hint}
           countdown={runner.countdown}
           stepScore={runner.stepScore}
-          elapsed={elapsed}
+          elapsed={runner.phase === 'attempt' ? elapsed : 0}
           durationMs={currentStep?.durationMs ?? 1}
           chordNow={chordNow}
           chordNext={chordNext}

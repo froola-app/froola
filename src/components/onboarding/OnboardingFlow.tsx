@@ -28,7 +28,7 @@ export default function OnboardingFlow() {
 
   async function handlePricingContinue() {
     await completeOnboarding(selectedType);
-    navigate('/play');
+    navigate('/');
   }
 
   const stepIndex = ORDER.indexOf(step);

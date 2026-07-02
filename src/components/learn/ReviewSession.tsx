@@ -160,7 +160,7 @@ export default function ReviewSession() {
               </button>
               <button
                 className="lesson-complete__btn lesson-complete__btn--primary"
-                onClick={() => navigate('/play')}
+                onClick={() => navigate('/')}
               >
                 Play freely →
               </button>

@@ -200,6 +200,7 @@ export function useRenderer(
   // When set, the extension (qualIdx) persists while the right wheel is untouched
   // instead of snapping back to a triad — for single-pointer mouse/touch play.
   stickyExtensionRef?: RefObject<boolean>,
+  guardrailRef?: RefObject<boolean>,
 ): void {
   const particlesRef = useRef(new ParticleSystem());
 
@@ -335,5 +336,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, stickyExtensionRef]);
+  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, stickyExtensionRef, guardrailRef, musicRef, selectedRef]);
 }

@@ -1,6 +1,7 @@
 // src/engine/input/index.ts
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
+import { classifyHandFacing, handFacingAngles } from './handFacing';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -222,6 +223,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return curled >= 3;
       }
 
+      // Set localStorage 'froola.debugFacing' = '1' to log per-hand tilt
+      // angles (for tuning the tilt-popup thresholds against a real camera).
+      const facingDebug = (() => {
+        try { return localStorage.getItem('froola.debugFacing') === '1'; } catch { return false; }
+      })();
+      let lastFacingLogMs = 0;
+
       const FACE_INTERVAL = 100;
       let lastFaceInferenceTime = 0;
       // -1 = not yet seeded; seeded from actual nose position on first detection
@@ -241,67 +249,85 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           const result = landmarker.detectForVideo(video, now);
           lastInferenceTime = now;
 
-          const signals: GestureSignal[] = [];
-          for (let i = 0; i < result.landmarks.length; i++) {
-            const lm = result.landmarks[i];
-            const tip = lm[8]; // index fingertip
-            const rawHandedness = result.handednesses[i][0].categoryName;
-            const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
+          if (result.landmarks.length === 0) {
+            // No hands in frame: explicitly clear so the renderer's guardrail
+            // check (signals.some(s => s.present)) returns false and the
+            // pulsing guide rings reappear.
+            signalRef.current = [];
+          } else {
+            const signals: GestureSignal[] = [];
+            for (let i = 0; i < result.landmarks.length; i++) {
+              const lm = result.landmarks[i];
+              // World landmarks (metric 3D) — required for facing angles;
+              // normalized landmarks give distorted out-of-plane angles.
+              const worldLm = result.worldLandmarks[i];
+              const tip = lm[8]; // index fingertip
+              const rawHandedness = result.handednesses[i][0].categoryName;
+              const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
 
-            // Remap from video-native coords to viewport coords (object-fit:cover compensation)
-            const vw = video.videoWidth;
-            const vh = video.videoHeight;
-            const dw = window.innerWidth;
-            const dh = window.innerHeight;
-            const scale = Math.max(dw / vw, dh / vh);
-            const offsetX = (dw - vw * scale) / 2;
-            const offsetY = (dh - vh * scale) / 2;
-            const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
-            const ry = (tip.y * vh * scale + offsetY) / dh;
+              // Remap from video-native coords to viewport coords (object-fit:cover compensation)
+              const vw = video.videoWidth;
+              const vh = video.videoHeight;
+              const dw = window.innerWidth;
+              const dh = window.innerHeight;
+              const scale = Math.max(dw / vw, dh / vh);
+              const offsetX = (dw - vw * scale) / 2;
+              const offsetY = (dh - vh * scale) / 2;
+              const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
+              const ry = (tip.y * vh * scale + offsetY) / dh;
 
-            const fist = isFist(lm);
-            const s = smooth[handId];
+              const fist = isFist(lm);
+              const s = smooth[handId];
 
-            // Jump EMA to actual position on first appearance or after a tracking
-            // gap — prevents the orb from drifting in from center (0.5, 0.5).
-            const isNew = now - s.lastSeenMs > REAPPEAR_GAP_MS;
-            s.lastSeenMs = now;
+              // Jump EMA to actual position on first appearance or after a tracking
+              // gap — prevents the orb from drifting in from center (0.5, 0.5).
+              const isNew = now - s.lastSeenMs > REAPPEAR_GAP_MS;
+              s.lastSeenMs = now;
 
-            if (!fist) {
-              if (isNew) {
+              if (!fist) {
+                if (isNew) {
+                  s.x = rx; s.y = ry;
+                } else {
+                  s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
+                  s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+                }
+              } else if (isNew) {
+                // Fist on reappearance: seed EMA at actual position so the freeze
+                // captures the real hand location, not the stale center default.
                 s.x = rx; s.y = ry;
-              } else {
-                s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
-                s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
               }
-            } else if (isNew) {
-              // Fist on reappearance: seed EMA at actual position so the freeze
-              // captures the real hand location, not the stale center default.
-              s.x = rx; s.y = ry;
+
+              // Freeze reported position on fist-close; unfreeze on fist-open
+              if (fist && !s.wasFist) {
+                s.frozenX = s.x;
+                s.frozenY = s.y;
+              } else if (!fist && s.wasFist) {
+                s.frozenX = null;
+                s.frozenY = null;
+              }
+              s.wasFist = fist;
+
+              const reportX = s.frozenX ?? s.x;
+              const reportY = s.frozenY ?? s.y;
+
+              const facing = classifyHandFacing(worldLm);
+              if (facingDebug && now - lastFacingLogMs > 500) {
+                lastFacingLogMs = now;
+                const a = handFacingAngles(worldLm);
+                console.log(`[facing] ${handId} turn=${a.turn.toFixed(0)}° pitch=${a.pitch.toFixed(0)}° → ${facing}`);
+              }
+
+              signals.push({
+                x: Math.max(0, Math.min(1, reportX)),
+                y: Math.max(0, Math.min(1, reportY)),
+                present: true,
+                handId,
+                fist,
+                facing,
+              });
             }
-
-            // Freeze reported position on fist-close; unfreeze on fist-open
-            if (fist && !s.wasFist) {
-              s.frozenX = s.x;
-              s.frozenY = s.y;
-            } else if (!fist && s.wasFist) {
-              s.frozenX = null;
-              s.frozenY = null;
-            }
-            s.wasFist = fist;
-
-            const reportX = s.frozenX ?? s.x;
-            const reportY = s.frozenY ?? s.y;
-
-            signals.push({
-              x: Math.max(0, Math.min(1, reportX)),
-              y: Math.max(0, Math.min(1, reportY)),
-              present: true,
-              handId,
-              fist,
-            });
+            signalRef.current = signals;
           }
-          signalRef.current = signals;
 
           // Face inference at ~10fps for nod detection
           if (now - lastFaceInferenceTime >= FACE_INTERVAL) {
