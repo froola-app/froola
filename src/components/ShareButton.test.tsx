@@ -18,10 +18,10 @@ describe('ShareButton', () => {
     expect(screen.getByRole('button', { name: 'Share' })).toBeInTheDocument();
   });
 
-  it('copies /play URL on click and shows Copied!', async () => {
+  it('copies the app URL on click and shows Copied!', async () => {
     render(<ShareButton />);
     await userEvent.click(screen.getByRole('button', { name: 'Share' }));
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://froola.app/play');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://froola.app/');
     expect(screen.getByRole('button', { name: 'Copied!' })).toBeInTheDocument();
   });
 

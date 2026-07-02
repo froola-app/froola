@@ -12,6 +12,21 @@ vi.mock('./PlayShell', () => ({
 }));
 
 describe('LandingPage', () => {
+  beforeEach(() => sessionStorage.clear());
+
+  it('remembers the session input mode and skips the hero', () => {
+    sessionStorage.setItem('froola.inputMode', 'camera');
+    render(<LandingPage />);
+    expect(screen.getByText('play shell: camera')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+  });
+
+  it('stores the chosen input mode for the session', async () => {
+    render(<LandingPage />);
+    await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
+    expect(sessionStorage.getItem('froola.inputMode')).toBe('camera');
+  });
+
   it('renders the headline and both input choices', () => {
     render(<LandingPage />);
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();

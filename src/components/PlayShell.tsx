@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import type { InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
@@ -9,9 +9,10 @@ import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
-import GestureCoach from './GestureCoach';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
+import BeginnerTutorial from './BeginnerTutorial';
+import HandTiltPopup from './HandTiltPopup';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -57,27 +58,23 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
   );
 }
 
-export default function PlayShell({ initialInput: inputProp }: { initialInput?: InputMode } = {}) {
-  const location = useLocation();
+export default function PlayShell({ initialInput = 'asking' }: { initialInput?: InputMode } = {}) {
   const navigate = useNavigate();
-  // Input mode comes from the landing page — either passed directly as a prop
-  // (rendered inline) or via router state. Fall back to the prompt otherwise.
-  const initialInput = inputProp ?? ((location.state as { input?: InputMode } | null)?.input) ?? 'asking';
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
   const modeRef = useRef<InstrumentMode>(instrumentMode);
-  modeRef.current = instrumentMode;
+  useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
   const [octave, setOctave] = useState(0);
   const octaveRef = useRef(octave);
-  octaveRef.current = octave;
+  useEffect(() => { octaveRef.current = octave; }, [octave]);
 
   // Key (tonic, 0–11 semitones above C) + scale select the 7 wheel notes.
   const [keyOffset, setKeyOffset] = useState(0);
   const [scale, setScale] = useState<ScaleName>('major');
   const musicRef = useRef<MusicConfig>({ keyOffset, scale });
-  musicRef.current = { keyOffset, scale };
+  useEffect(() => { musicRef.current = { keyOffset, scale }; }, [keyOffset, scale]);
 
   // Chord looper: drives the chord pad while the hand solos over it. The ref
   // lets the coordinator's hot loop know when the loop owns the pad.
@@ -104,6 +101,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     volumeTimerRef.current = setTimeout(() => setVolumeDisplay(null), 1500);
   }, []);
 
+
   // Arrow keys are a quick shortcut for the on-screen octave stepper.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -114,7 +112,11 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+
+  const [showTutorial] = useState(
+    () => !localStorage.getItem('froola.tutorialSeen')
+  );
 
   // Create the looper after mount (the engine exists by then), wiring its
   // scheduling/playback to the audio engine. The deps are all stable refs.
@@ -176,6 +178,14 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
+      {showTutorial && mode !== 'asking' && (
+        <BeginnerTutorial
+          signalRef={signalRef}
+          selectedRef={selectedRef}
+          mode={mode}
+        />
+      )}
       {volumeDisplay !== null && (
         <div className="volume-badge">vol {volumeDisplay}%</div>
       )}
@@ -185,15 +195,18 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
       {mode === 'mouse' && (
         <MouseModeBadge onSwitch={requestCamera} />
       )}
+      {/* The permission screen (mode 'asking') is a full-viewport layer below
+          the HUD's z-index, so hide the HUD until an input mode is chosen. */}
+      {mode !== 'asking' && <>
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
-      {(mode === 'camera' || mode === 'mouse') && <GestureCoach mode={mode} />}
+      </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
       )}
-      <div className="hud-bottom">
+      {mode !== 'asking' && <div className="hud-bottom">
         <select
           className="instrument-select"
           value={instrumentMode}
@@ -257,7 +270,7 @@ export default function PlayShell({ initialInput: inputProp }: { initialInput?: 
         >
           arp {arpEnabled ? 'on' : 'off'}
         </button>
-      </div>
+      </div>}
     </>
   );
 }
