@@ -2431,3 +2431,63 @@ body {
 .auth-btn--signout {
   top: 8.4rem;
 }
+
+/* ── Sign-in prompt overlay ──────────────────────────────── */
+.signin-prompt {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 1.5rem 1.6rem;
+  background: #faf6ee;
+  color: #111;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  text-align: center;
+}
+.signin-prompt__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.signin-prompt__body {
+  margin: 0 0 1.1rem;
+  font-size: 0.9rem;
+  color: rgba(17, 17, 17, 0.7);
+}
+.signin-prompt__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.signin-prompt__google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111;
+  background: #ffffff;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.signin-prompt__google:hover {
+  border-color: rgba(17, 17, 17, 0.4);
+}
+.signin-prompt__dismiss {
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  color: rgba(17, 17, 17, 0.55);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.signin-prompt__dismiss:hover {
+  color: #111;
+}
