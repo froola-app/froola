@@ -9,7 +9,7 @@ import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
-import AuthButton from './AuthButton';
+import ProfileButton from './ProfileButton';
 import SignInPrompt from './SignInPrompt';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
@@ -151,9 +151,24 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     if (mode === 'camera' || mode === 'mouse') storeInputMode(mode);
   }, [mode]);
 
-  const [showTutorial] = useState(
+  const [showTutorial, setShowTutorial] = useState(
     () => !localStorage.getItem('froola.tutorialSeen')
   );
+  // The tutorial hides itself with internal state once it finishes, so a
+  // replay must remount it — bump the key to get a fresh run.
+  const [tutorialRun, setTutorialRun] = useState(0);
+
+  // Sidebar Settings → "Replay": clear the seen flags so the intro tips
+  // and the nod hint run again, right now and on the next visit.
+  const replayTutorial = useCallback(() => {
+    try {
+      localStorage.removeItem('froola.tutorialSeen');
+      localStorage.removeItem('froola.nodHintSeen');
+    } catch { /* private mode */ }
+    setShowTutorial(true);
+    setTutorialRun(r => r + 1);
+    setShowNodHint(true);
+  }, []);
 
   // Create the looper after mount (the engine exists by then), wiring its
   // scheduling/playback to the audio engine. The deps are all stable refs.
@@ -218,6 +233,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
       {showTutorial && mode !== 'asking' && (
         <BeginnerTutorial
+          key={tutorialRun}
           signalRef={signalRef}
           selectedRef={selectedRef}
           mode={mode}
@@ -242,7 +258,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
-      <AuthButton />
+      <ProfileButton
+        play={mode === 'camera' || mode === 'mouse' ? {
+          inputMode: mode,
+          onSwitchInput: mode === 'camera' ? useMouse : requestCamera,
+          onReplayTutorial: replayTutorial,
+        } : undefined}
+      />
       <SignInPrompt />
       </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (

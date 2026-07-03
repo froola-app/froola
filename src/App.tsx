@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react';
-import { Navigate, Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './components/LandingPage';
 import AuthPopupDone from './components/AuthPopupDone';
@@ -7,6 +7,7 @@ import './App.css';
 
 // Everything off the critical path (`/` is the instrument) loads on demand.
 const ReplayShell = lazy(() => import('./components/ReplayShell'));
+const AuthPopup = lazy(() => import('./components/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
 const PricingPage = lazy(() => import('./components/PricingPage'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
@@ -15,6 +16,13 @@ const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
 
 function AppRoutes() {
   const { user, profile, loading, authReady } = useAuth();
+  const location = useLocation();
+
+  // The OAuth popup window lands here mid-sign-in. Render its completer
+  // ahead of every gate below — the loading blank and the onboarding
+  // redirect would otherwise unmount it before it can notify the opener
+  // and close itself.
+  if (location.pathname === '/auth/popup') return <AuthPopup />;
 
   if (loading) return null;
 

@@ -25,6 +25,17 @@ export function storeInputMode(mode: 'camera' | 'mouse'): void {
   try { sessionStorage.setItem(INPUT_MODE_KEY, mode); } catch { /* private mode */ }
 }
 
+// MediaPipe's WebGL GPU delegate stalls badly in Safari/WebKit (texture
+// upload/readback overhead per frame with no compute-shader path), where it's
+// often *slower* than the CPU delegate — the opposite of Chrome. Safari also
+// has a heavier camera decode pipeline, so we ask for a smaller frame too.
+// Vendor check rather than a UA-string regex: every iOS browser (CriOS,
+// FxiOS, Edge…) is WebKit under the hood and needs the same treatment, and
+// they all report vendor 'Apple Computer, Inc.'.
+const isWebKit =
+  typeof navigator !== 'undefined' &&
+  navigator.vendor === 'Apple Computer, Inc.';
+
 // A single mouse pointer can only be on one wheel at a time, so we label it by
 // which half of the screen it's in: the left wheel sits near the left edge and
 // the right (extension) wheel near the right edge, so a mid-screen split lets
@@ -135,7 +146,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
+          video: isWebKit
+            ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
+            : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
         });
       } catch {
         // Persisting this fallback is PlayShell's job (it syncs `mode` on
@@ -173,7 +186,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           baseOptions: {
             modelAssetPath:
               'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-            delegate: 'GPU',
+            delegate: isWebKit ? 'CPU' : 'GPU',
           },
           runningMode: 'VIDEO',
           numHands: 2,
@@ -190,7 +203,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           baseOptions: {
             modelAssetPath:
               'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-            delegate: 'GPU',
+            delegate: isWebKit ? 'CPU' : 'GPU',
           },
           runningMode: 'VIDEO',
           numFaces: 1,
@@ -207,12 +220,17 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return;
       }
 
-      // Per-hand EMA + fist-lock state
-      const SMOOTH = 0.35;
+      // Per-hand EMA + fist-lock state.
+      // Time constant (ms) for the fingertip EMA; the per-update alpha is
+      // 1 - exp(-dt/tau), which matches the old fixed alpha (0.35 per 33 ms
+      // tick) at the nominal rate but stays rate-independent. With a fixed
+      // alpha, slower inference (Safari's CPU delegate) meant fewer blend
+      // steps per second, so the orb converged slower — "lags behind".
+      const SMOOTH_TAU = 77;
       // How long (ms) a hand must be absent before we re-initialize its EMA
       // on the next appearance instead of blending from the stale position.
       // Prevents the orb from snapping to the 0.5,0.5 default when a hand
-      // first appears or briefly drops out of tracking.
+      // first appears or briefly drops out (e.g. due to handedness flipping).
       const REAPPEAR_GAP_MS = 300;
       type HandState = { x: number; y: number; lastSeenMs: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
       const smooth: Record<'left' | 'right', HandState> = {
@@ -240,6 +258,36 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       })();
       let lastFacingLogMs = 0;
 
+      // On WebKit the CPU delegate spends most of its budget acquiring
+      // pixels: every detect call reads back the full 720p frame (~3.7 MB)
+      // and resizes it in WASM, though the models consume only 192-224 px
+      // inputs. Drawing the video into a small offscreen canvas first cuts
+      // that readback ~7x. Chrome keeps the direct video path — its GPU
+      // delegate samples the frame as a texture, so the copy would only add
+      // work. Aspect ratio is preserved, so the normalized landmark coords
+      // (and the viewport remap below) are unaffected.
+      const INFER_MAX_WIDTH = 480;
+      const inferCtx = isWebKit
+        ? document.createElement('canvas').getContext('2d')
+        : null;
+
+      function inferenceSource(): HTMLVideoElement | HTMLCanvasElement {
+        if (!inferCtx) return video;
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        if (!vw || !vh) return video;
+        const scale = Math.min(1, INFER_MAX_WIDTH / vw);
+        const cw = Math.round(vw * scale);
+        const ch = Math.round(vh * scale);
+        const canvas = inferCtx.canvas;
+        if (canvas.width !== cw || canvas.height !== ch) {
+          canvas.width = cw;
+          canvas.height = ch;
+        }
+        inferCtx.drawImage(video, 0, 0, cw, ch);
+        return canvas;
+      }
+
       const FACE_INTERVAL = 100;
       let lastFaceInferenceTime = 0;
       // -1 = not yet seeded; seeded from actual nose position on first detection
@@ -253,14 +301,28 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       // a physically smaller motion than nodding forward/down for most people,
       // so a symmetric threshold under-triggers the "increase volume" gesture.
       const NOD_UP_THRESHOLD = -0.005;
-      const FACE_SMOOTH = 0.4;
+      // Nose EMA time constant (ms) — equivalent to the old fixed alpha of
+      // 0.4 at the nominal 100 ms face interval, but stays correct when the
+      // interval stretches under load (see SMOOTH_TAU).
+      const FACE_TAU = 196;
+
+      // Adaptive pacing: each delay stretches to a multiple of the measured
+      // cost of the last detect call, so slow inference (WebKit's CPU
+      // delegate) lowers its own rate instead of re-running on every rAF
+      // tick and saturating the main thread — that saturation is what made
+      // the whole page (video included) jank on Safari. On Chrome the GPU
+      // calls take a few ms, so both delays stay pinned at their nominal
+      // intervals.
+      let handDelay = INFERENCE_INTERVAL;
+      let faceDelay = FACE_INTERVAL;
 
       function loop() {
         if (cancelled) return;
         const now = performance.now();
-        if (now - lastInferenceTime >= INFERENCE_INTERVAL) {
-          const result = landmarker.detectForVideo(video, now);
+        if (now - lastInferenceTime >= handDelay) {
+          const result = landmarker.detectForVideo(inferenceSource(), now);
           lastInferenceTime = now;
+          handDelay = Math.max(INFERENCE_INTERVAL, (performance.now() - now) * 1.5);
 
           if (result.landmarks.length === 0) {
             // No hands in frame: explicitly clear so the renderer's guardrail
@@ -268,58 +330,54 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             // pulsing guide rings reappear.
             signalRef.current = [];
           } else {
-            // First pass: remap every detected hand to viewport coords. handId is
-            // deliberately NOT taken from MediaPipe handedness — that label
-            // flickers (swapping which wheel a hand drives mid-play, snapping the
-            // vacated wheel back to slice 0) and can come back the same for both
-            // hands (leaving one wheel unreachable). We assign by screen position
-            // below instead, exactly like the mouse/touch path (pointerHandId).
-            const dw = window.innerWidth;
-            const dh = window.innerHeight;
+            // Remap from video-native coords to viewport coords (object-fit:cover compensation)
             const vw = video.videoWidth;
             const vh = video.videoHeight;
+            const dw = window.innerWidth;
+            const dh = window.innerHeight;
             const scale = Math.max(dw / vw, dh / vh);
             const offsetX = (dw - vw * scale) / 2;
             const offsetY = (dh - vh * scale) / 2;
-            const hands = result.landmarks.map((lm, i) => {
+
+            // handId comes from mirrored screen position, not MediaPipe's
+            // handedness label: handedness flickers frame-to-frame, which
+            // swapped the wheel a hand was driving mid-play, and two
+            // detections with the same label collided the per-hand EMA state
+            // and left one wheel unreachable. Leftmost orb → left/note wheel,
+            // rightmost → right/extension wheel; a single hand gets the wheel
+            // for the side it's on (the same rule as pointer input).
+            const detections = result.landmarks.slice(0, 2).map((lm, i) => {
               const tip = lm[8]; // index fingertip
               return {
-                // World landmarks (metric 3D) — required for facing angles;
-                // normalized landmarks give distorted out-of-plane angles.
-                worldLm: result.worldLandmarks[i],
-                // Mirror x for the selfie view; object-fit:cover compensation.
                 rx: ((1 - tip.x) * vw * scale + offsetX) / dw,
                 ry: (tip.y * vh * scale + offsetY) / dh,
                 fist: isFist(lm),
+                // World landmarks (metric 3D) — required for facing angles;
+                // normalized landmarks give distorted out-of-plane angles.
+                worldLm: result.worldLandmarks[i],
               };
-            });
-            // Leftmost orb drives the left (note) wheel, rightmost the right
-            // (extension) wheel; a single hand's own side decides. Sorting means
-            // two hands can never collapse onto one handId the way handedness
-            // could. (Crossing hands past centre swaps control — expected for a
-            // position-based UI, and identical to the touch handler's rule.)
-            hands.sort((a, b) => a.rx - b.rx);
+            }).sort((a, b) => a.rx - b.rx);
 
             const signals: GestureSignal[] = [];
-            for (let i = 0; i < hands.length; i++) {
-              const hnd = hands[i];
+            for (let i = 0; i < detections.length; i++) {
+              const { rx, ry, fist, worldLm } = detections[i];
               const handId: 'left' | 'right' =
-                hands.length === 1 ? (hnd.rx < 0.5 ? 'left' : 'right')
-                : i === 0 ? 'left' : 'right';
-              const { rx, ry, fist } = hnd;
+                detections.length === 1 ? pointerHandId(rx) : i === 0 ? 'left' : 'right';
               const s = smooth[handId];
 
               // Jump EMA to actual position on first appearance or after a tracking
               // gap — prevents the orb from drifting in from center (0.5, 0.5).
-              const isNew = now - s.lastSeenMs > REAPPEAR_GAP_MS;
+              const dt = now - s.lastSeenMs;
+              const isNew = dt > REAPPEAR_GAP_MS;
               s.lastSeenMs = now;
 
               if (!fist) {
                 if (isNew) {
                   s.x = rx; s.y = ry;
                 } else {
-                  s.x = SMOOTH * rx + (1 - SMOOTH) * s.x;
-                  s.y = SMOOTH * ry + (1 - SMOOTH) * s.y;
+                  const alpha = 1 - Math.exp(-dt / SMOOTH_TAU);
+                  s.x = alpha * rx + (1 - alpha) * s.x;
+                  s.y = alpha * ry + (1 - alpha) * s.y;
                 }
               } else if (isNew) {
                 // Fist on reappearance: seed EMA at actual position so the freeze
@@ -340,10 +398,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
               const reportX = s.frozenX ?? s.x;
               const reportY = s.frozenY ?? s.y;
 
-              const facing = classifyHandFacing(hnd.worldLm);
+              const facing = classifyHandFacing(worldLm);
               if (facingDebug && now - lastFacingLogMs > 500) {
                 lastFacingLogMs = now;
-                const a = handFacingAngles(hnd.worldLm);
+                const a = handFacingAngles(worldLm);
                 console.log(`[facing] ${handId} turn=${a.turn.toFixed(0)}° pitch=${a.pitch.toFixed(0)}° → ${facing}`);
               }
 
@@ -358,38 +416,45 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             }
             signalRef.current = signals;
           }
+        } else if (now - lastFaceInferenceTime >= faceDelay) {
+          // Face inference (~10 fps) for nod detection. `else if`, not `if`:
+          // the two detect calls must never share a rAF tick, or they stack
+          // into one long main-thread stall — the periodic hitch that read as
+          // jitter (mild on Chrome, severe on Safari's CPU delegate).
+          const dtFace = now - lastFaceInferenceTime;
+          const faceResult = faceLandmarker.detectForVideo(inferenceSource(), now);
+          lastFaceInferenceTime = now;
+          faceDelay = Math.max(FACE_INTERVAL, (performance.now() - now) * 2);
 
-          // Face inference at ~10fps for nod detection
-          if (now - lastFaceInferenceTime >= FACE_INTERVAL) {
-            const faceResult = faceLandmarker.detectForVideo(video, now);
-            lastFaceInferenceTime = now;
+          if (faceResult.faceLandmarks.length > 0) {
+            const noseTip = faceResult.faceLandmarks[0][1];
+            if (nodSmoothedY < 0) {
+              // Seed EMA at actual nose position on first detection — same
+              // pattern as the hand EMA — so dy starts near zero instead of
+              // jumping from the 0.5 placeholder and false-triggering NODDING_UP.
+              nodSmoothedY = noseTip.y;
+              nodPrevY = noseTip.y;
+            } else {
+              const alpha = 1 - Math.exp(-dtFace / FACE_TAU);
+              nodSmoothedY = alpha * noseTip.y + (1 - alpha) * nodSmoothedY;
+              // Normalize the per-tick delta to per-FACE_INTERVAL units so the
+              // nod thresholds (tuned at 100 ms ticks) keep their meaning when
+              // the interval stretches under load.
+              const dy = (nodSmoothedY - nodPrevY) * (FACE_INTERVAL / dtFace);
+              nodPrevY = nodSmoothedY;
 
-            if (faceResult.faceLandmarks.length > 0) {
-              const noseTip = faceResult.faceLandmarks[0][1];
-              if (nodSmoothedY < 0) {
-                // Seed EMA at actual nose position on first detection — same
-                // pattern as the hand EMA — so dy starts near zero instead of
-                // jumping from the 0.5 placeholder and false-triggering NODDING_UP.
-                nodSmoothedY = noseTip.y;
-                nodPrevY = noseTip.y;
-              } else {
-                nodSmoothedY = FACE_SMOOTH * noseTip.y + (1 - FACE_SMOOTH) * nodSmoothedY;
-                const dy = nodSmoothedY - nodPrevY;
-                nodPrevY = nodSmoothedY;
-
-                if (now > nodDebounceUntil) {
-                  if (nodState === 'IDLE') {
-                    if (dy > NOD_DOWN_THRESHOLD) nodState = 'NODDING_DOWN';
-                    else if (dy < NOD_UP_THRESHOLD) nodState = 'NODDING_UP';
-                  } else if (nodState === 'NODDING_DOWN' && dy < 0) {
-                    nodEventRef.current = 'down';
-                    nodState = 'IDLE';
-                    nodDebounceUntil = now + 750;
-                  } else if (nodState === 'NODDING_UP' && dy > 0) {
-                    nodEventRef.current = 'up';
-                    nodState = 'IDLE';
-                    nodDebounceUntil = now + 750;
-                  }
+              if (now > nodDebounceUntil) {
+                if (nodState === 'IDLE') {
+                  if (dy > NOD_DOWN_THRESHOLD) nodState = 'NODDING_DOWN';
+                  else if (dy < NOD_UP_THRESHOLD) nodState = 'NODDING_UP';
+                } else if (nodState === 'NODDING_DOWN' && dy < 0) {
+                  nodEventRef.current = 'down';
+                  nodState = 'IDLE';
+                  nodDebounceUntil = now + 750;
+                } else if (nodState === 'NODDING_UP' && dy > 0) {
+                  nodEventRef.current = 'up';
+                  nodState = 'IDLE';
+                  nodDebounceUntil = now + 750;
                 }
               }
             }

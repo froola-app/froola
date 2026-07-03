@@ -1,7 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { render as rtlRender, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import LandingPage from './LandingPage';
+
+// LandingPage calls useNavigate (learn/pricing links), so it needs a router.
+const render = (ui: React.ReactElement) =>
+  rtlRender(ui, { wrapper: MemoryRouter });
 
 // PlayShell pulls in the audio/canvas coordinator, so stub it: we only care that
 // the landing page swaps to it inline (same URL) with the chosen input mode.

@@ -8,11 +8,18 @@ export type UserType = 'casual' | 'creator' | 'learner' | null;
 export interface AppUser {
   id: string;
   displayName: string | null;
+  email: string | null;
+  /** Provider photo (Google account picture). */
+  avatarUrl: string | null;
 }
 
 interface UserProfile {
   userType: UserType;
   onboardingComplete: boolean;
+  /** Custom photo the user uploaded — overrides the provider photo.
+      Always null until the profiles table grows an avatar_url column
+      and an upload flow exists; the UI fallback chain already handles it. */
+  avatarUrl: string | null;
 }
 
 interface AuthContextValue {
@@ -34,7 +41,18 @@ function toAppUser(session: Session | null): AppUser | null {
     (typeof meta.full_name === 'string' && meta.full_name) ||
     (typeof meta.name === 'string' && meta.name) ||
     null;
-  return { id: session.user.id, displayName };
+  // Google puts the account photo in avatar_url (Supabase's normalized
+  // key) and/or picture (the raw OIDC claim).
+  const avatarUrl =
+    (typeof meta.avatar_url === 'string' && meta.avatar_url) ||
+    (typeof meta.picture === 'string' && meta.picture) ||
+    null;
+  return {
+    id: session.user.id,
+    displayName,
+    email: session.user.email ?? null,
+    avatarUrl,
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -64,6 +82,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             nextProfile = {
               userType: (data.user_type ?? null) as UserType,
               onboardingComplete: !!data.onboarding_complete,
+              // Not selected above on purpose: asking PostgREST for a
+              // column that doesn't exist yet fails the whole query,
+              // which would null the profile and re-run onboarding.
+              // Add avatar_url to the select once the column ships.
+              avatarUrl: null,
             };
           }
         } catch { /* profile stays null */ }
@@ -126,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user_type: userType,
       onboarding_complete: true,
     });
-    if (!error) setProfile({ userType, onboardingComplete: true });
+    if (!error) setProfile({ userType, onboardingComplete: true, avatarUrl: null });
   }
 
   return (

@@ -25,7 +25,14 @@ vi.mock('../supabase', () => ({
 }));
 
 const session = {
-  user: { id: 'uid-1', user_metadata: { full_name: 'Lela Star' } },
+  user: {
+    id: 'uid-1',
+    email: 'lela@example.com',
+    user_metadata: {
+      full_name: 'Lela Star',
+      avatar_url: 'https://lh3.example.com/photo.jpg',
+    },
+  },
 };
 
 function Probe() {
@@ -56,8 +63,17 @@ describe('AuthContext (Supabase)', () => {
     });
     render(<AuthProvider><Probe /></AuthProvider>);
     await waitFor(() => expect(probeState().loading).toBe(false));
-    expect(probeState().user).toEqual({ id: 'uid-1', displayName: 'Lela Star' });
-    expect(probeState().profile).toEqual({ userType: 'casual', onboardingComplete: true });
+    expect(probeState().user).toEqual({
+      id: 'uid-1',
+      displayName: 'Lela Star',
+      email: 'lela@example.com',
+      avatarUrl: 'https://lh3.example.com/photo.jpg',
+    });
+    expect(probeState().profile).toEqual({
+      userType: 'casual',
+      onboardingComplete: true,
+      avatarUrl: null,
+    });
     expect(probeState().authReady).toBe(true);
   });
 

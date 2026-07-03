@@ -3199,6 +3199,9 @@ body {
 }
 
 .profile-drawer {
+  /* ThemeToggle reads these; they're otherwise scoped to .lp4 */
+  --lp-accent: #d4500a;
+  --lp-hairline: rgba(0, 0, 0, 0.1);
   position: fixed;
   top: 0;
   right: 0;
@@ -3261,6 +3264,10 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* taglines (not addresses) read better wrapped than ellipsized */
+.profile-drawer__email--wrap {
+  white-space: normal;
 }
 .profile-drawer__close {
   flex: none;
@@ -3365,6 +3372,20 @@ body {
 }
 .profile-drawer__row-btn:hover {
   border-color: rgba(17, 17, 17, 0.45);
+}
+
+/* ── OAuth popup landing page ────────────────────────────── */
+.auth-popup-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #faf6ee;
+  color: #111;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.95rem;
 }
 
 /* ── Sign-in prompt overlay ──────────────────────────────── */
