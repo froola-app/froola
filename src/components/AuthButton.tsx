@@ -12,7 +12,10 @@ export default function AuthButton() {
 
   if (!user) {
     return (
-      <button className="auth-btn" onClick={signInWithGoogle}>
+      <button
+        className="auth-btn"
+        onClick={() => { signInWithGoogle().catch(() => { /* popup blocked or closed */ }); }}
+      >
         Sign in
       </button>
     );

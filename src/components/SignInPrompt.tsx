@@ -34,7 +34,11 @@ export default function SignInPrompt() {
       <div className="signin-prompt__actions">
         <button
           className="signin-prompt__google"
-          onClick={() => { setShow(false); void signInWithGoogle(); }}
+          onClick={() => {
+            signInWithGoogle()
+              .then(() => setShow(false))
+              .catch(() => { /* popup blocked or closed — keep the prompt for retry */ });
+          }}
         >
           <img src="/google-logo.svg" alt="" width={16} height={16} />
           Continue with Google

@@ -112,8 +112,7 @@ src/
 │   ├── PlayShell.tsx # Main play screen
 │   ├── ReplayShell.tsx
 │   ├── RecordButton.tsx
-│   ├── ShareButton.tsx
-│   └── SignInPage.tsx
+│   └── ShareButton.tsx
 ├── contexts/
 │   └── AuthContext.tsx  # Firebase auth state + Firestore profile
 ├── coordinator.ts    # Wires input → music → audio → renderer

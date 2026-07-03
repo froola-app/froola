@@ -75,13 +75,25 @@ describe('SignInPrompt', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('"Continue with Google" starts sign-in and closes the prompt', () => {
-    const signInWithGoogle = vi.fn();
+  it('"Continue with Google" starts sign-in and closes the prompt', async () => {
+    const signInWithGoogle = vi.fn().mockResolvedValue(undefined);
     mockUseAuth.mockReturnValue(authState({ signInWithGoogle }));
     render(<SignInPrompt />);
     act(() => vi.advanceTimersByTime(PROMPT_DELAY_MS));
     fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
     expect(signInWithGoogle).toHaveBeenCalledOnce();
+    await act(async () => {});
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('"Continue with Google" keeps the prompt open when sign-in fails', async () => {
+    const signInWithGoogle = vi.fn().mockRejectedValue(new Error('popup-blocked'));
+    mockUseAuth.mockReturnValue(authState({ signInWithGoogle }));
+    render(<SignInPrompt />);
+    act(() => vi.advanceTimersByTime(PROMPT_DELAY_MS));
+    fireEvent.click(screen.getByRole('button', { name: /continue with google/i }));
+    expect(signInWithGoogle).toHaveBeenCalledOnce();
+    await act(async () => {});
+    expect(screen.getByRole('dialog')).toBeDefined();
   });
 });

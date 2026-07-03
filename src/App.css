@@ -905,64 +905,6 @@ body {
   color: rgba(0, 0, 0, 0.3);
 }
 
-/* ── Landing v2 legacy (SignInPage only) ────────────────────── */
-
-.landing-v2 {
-  position: fixed;
-  inset: 0;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  color: #111111;
-  -webkit-font-smoothing: antialiased;
-}
-
-.landing-v2__canvas {
-  position: fixed;
-  inset: 0;
-  display: block;
-  z-index: 0;
-}
-
-.landing-v2__tagline {
-  font-size: 0.95rem;
-  color: #888888;
-  font-weight: 400;
-}
-
-.landing-v2__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.landing-v2__btn-google {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.8rem 2rem;
-  border-radius: 2px;
-  border: 1px solid rgba(0,0,0,0.12);
-  background: #ffffff;
-  color: #111111;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.landing-v2__btn-google:hover {
-  border-color: #D4500A;
-  box-shadow: 0 0 0 1px #D4500A;
-}
-
-.landing-v2__privacy {
-  font-size: 0.78rem;
-  color: #D4500A;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
 /* ── Onboarding (editorial light, on-brand) ─────────────────── */
 
 .onboarding-shell {

@@ -13,7 +13,7 @@ function authState(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
     profile: null,
     loading: false,
     firebaseReady: true,
-    signInWithGoogle: vi.fn(),
+    signInWithGoogle: vi.fn().mockResolvedValue(undefined),
     signOutUser: vi.fn(),
     completeOnboarding: vi.fn(),
     ...overrides,
@@ -30,7 +30,7 @@ describe('AuthButton', () => {
   });
 
   it('shows a sign-in button when signed out and calls signInWithGoogle', () => {
-    const signInWithGoogle = vi.fn();
+    const signInWithGoogle = vi.fn().mockResolvedValue(undefined);
     mockUseAuth.mockReturnValue(authState({ signInWithGoogle }));
     render(<AuthButton />);
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));

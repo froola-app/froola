@@ -33,13 +33,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Firebase isn't configured — so loading is already false here.
     if (!firebaseConfigured || !auth) return;
     return onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
+      let nextProfile: UserProfile | null = null;
       if (firebaseUser && db) {
-        const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        setProfile(profileDoc.exists() ? (profileDoc.data() as UserProfile) : null);
-      } else {
-        setProfile(null);
+        try {
+          const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          nextProfile = profileDoc.exists() ? (profileDoc.data() as UserProfile) : null;
+        } catch {
+          nextProfile = null;
+        }
       }
+      // Commit user + profile together so App.tsx's onboarding check never sees
+      // a signed-in user with a stale/missing profile mid-fetch (would flash
+      // an existing user through /onboarding on a mid-session sign-in).
+      setUser(firebaseUser);
+      setProfile(nextProfile);
       setLoading(false);
     });
   }, []);
