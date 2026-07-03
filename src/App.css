@@ -82,7 +82,7 @@ body {
 }
 
 .permission-body {
-  color: #888888;
+  color: #111111;
   font-size: 1rem;
   line-height: 1.5;
   margin-top: -0.25rem;
@@ -969,7 +969,7 @@ body {
 
 .landing-v2__tagline {
   font-size: 0.95rem;
-  color: #888888;
+  color: #111111;
   font-weight: 400;
 }
 
@@ -1003,7 +1003,7 @@ body {
 
 .landing-v2__privacy {
   font-size: 0.78rem;
-  color: #D4500A;
+  color: #111111;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -1114,7 +1114,7 @@ body {
 }
 
 .onboarding-subtitle {
-  color: #888888;
+  color: #111111;
   font-size: 1rem;
   margin-top: -0.5rem;
 }
@@ -1161,14 +1161,14 @@ body {
 
 .user-type-description {
   font-size: 0.85rem;
-  color: #888888;
+  color: #111111;
   display: block;
   margin-top: 0.1rem;
 }
 
 .user-type-arrow {
   font-size: 1.1rem;
-  color: #888888;
+  color: #111111;
   flex-shrink: 0;
   transition: transform 0.15s, color 0.15s;
 }
