@@ -8,8 +8,7 @@ export default defineConfig({
       output: {
         codeSplitting: {
           groups: [
-            { name: 'firestore', test: /node_modules[/\\]@?firebase[/\\]+firestore/ },
-            { name: 'firebase', test: /node_modules[/\\]@?firebase/ },
+            { name: 'supabase', test: /node_modules[/\\]@supabase/ },
           ],
         },
       },

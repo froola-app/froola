@@ -46,7 +46,7 @@ No camera? Froola falls back to **mouse mode** (desktop) or **touch mode** (mobi
 | Routing | React Router v7 |
 | Hand tracking | MediaPipe Tasks Vision (WASM, runs on-device) |
 | Audio | Web Audio API + [soundfont-player](https://github.com/danigb/soundfont-player) |
-| Auth & database | Firebase (Google Sign-In + Firestore) |
+| Auth & database | Supabase (Google Sign-In via Supabase Auth + Postgres for profile storage) |
 | Rendering | Canvas 2D API |
 | Tests | Vitest + Testing Library |
 
@@ -56,7 +56,7 @@ No camera? Froola falls back to **mouse mode** (desktop) or **touch mode** (mobi
 
 ### Prerequisites
 - Node.js 18+
-- A Firebase project with Google Sign-In and Firestore enabled ([setup guide below](#firebase-setup))
+- A Supabase project with Google Sign-In and a `profiles` table set up ([setup guide below](#supabase-setup))
 
 ### Install and run
 
@@ -64,26 +64,26 @@ No camera? Froola falls back to **mouse mode** (desktop) or **touch mode** (mobi
 git clone https://github.com/froola-app/froola.git
 cd froola
 npm install
-cp .env.example .env   # fill in your Firebase config
+cp .env.example .env   # fill in your Supabase config
 npm run dev
 ```
 
-### Firebase setup
+### Supabase setup
 
-1. Go to [console.firebase.google.com](https://console.firebase.google.com) and create a new project
-2. **Authentication** → Sign-in method → enable **Google**
-3. **Firestore Database** → Create database → Start in test mode
-4. **Project settings** → Your apps → register a Web app → copy the config
-5. Paste the values into your `.env` file:
+1. Go to [supabase.com](https://supabase.com) and create a new project
+2. In [Google Cloud Console](https://console.cloud.google.com/), create an OAuth Client ID (Web application) and add the Supabase callback URL (`https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI
+3. In Supabase, **Authentication** → Providers → enable **Google**, pasting in the Client ID/Secret from step 2
+4. **Authentication** → URL Configuration → Redirect URLs → add `http://localhost:5173/auth/popup` and your production origin + `/auth/popup` (the sign-in popup calls `signInWithOAuth` with this as `redirectTo`, so it must be allowlisted or the OAuth flow will fail)
+5. **Table Editor** → create a `profiles` table with columns: `id` (uuid, references `auth.users`), `user_type` (text), `onboarding_complete` (boolean)
+6. **Project settings** → API → copy the Project URL and anon/publishable key
+7. Paste the values into your `.env` file:
 
 ```env
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
+
+Optional: see `supabase/migrations/` for the expected schema and RLS policies.
 
 ### Available scripts
 
@@ -114,9 +114,9 @@ src/
 │   ├── RecordButton.tsx
 │   └── ShareButton.tsx
 ├── contexts/
-│   └── AuthContext.tsx  # Firebase auth state + Firestore profile
+│   └── AuthContext.tsx  # Supabase auth state + profile
 ├── coordinator.ts    # Wires input → music → audio → renderer
-└── firebase.ts       # Firebase app init
+└── supabase.ts       # Supabase client init
 docs/
 ├── marketing.md      # Product strategy, free/paid tiers, growth ideas
 └── tasks/            # Engineering task specs
@@ -128,7 +128,7 @@ docs/
 
 New users go through a 3-step flow after signing in with Google:
 
-1. **User type** — casual, content creator, or music learner (stored in Firestore, personalizes future features)
+1. **User type** — casual, content creator, or music learner (stored in Supabase, personalizes future features)
 2. **Learning curve tips** — quick guide on how hand positions map to sound
 3. **Pricing overview** — what's free forever vs. what's in Pro
 
@@ -154,7 +154,7 @@ MediaPipe's WASM runtime runs entirely in the browser — no backend involved in
 
 - Camera frames are processed locally by MediaPipe and **never leave your device**
 - No video or image data is transmitted anywhere
-- Only your Google account profile (name, email) and onboarding preferences are stored in Firestore
+- Only your Google account profile (name, email) and onboarding preferences are stored in Supabase (Postgres)
 
 ---
 
