@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import type { DrillProgress } from './types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLessonProgress } from './useLessonProgress';
 import { DRILL_BANK } from './drillBank';
 import { initialBoxState, nextBoxState, isDue } from './leitner';
-
-// Lazy import Firestore so we don't break when Firebase isn't configured
-async function getFirestore() {
-  const { doc, setDoc, collection, getDocs } = await import('firebase/firestore');
-  const { db } = await import('../../firebase');
-  return { doc, setDoc, collection, getDocs, db };
-}
+import { db } from '../../firebase';
 
 // Drills the user is eligible to review (their introducing lesson is passed),
 // filtered down to the ones currently due, plus a function to record a
@@ -22,16 +17,14 @@ export function useReviewProgress() {
   const [allProgress, setAllProgress] = useState<Record<string, DrillProgress>>({});
 
   useEffect(() => {
-    if (!firebaseReady || !user) return;
+    if (!firebaseReady || !user || !db) return;
     let cancelled = false;
-    getFirestore().then(async ({ collection, getDocs, db }) => {
-      if (!db || cancelled) return;
-      const snap = await getDocs(collection(db, 'users', user.uid, 'reviewProgress'));
+    getDocs(collection(db, 'users', user.uid, 'reviewProgress')).then(snap => {
       if (cancelled) return;
       const map: Record<string, DrillProgress> = {};
       snap.forEach(d => { map[d.id] = d.data() as DrillProgress; });
       setAllProgress(map);
-    }).catch(() => { /* firebase not available */ });
+    }).catch(() => { /* firestore unavailable */ });
     return () => { cancelled = true; };
   }, [user, firebaseReady]);
 
@@ -59,12 +52,10 @@ export function useReviewProgress() {
       lastReviewedAt: Date.now(),
     };
     setAllProgress(prev => ({ ...prev, [drillId]: progress }));
-    if (!firebaseReady || !user) return;
+    if (!firebaseReady || !user || !db) return;
     try {
-      const { doc, setDoc, db } = await getFirestore();
-      if (!db) return;
       await setDoc(doc(db, 'users', user.uid, 'reviewProgress', drillId), progress);
-    } catch { /* firebase not available */ }
+    } catch { /* firestore unavailable */ }
   }, [allProgress, user, firebaseReady]);
 
   return {

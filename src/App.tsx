@@ -1,13 +1,16 @@
+import { Suspense, lazy } from 'react';
 import { Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './components/LandingPage';
-import ReplayShell from './components/ReplayShell';
-import SignInPage from './components/SignInPage';
-import OnboardingFlow from './components/onboarding/OnboardingFlow';
-import LessonCatalog from './components/learn/LessonCatalog';
-import LearnShell from './components/learn/LearnShell';
-import ReviewSession from './components/learn/ReviewSession';
 import './App.css';
+
+// Everything off the critical path (`/` is the instrument) loads on demand.
+const ReplayShell = lazy(() => import('./components/ReplayShell'));
+const SignInPage = lazy(() => import('./components/SignInPage'));
+const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
+const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
+const LearnShell = lazy(() => import('./components/learn/LearnShell'));
+const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
 
 function AppRoutes() {
   const { user, profile, loading, firebaseReady } = useAuth();
@@ -63,7 +66,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <Suspense fallback={null}>
+        <AppRoutes />
+      </Suspense>
     </AuthProvider>
   );
 }
