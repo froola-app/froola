@@ -361,9 +361,13 @@ body {
   color: #ffffff;
 }
 
-/* At narrow widths .hud-bottom's 5 pills wrap to 3 rows, growing well past
-   the 4.6rem this offset assumes for a single-row desktop layout — pushing
-   loop-panel down onto it. Clear the taller wrapped stack instead. */
+/* At medium widths .hud-bottom's pills wrap to 2 rows, and at narrow widths
+   to 3+ rows. Adjust .loop-panel bottom offset to clear the variable height
+   instead of assuming a fixed single-row layout. */
+@media (max-width: 800px) {
+  .loop-panel { bottom: 7rem; }
+}
+
 @media (max-width: 480px) {
   .loop-panel { bottom: 9.5rem; }
   /* Supplementary hint text, not a control — rather than stack it above an
