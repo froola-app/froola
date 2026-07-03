@@ -30,10 +30,14 @@ function stickySlice(pos: number, n: number, cur: number): number {
   return cur;
 }
 
-// Extension wheel uses a cool blue→violet ramp, distinct from the amber note wheel.
-function extensionColor(i: number, n: number, alpha: number): string {
-  const hue = 205 + (i / Math.max(1, n - 1)) * 95;
-  return `hsla(${hue}, 70%, 62%, ${alpha})`;
+// System (SF on Apple platforms) type for everything drawn on the canvas.
+const UI_FONT = "system-ui, -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif";
+
+// Extension wheel uses a cool blue→violet ramp (Apple system blue → purple),
+// distinct from the orange note wheel.
+function extensionColor(i: number, n: number): string {
+  const hue = 211 + (i / Math.max(1, n - 1)) * 69;
+  return `hsl(${hue}, 90%, 61%)`;
 }
 
 function drawWheel(
@@ -57,78 +61,110 @@ function drawWheel(
   const innerR = outerR * 0.36;
   const s = outerR / 180;
 
-  // Dark backing circle
+  // Translucent dark material disc with a faint top sheen — reads like an
+  // iOS overlay resting on the camera feed rather than a hole punched in it.
   ctx.beginPath();
-  ctx.arc(cx, cy, outerR + 6, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.arc(cx, cy, outerR + 6 * s, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(22,22,24,0.58)';
+  ctx.fill();
+  const sheen = ctx.createLinearGradient(cx, cy - outerR, cx, cy + outerR);
+  sheen.addColorStop(0, 'rgba(255,255,255,0.055)');
+  sheen.addColorStop(0.55, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sheen;
   ctx.fill();
 
-  // Slices
+  // Slices: quiet wedge tint for selection/ghost (keeps the touch target
+  // legible) — the loud part of the selection is the rim arc drawn below.
   for (let i = 0; i < n; i++) {
     const a0 = ((i - 0.5) / n) * Math.PI * 2 - Math.PI / 2;
     const a1 = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
-    const isSelected = i === selectedIdx;
-    const isGhost = i === ghostIdx && !(isSelected && active);
+    const isSelected = i === selectedIdx && active;
+    const isGhost = i === ghostIdx && !isSelected;
 
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, outerR, a0, a1);
-    ctx.closePath();
-    ctx.fillStyle = isSelected && active
-      ? getActiveColor(i)
-      : isGhost && ghostColor
-        ? ghostColor
-        : `rgba(255,255,255,${active ? 0.06 : 0.03})`;
-    if (isSelected && active) {
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = getActiveColor(i);
+    if (isSelected || (isGhost && ghostColor)) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, outerR, a0, a1);
+      ctx.closePath();
+      ctx.save();
+      ctx.globalAlpha = isSelected ? 0.22 : 0.16;
+      ctx.fillStyle = isSelected ? getActiveColor(i) : ghostColor!;
+      ctx.fill();
+      ctx.restore();
     }
-    ctx.fill();
-    ctx.shadowBlur = 0;
 
     // Label
     const midA = (a0 + a1) / 2;
     const lr = outerR * 0.71;
-    const emphasize = (isSelected && active) || isGhost;
-    ctx.font = (emphasize ? 'bold ' : '') + Math.round((emphasize ? 15 : 12) * s) + 'px monospace';
-    ctx.fillStyle = isSelected && active ? '#fff' : isGhost ? '#fff' : `rgba(255,255,255,${active ? 0.45 : 0.2})`;
+    const emphasize = isSelected || isGhost;
+    ctx.font = `${emphasize ? 600 : 400} ${Math.round((emphasize ? 15 : 12) * s)}px ${UI_FONT}`;
+    ctx.fillStyle = emphasize ? '#fff' : `rgba(255,255,255,${active ? 0.55 : 0.28})`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(labels[i], cx + Math.cos(midA) * lr, cy + Math.sin(midA) * lr);
   }
 
-  // Divider lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  // Hairline boundary ticks near the rim (camera-dial style) instead of
+  // full spokes — the wheel reads as one surface, not a pie chart.
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
   ctx.lineWidth = 1;
   for (let i = 0; i < n; i++) {
     const a = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
     ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * innerR, cy + Math.sin(a) * innerR);
-    ctx.lineTo(cx + Math.cos(a) * outerR, cy + Math.sin(a) * outerR);
+    ctx.moveTo(cx + Math.cos(a) * (outerR - 9 * s), cy + Math.sin(a) * (outerR - 9 * s));
+    ctx.lineTo(cx + Math.cos(a) * (outerR - 2 * s), cy + Math.sin(a) * (outerR - 2 * s));
     ctx.stroke();
   }
 
-  // Outer ring
+  // Outer hairline ring
   ctx.beginPath();
   ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = `rgba(255,255,255,${active ? 0.32 : 0.22})`;
+  ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Inner hole
+  // Selection indicator: rounded accent arc riding the rim of the selected
+  // slice, inset slightly, with a small angular gap at each boundary.
+  const drawRimArc = (idx: number, color: string, alpha: number) => {
+    const arcR = outerR - 5 * s;
+    const pad = Math.min(3.5 * s / arcR + 0.02, (Math.PI / n) * 0.35);
+    const b0 = ((idx - 0.5) / n) * Math.PI * 2 - Math.PI / 2 + pad;
+    const b1 = ((idx + 0.5) / n) * Math.PI * 2 - Math.PI / 2 - pad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, arcR, b0, b1);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(3, 3.5 * s);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.restore();
+  };
+  if (ghostIdx !== undefined && ghostColor && !(ghostIdx === selectedIdx && active)) {
+    drawRimArc(ghostIdx, ghostColor, 0.8);
+  }
+  if (active) drawRimArc(selectedIdx, getActiveColor(selectedIdx), 1);
+
+  // Hub
   ctx.beginPath();
   ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
   ctx.fillStyle = bgColor;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Center label
+  // Center label: the live chord name when active, otherwise a quiet
+  // uppercase role caption ("NOTE" / "CHORD").
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `bold ${Math.round(15 * s)}px monospace`;
-  ctx.fillStyle = active ? '#F59E0B' : 'rgba(255,255,255,0.3)';
+  if (active) {
+    ctx.font = `600 ${Math.round(16 * s)}px ${UI_FONT}`;
+    ctx.fillStyle = '#fff';
+  } else {
+    ctx.font = `600 ${Math.round(10 * s)}px ${UI_FONT}`;
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  }
   ctx.fillText(centerLabel, cx, cy);
 }
 
@@ -142,8 +178,8 @@ function drawOrb(
 ) {
   const cx = signal.x * w;
   const cy = signal.y * h;
-  const baseRadius = 20;
-  const glowRadius = baseRadius + amplitude * 40;
+  const baseRadius = 16;
+  const glowRadius = baseRadius + amplitude * 30;
 
   const isLeft = signal.handId === 'left';
 
@@ -153,44 +189,51 @@ function drawOrb(
     ctx.globalAlpha = 0.45;
     ctx.beginPath();
     ctx.arc(cx, cy, glowRadius * 1.4, 0, Math.PI * 2);
-    ctx.strokeStyle = isLeft ? 'rgba(180,220,255,1)' : 'rgba(255,220,140,1)';
+    ctx.strokeStyle = isLeft ? 'rgba(120,200,255,1)' : 'rgba(255,214,10,1)';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-    ctx.fillStyle = isLeft ? 'rgba(180,220,255,0.6)' : 'rgba(255,220,140,0.6)';
+    ctx.fillStyle = isLeft ? 'rgba(120,200,255,0.6)' : 'rgba(255,214,10,0.6)';
     ctx.fill();
     ctx.restore();
     return;
   }
 
-  const stop0 = isLeft ? 'rgba(200,230,255,0.9)' : 'rgba(255,240,200,0.9)';
-  const stop1 = isLeft ? 'rgba(100,180,255,0.4)' : 'rgba(245,200,100,0.4)';
-  const stop2 = isLeft ? 'rgba(100,180,255,0)'   : 'rgba(245,158,11,0)';
-  const core  = isLeft ? 'rgba(200,230,255,0.95)' : 'rgba(255,248,220,0.95)';
+  // Tight halo + crisp near-white core; the amplitude still breathes the
+  // radius but nothing blooms across half the screen.
+  const stop0 = isLeft ? 'rgba(190,225,255,0.7)' : 'rgba(255,235,190,0.7)';
+  const stop1 = isLeft ? 'rgba(10,132,255,0.28)' : 'rgba(255,159,10,0.28)';
+  const stop2 = isLeft ? 'rgba(10,132,255,0)'    : 'rgba(255,159,10,0)';
+  const core  = isLeft ? 'rgba(225,240,255,0.95)' : 'rgba(255,248,225,0.95)';
 
-  const orbGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 2.5);
+  const orbGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 2);
   orbGrad.addColorStop(0, stop0);
-  orbGrad.addColorStop(0.3, stop1);
+  orbGrad.addColorStop(0.35, stop1);
   orbGrad.addColorStop(1, stop2);
   ctx.fillStyle = orbGrad;
   ctx.beginPath();
-  ctx.arc(cx, cy, glowRadius * 2.5, 0, Math.PI * 2);
+  ctx.arc(cx, cy, glowRadius * 2, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = core;
   ctx.beginPath();
-  ctx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+  ctx.arc(cx, cy, glowRadius * 0.85, 0, Math.PI * 2);
   ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, glowRadius * 0.85, 0, Math.PI * 2);
+  ctx.strokeStyle = isLeft ? 'rgba(10,132,255,0.55)' : 'rgba(255,159,10,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
 
   // Fist = chord locked: draw a bright ring around the orb
   if (signal.fist) {
     ctx.beginPath();
-    ctx.arc(cx, cy, glowRadius * 1.5, 0, Math.PI * 2);
-    ctx.strokeStyle = isLeft ? 'rgba(180,220,255,0.85)' : 'rgba(255,220,140,0.85)';
-    ctx.lineWidth = 2.5;
+    ctx.arc(cx, cy, glowRadius * 1.45, 0, Math.PI * 2);
+    ctx.strokeStyle = isLeft ? 'rgba(120,200,255,0.85)' : 'rgba(255,214,10,0.85)';
+    ctx.lineWidth = 2;
     ctx.stroke();
   }
 }
@@ -245,7 +288,7 @@ export function useRenderer(
       }
 
       const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
-      const bgColor = 'rgba(10,14,26,0.88)';
+      const bgColor = 'rgba(22,22,24,0.92)';
 
       // Particles — between warm zone and dials
       const presentSignals = signals.filter(s => s.present);
@@ -311,11 +354,11 @@ export function useRenderer(
       drawWheel(
         ctx, leftCx, wheelCy, outerR,
         noteLabels, noteIdx, leftInDial,
-        () => 'rgba(245,158,11,0.60)',
+        () => '#FF9F0A',
         leftCenterLabel,
         bgColor,
         leftGhost?.sliceIdx,
-        'rgba(180,220,255,0.55)',
+        'rgb(120,200,255)',
       );
 
       // Right wheel — chord extension (triad / 7th / sus / …)
@@ -323,11 +366,11 @@ export function useRenderer(
         ctx, rightCx, wheelCy, outerR,
         EXTENSIONS.map(e => e.label),
         qualIdx, rightInDial,
-        (i) => extensionColor(i, EXTENSIONS.length, 0.60),
+        (i) => extensionColor(i, EXTENSIONS.length),
         rightInDial ? EXTENSIONS[qualIdx].label : 'CHORD',
         bgColor,
         rightGhost?.sliceIdx,
-        'rgba(255,220,140,0.55)',
+        'rgb(255,214,10)',
       );
 
       // Publish slice selection so the coordinator can drive audio

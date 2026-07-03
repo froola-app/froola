@@ -24,6 +24,12 @@ export default function LessonCatalog() {
 
   return (
     <div className="learn-page">
+      <div className="learn-page__blobs" aria-hidden="true">
+        <span className="learn-page__blob learn-page__blob--a" />
+        <span className="learn-page__blob learn-page__blob--b" />
+        <span className="learn-page__blob learn-page__blob--c" />
+        <span className="learn-page__blob learn-page__blob--d" />
+      </div>
       <div className="learn-page__inner">
         <header className="learn-header">
           <button className="learn-back-btn" onClick={() => navigate('/')}>
