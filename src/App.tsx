@@ -6,7 +6,6 @@ import './App.css';
 
 // Everything off the critical path (`/` is the instrument) loads on demand.
 const ReplayShell = lazy(() => import('./components/ReplayShell'));
-const SignInPage = lazy(() => import('./components/SignInPage'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
@@ -31,18 +30,8 @@ function AppRoutes() {
     );
   }
 
-  // Not signed in → show sign-in page (replay is always public)
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/replay" element={<ReplayShell />} />
-        <Route path="*" element={<SignInPage />} />
-      </Routes>
-    );
-  }
-
   // Signed in but hasn't finished onboarding
-  if (!profile?.onboardingComplete) {
+  if (user && !profile?.onboardingComplete) {
     return (
       <Routes>
         <Route path="/onboarding" element={<OnboardingFlow />} />
