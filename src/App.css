@@ -709,6 +709,7 @@ body {
 
 /* Hero */
 .lp4__hero {
+  position: relative;
   max-width: 980px;
   margin: 0 auto;
   padding: clamp(56px, 10vh, 96px) 22px 76px;
@@ -716,6 +717,39 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
+}
+
+/* Soft radial wash behind the hero so the page doesn't read as flat white. */
+.lp4__hero::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  width: 140%;
+  height: 120%;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 50% at 50% 0%, rgba(212, 80, 10, 0.07), rgba(212, 80, 10, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lp4__hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lp4__hero-logo {
+  margin-bottom: 20px;
+  animation: lp4-logo-in 0.9s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+@keyframes lp4-logo-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.92); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp4__hero-logo { animation: none; }
 }
 
 .lp4__headline {

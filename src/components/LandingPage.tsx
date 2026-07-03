@@ -93,6 +93,9 @@ export default function LandingPage() {
 
       {/* Hero */}
       <header className="lp4__hero">
+        <div className="lp4__hero-logo">
+          <FroolaLogo size={52} />
+        </div>
         <h1 className="lp4__headline">
           Make music
           <br />
