@@ -3,10 +3,10 @@ import { PRICING_TIERS } from '../pricingTiers';
 export default function PricingSection() {
   return (
     <section className="lp4__section" id="pricing" data-reveal>
-      <h2 className="lp4__h2">Simple, honest pricing</h2>
+      <h2 className="lp4__h2">Pricing that plays fair.</h2>
       <p className="lp4__prose">
-        Free forever. Upgrade for more instruments, longer recordings, and pro
-        tools — billed monthly, cancel anytime.
+        Free forever. Plus and Studio add more instruments, longer recordings,
+        and pro tools. Billed monthly, cancel anytime.
       </p>
       <div className="lp4__pricing-grid">
         {PRICING_TIERS.map(tier => (
