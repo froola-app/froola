@@ -1211,7 +1211,7 @@ body {
 /* Pricing cards */
 .pricing-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
   width: 100%;
   margin-top: 0.5rem;
@@ -1253,6 +1253,21 @@ body {
   letter-spacing: 0.08em;
 }
 
+.pricing-card-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.pricing-card-period {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #777777;
+  margin-left: 0.15rem;
+}
+
 .pricing-card ul {
   list-style: none;
   display: flex;
@@ -1290,7 +1305,7 @@ body {
 
 .onboarding-btn:hover { background: #D4500A; transform: translateY(-1px); }
 
-@media (max-width: 480px) {
+@media (max-width: 720px) {
   .pricing-cards { grid-template-columns: 1fr; }
 }
 
