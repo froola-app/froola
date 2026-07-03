@@ -905,64 +905,6 @@ body {
   color: rgba(0, 0, 0, 0.3);
 }
 
-/* ── Landing v2 legacy (SignInPage only) ────────────────────── */
-
-.landing-v2 {
-  position: fixed;
-  inset: 0;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  color: #111111;
-  -webkit-font-smoothing: antialiased;
-}
-
-.landing-v2__canvas {
-  position: fixed;
-  inset: 0;
-  display: block;
-  z-index: 0;
-}
-
-.landing-v2__tagline {
-  font-size: 0.95rem;
-  color: #888888;
-  font-weight: 400;
-}
-
-.landing-v2__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.landing-v2__btn-google {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.8rem 2rem;
-  border-radius: 2px;
-  border: 1px solid rgba(0,0,0,0.12);
-  background: #ffffff;
-  color: #111111;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.landing-v2__btn-google:hover {
-  border-color: #D4500A;
-  box-shadow: 0 0 0 1px #D4500A;
-}
-
-.landing-v2__privacy {
-  font-size: 0.78rem;
-  color: #D4500A;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
 /* ── Onboarding (editorial light, on-brand) ─────────────────── */
 
 .onboarding-shell {
@@ -2402,4 +2344,92 @@ body {
   font-size: 0.9rem;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.88);
+}
+
+/* ── Optional auth (play HUD) ─────────────────────────────── */
+.auth-btn {
+  position: fixed;
+  top: 6rem;
+  right: 1rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  z-index: 20;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.auth-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.auth-btn--signout {
+  top: 8.4rem;
+}
+
+/* ── Sign-in prompt overlay ──────────────────────────────── */
+.signin-prompt {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: 1.5rem 1.6rem;
+  background: #faf6ee;
+  color: #111;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  text-align: center;
+}
+.signin-prompt__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.signin-prompt__body {
+  margin: 0 0 1.1rem;
+  font-size: 0.9rem;
+  color: rgba(17, 17, 17, 0.7);
+}
+.signin-prompt__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.signin-prompt__google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111;
+  background: #ffffff;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.signin-prompt__google:hover {
+  border-color: rgba(17, 17, 17, 0.4);
+}
+.signin-prompt__dismiss {
+  padding: 0.4rem;
+  font-size: 0.85rem;
+  color: rgba(17, 17, 17, 0.55);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.signin-prompt__dismiss:hover {
+  color: #111;
 }

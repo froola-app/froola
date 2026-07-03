@@ -25,7 +25,7 @@ if (!globalThis.localStorage || typeof globalThis.localStorage.clear !== 'functi
 }
 
 // jsdom implements neither the canvas 2d context nor the FontFaceSet API.
-// Several components (FroolaLogo, useLandingCanvas) draw on mount, so provide
+// Several components (FroolaLogo) draw on mount, so provide
 // lightweight stubs to keep them from throwing during tests.
 const ctxStub = new Proxy(
   {},
@@ -50,7 +50,7 @@ if (!('fonts' in document)) {
   });
 }
 
-// jsdom doesn't implement matchMedia; useLandingCanvas queries prefers-reduced-motion.
+// jsdom doesn't implement matchMedia; some components query prefers-reduced-motion.
 if (!window.matchMedia) {
   window.matchMedia = ((query: string) => ({
     matches: false,

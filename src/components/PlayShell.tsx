@@ -9,6 +9,8 @@ import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
+import AuthButton from './AuthButton';
+import SignInPrompt from './SignInPrompt';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
@@ -240,6 +242,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       <RecordButton selectedRef={selectedRef} vibe={vibe} />
       <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
+      <AuthButton />
+      <SignInPrompt />
       </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
