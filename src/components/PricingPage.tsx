@@ -1,8 +1,10 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollReveal } from '../useScrollReveal';
+import { useTheme } from '../useTheme';
 import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';
+import ThemeToggle from './ThemeToggle';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
@@ -11,12 +13,15 @@ const CONTACT_EMAIL = 'supportfroola@gmail.com';
 export default function PricingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
   useScrollReveal(rootRef);
+  const { theme, toggleTheme } = useTheme();
+  const inkColor = theme === 'dark' ? '#FAFAF8' : '#111111';
+
   return (
-    <div className="lp4" ref={rootRef}>
+    <div className="lp4" data-theme={theme} ref={rootRef}>
       <nav className="lp4__nav">
         <div className="lp4__nav-inner">
           <Link to="/" aria-label="Froola home">
-            <FroolaLogo size={16} />
+            <FroolaLogo size={16} color={inkColor} />
           </Link>
           <div className="lp4__nav-links">
             <Link to="/" className="lp4__nav-link">
@@ -25,6 +30,7 @@ export default function PricingPage() {
             <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
               Contact
             </a>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </div>
       </nav>

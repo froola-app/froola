@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
 import { storedInputMode, storeInputMode, type InputMode } from '../engine/input';
 import { useScrollReveal } from '../useScrollReveal';
+import { useTheme } from '../useTheme';
 import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
 import PlayShell from './PlayShell';
 import PricingSection from './PricingSection';
+import ThemeToggle from './ThemeToggle';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
@@ -51,6 +53,7 @@ export default function LandingPage() {
   const [input, setInput] = useState<InputMode | null>(storedInputMode);
   const rootRef = useRef<HTMLDivElement>(null);
   const touch = isTouchDevice();
+  const { theme, toggleTheme } = useTheme();
 
   const chooseInput = (mode: 'camera' | 'mouse') => {
     storeInputMode(mode);
@@ -74,12 +77,14 @@ export default function LandingPage() {
     </div>
   );
 
+  const inkColor = theme === 'dark' ? '#FAFAF8' : '#111111';
+
   return (
-    <div className="lp4" ref={rootRef}>
+    <div className="lp4" data-theme={theme} ref={rootRef}>
       {/* Nav */}
       <nav className="lp4__nav">
         <div className="lp4__nav-inner">
-          <FroolaLogo size={16} />
+          <FroolaLogo size={16} color={inkColor} />
           <div className="lp4__nav-links">
             <a href="#pricing" className="lp4__nav-link">
               Pricing
@@ -87,6 +92,7 @@ export default function LandingPage() {
             <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
               Contact
             </a>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
         </div>
       </nav>
@@ -94,7 +100,7 @@ export default function LandingPage() {
       {/* Hero */}
       <header className="lp4__hero">
         <div className="lp4__hero-logo">
-          <FroolaLogo size={52} />
+          <FroolaLogo size={52} color={inkColor} />
         </div>
         <h1 className="lp4__headline">
           Make music

@@ -652,11 +652,14 @@ body {
 .lp4 {
   --lp-bg: #ffffff;
   --lp-bg-alt: #f5f5f7;
+  --lp-card: #ffffff;
+  --lp-nav-bg: rgba(255, 255, 255, 0.72);
   --lp-ink: #1d1d1f;
   --lp-gray: #6e6e73;
   --lp-faint: #86868b;
   --lp-accent: #d4500a;
   --lp-hairline: rgba(0, 0, 0, 0.1);
+  --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.04);
   position: fixed;
   inset: 0;
   background: var(--lp-bg);
@@ -668,6 +671,22 @@ body {
   overflow-y: auto;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+/* Dark theme — manual toggle only, matches the near-black dial stage
+   gradient (#141417 → #0b0b0d) rather than any OS dark-mode heuristic. */
+.lp4[data-theme='dark'] {
+  --lp-bg: #0b0b0d;
+  --lp-bg-alt: #0f1013;
+  --lp-card: #17181c;
+  --lp-nav-bg: rgba(11, 11, 13, 0.78);
+  --lp-ink: #f5f5f7;
+  --lp-gray: #a9a9b0;
+  --lp-faint: #7c7c85;
+  --lp-accent: #f2650f;
+  --lp-hairline: rgba(255, 255, 255, 0.1);
+  --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.35);
 }
 
 /* Nav */
@@ -675,10 +694,11 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--lp-nav-bg);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--lp-hairline);
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
 
 .lp4__nav-inner {
@@ -706,6 +726,65 @@ body {
 }
 
 .lp4__nav-link:hover { opacity: 1; }
+
+/* Theme toggle — custom froola switch, not a generic checkbox skin */
+.theme-toggle {
+  position: relative;
+  width: 46px;
+  height: 25px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  background: none;
+  flex-shrink: 0;
+}
+
+.theme-toggle__track {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(0, 0, 0, 0.09);
+  border: 1px solid var(--lp-hairline);
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.theme-toggle.is-dark .theme-toggle__track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--lp-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s ease;
+}
+
+.theme-toggle.is-dark .theme-toggle__thumb {
+  transform: translateX(21px);
+  background: #1d1d1f;
+}
+
+.theme-toggle__icon {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  color: #fff;
+  transition: opacity 0.2s ease;
+}
+
+.theme-toggle__icon--sun { opacity: 1; }
+.theme-toggle__icon--moon { opacity: 0; }
+.theme-toggle.is-dark .theme-toggle__icon--sun { opacity: 0; }
+.theme-toggle.is-dark .theme-toggle__icon--moon { opacity: 1; }
 
 /* Hero */
 .lp4__hero {
@@ -860,7 +939,7 @@ body {
   text-align: center;
 }
 
-.lp4__section--alt { background: var(--lp-bg-alt); }
+.lp4__section--alt { background: var(--lp-bg-alt); transition: background 0.35s ease; }
 
 .lp4__h2 {
   font-size: clamp(28px, 4.5vw, 44px);
@@ -901,10 +980,12 @@ body {
 }
 
 .lp4__card {
-  background: #ffffff;
+  background: var(--lp-card);
   border-radius: 18px;
   padding: 36px 28px;
   text-align: left;
+  box-shadow: var(--lp-card-shadow);
+  transition: background 0.35s ease, box-shadow 0.35s ease;
 }
 
 .lp4__card-icon {
@@ -955,15 +1036,17 @@ body {
 }
 
 .lp4__pricing-card {
-  background: #ffffff;
+  background: var(--lp-card);
   border: 1px solid var(--lp-hairline);
   border-radius: 18px;
   padding: 32px 28px;
+  box-shadow: var(--lp-card-shadow);
+  transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
 }
 
 .lp4__pricing-card--highlight {
   border-color: rgba(212, 80, 10, 0.35);
-  background: linear-gradient(180deg, rgba(212, 80, 10, 0.06), rgba(212, 80, 10, 0.01));
+  background: linear-gradient(180deg, rgba(212, 80, 10, 0.09), var(--lp-card) 65%);
 }
 
 .lp4__pricing-head {
@@ -1043,6 +1126,7 @@ body {
 .lp4__footer {
   background: var(--lp-bg-alt);
   border-top: 1px solid var(--lp-hairline);
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
 
 .lp4__footer-inner {
