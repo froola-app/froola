@@ -212,7 +212,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       // How long (ms) a hand must be absent before we re-initialize its EMA
       // on the next appearance instead of blending from the stale position.
       // Prevents the orb from snapping to the 0.5,0.5 default when a hand
-      // first appears or briefly drops out (e.g. due to handedness flipping).
+      // first appears or briefly drops out of tracking.
       const REAPPEAR_GAP_MS = 300;
       type HandState = { x: number; y: number; lastSeenMs: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
       const smooth: Record<'left' | 'right', HandState> = {
@@ -268,28 +268,45 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             // pulsing guide rings reappear.
             signalRef.current = [];
           } else {
-            const signals: GestureSignal[] = [];
-            for (let i = 0; i < result.landmarks.length; i++) {
-              const lm = result.landmarks[i];
-              // World landmarks (metric 3D) — required for facing angles;
-              // normalized landmarks give distorted out-of-plane angles.
-              const worldLm = result.worldLandmarks[i];
+            // First pass: remap every detected hand to viewport coords. handId is
+            // deliberately NOT taken from MediaPipe handedness — that label
+            // flickers (swapping which wheel a hand drives mid-play, snapping the
+            // vacated wheel back to slice 0) and can come back the same for both
+            // hands (leaving one wheel unreachable). We assign by screen position
+            // below instead, exactly like the mouse/touch path (pointerHandId).
+            const dw = window.innerWidth;
+            const dh = window.innerHeight;
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            const scale = Math.max(dw / vw, dh / vh);
+            const offsetX = (dw - vw * scale) / 2;
+            const offsetY = (dh - vh * scale) / 2;
+            const hands = result.landmarks.map((lm, i) => {
               const tip = lm[8]; // index fingertip
-              const rawHandedness = result.handednesses[i][0].categoryName;
-              const handId: 'left' | 'right' = rawHandedness === 'Left' ? 'left' : 'right';
+              return {
+                // World landmarks (metric 3D) — required for facing angles;
+                // normalized landmarks give distorted out-of-plane angles.
+                worldLm: result.worldLandmarks[i],
+                // Mirror x for the selfie view; object-fit:cover compensation.
+                rx: ((1 - tip.x) * vw * scale + offsetX) / dw,
+                ry: (tip.y * vh * scale + offsetY) / dh,
+                fist: isFist(lm),
+              };
+            });
+            // Leftmost orb drives the left (note) wheel, rightmost the right
+            // (extension) wheel; a single hand's own side decides. Sorting means
+            // two hands can never collapse onto one handId the way handedness
+            // could. (Crossing hands past centre swaps control — expected for a
+            // position-based UI, and identical to the touch handler's rule.)
+            hands.sort((a, b) => a.rx - b.rx);
 
-              // Remap from video-native coords to viewport coords (object-fit:cover compensation)
-              const vw = video.videoWidth;
-              const vh = video.videoHeight;
-              const dw = window.innerWidth;
-              const dh = window.innerHeight;
-              const scale = Math.max(dw / vw, dh / vh);
-              const offsetX = (dw - vw * scale) / 2;
-              const offsetY = (dh - vh * scale) / 2;
-              const rx = ((1 - tip.x) * vw * scale + offsetX) / dw;
-              const ry = (tip.y * vh * scale + offsetY) / dh;
-
-              const fist = isFist(lm);
+            const signals: GestureSignal[] = [];
+            for (let i = 0; i < hands.length; i++) {
+              const hnd = hands[i];
+              const handId: 'left' | 'right' =
+                hands.length === 1 ? (hnd.rx < 0.5 ? 'left' : 'right')
+                : i === 0 ? 'left' : 'right';
+              const { rx, ry, fist } = hnd;
               const s = smooth[handId];
 
               // Jump EMA to actual position on first appearance or after a tracking
@@ -323,10 +340,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
               const reportX = s.frozenX ?? s.x;
               const reportY = s.frozenY ?? s.y;
 
-              const facing = classifyHandFacing(worldLm);
+              const facing = classifyHandFacing(hnd.worldLm);
               if (facingDebug && now - lastFacingLogMs > 500) {
                 lastFacingLogMs = now;
-                const a = handFacingAngles(worldLm);
+                const a = handFacingAngles(hnd.worldLm);
                 console.log(`[facing] ${handId} turn=${a.turn.toFixed(0)}° pitch=${a.pitch.toFixed(0)}° → ${facing}`);
               }
 
