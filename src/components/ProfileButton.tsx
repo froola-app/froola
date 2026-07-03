@@ -7,7 +7,12 @@ import ProfileSidebar, { type PlayActions } from './ProfileSidebar';
 // old AuthButton it renders in every auth state — signed out (and even
 // before Supabase is configured) it still opens the sidebar, which is
 // where settings and the Google sign-in live.
-export default function ProfileButton({ play }: { play?: PlayActions }) {
+//
+// `variant="nav"` is for mounting it inline in a page nav (e.g. the landing
+// page) instead of as a fixed HUD overlay: the default styling is sized and
+// colored for the dark play-screen canvas, and disappears against a light
+// nav bar otherwise.
+export default function ProfileButton({ play, variant }: { play?: PlayActions; variant?: 'nav' }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -16,13 +21,13 @@ export default function ProfileButton({ play }: { play?: PlayActions }) {
     <>
       <button
         ref={btnRef}
-        className="profile-btn"
+        className={variant === 'nav' ? 'profile-btn profile-btn--nav' : 'profile-btn'}
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label={user ? 'Account and settings' : 'Sign in and settings'}
       >
-        <Avatar size={38} />
+        <Avatar size={variant === 'nav' ? 22 : 38} />
       </button>
       <ProfileSidebar
         open={open}

@@ -3155,6 +3155,29 @@ body {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
+/* nav variant — inline in a page nav (e.g. the landing page) rather than
+   a fixed overlay on the dark play-screen canvas; sized to match the
+   surrounding nav links/theme toggle and colored via --lp-ink so it's
+   visible in both light and dark theme. */
+.profile-btn--nav {
+  position: static;
+  width: 28px;
+  height: 28px;
+  color: var(--lp-ink);
+  background: rgba(127, 127, 127, 0.12);
+  border-color: var(--lp-hairline);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.profile-btn--nav:hover {
+  color: var(--lp-ink);
+  background: rgba(127, 127, 127, 0.2);
+  border-color: var(--lp-ink);
+  box-shadow: none;
+}
+
 /* avatar circle — shared by the HUD button and the drawer header */
 .avatar {
   display: inline-flex;

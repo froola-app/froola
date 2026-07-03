@@ -134,10 +134,10 @@ export default function LandingPage() {
               Contact
             </a>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <ProfileButton variant="nav" />
           </div>
         </div>
       </nav>
-      <ProfileButton />
 
       {/* Hero */}
       <header className="lp4__hero">
