@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import type { User } from 'firebase/auth';
 import AuthButton from './AuthButton';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -12,7 +11,7 @@ function authState(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
     user: null,
     profile: null,
     loading: false,
-    firebaseReady: true,
+    authReady: true,
     signInWithGoogle: vi.fn().mockResolvedValue(undefined),
     signOutUser: vi.fn(),
     completeOnboarding: vi.fn(),
@@ -23,8 +22,8 @@ function authState(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
 beforeEach(() => vi.clearAllMocks());
 
 describe('AuthButton', () => {
-  it('renders nothing when Firebase is not configured', () => {
-    mockUseAuth.mockReturnValue(authState({ firebaseReady: false }));
+  it('renders nothing when auth is not configured', () => {
+    mockUseAuth.mockReturnValue(authState({ authReady: false }));
     const { container } = render(<AuthButton />);
     expect(container.firstChild).toBeNull();
   });
@@ -40,7 +39,7 @@ describe('AuthButton', () => {
   it('shows the first name when signed in, with a sign-out action behind it', () => {
     const signOutUser = vi.fn();
     mockUseAuth.mockReturnValue(authState({
-      user: { displayName: 'Lela Star' } as User,
+      user: { id: 'u1', displayName: 'Lela Star' },
       signOutUser,
     }));
     render(<AuthButton />);
@@ -51,7 +50,7 @@ describe('AuthButton', () => {
   });
 
   it('falls back to "Account" when the user has no display name', () => {
-    mockUseAuth.mockReturnValue(authState({ user: { displayName: null } as User }));
+    mockUseAuth.mockReturnValue(authState({ user: { id: 'u1', displayName: null } }));
     render(<AuthButton />);
     expect(screen.getByRole('button', { name: 'Account' })).toBeDefined();
   });

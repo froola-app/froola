@@ -12,12 +12,12 @@ const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
 
 function AppRoutes() {
-  const { user, profile, loading, firebaseReady } = useAuth();
+  const { user, profile, loading, authReady } = useAuth();
 
   if (loading) return null;
 
-  // Firebase not configured yet — skip auth and go straight to the app
-  if (!firebaseReady) {
+  // Supabase not configured yet — skip auth and go straight to the app
+  if (!authReady) {
     return (
       <Routes>
         <Route path="/" element={<LandingPage />} />

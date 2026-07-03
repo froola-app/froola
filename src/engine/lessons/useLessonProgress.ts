@@ -1,29 +1,34 @@
 import { useCallback, useEffect, useState } from 'react';
-import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import type { LessonProgress, LessonResult } from './types';
 import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../firebase';
+import { supabase, supabaseConfigured } from '../../supabase';
 
 // Returns progress for all lessons (keyed by lessonId) plus a save function
-// for a specific lesson. Degrades gracefully when Firebase isn't configured.
+// for a specific lesson. Degrades gracefully when Supabase isn't configured.
 export function useLessonProgress(lessonId?: string) {
-  const { user, firebaseReady } = useAuth();
+  const { user, authReady } = useAuth();
   const [allProgress, setAllProgress] = useState<Record<string, LessonProgress>>({});
 
   useEffect(() => {
-    if (!firebaseReady || !user || !db) return;
+    if (!authReady || !user || !supabaseConfigured) return;
     let cancelled = false;
-    getDocs(collection(db, 'users', user.uid, 'lessonProgress')).then(snap => {
-      if (cancelled) return;
+    supabase?.from('lesson_progress').select('*').eq('user_id', user.id).then(({ data, error }) => {
+      if (cancelled || error) return;
       const map: Record<string, LessonProgress> = {};
-      snap.forEach(d => { map[d.id] = d.data() as LessonProgress; });
+      (data ?? []).forEach(row => {
+        map[row.lesson_id] = {
+          bestScore: row.best_score,
+          completedAt: row.completed_at,
+          attempts: row.attempts,
+        };
+      });
       setAllProgress(map);
-    }).catch(() => { /* firestore unavailable */ });
+    });
     return () => { cancelled = true; };
-  }, [user, firebaseReady]);
+  }, [user, authReady]);
 
   const save = useCallback(async (result: LessonResult) => {
-    if (!firebaseReady || !user) return;
+    if (!authReady || !user || !supabase) return;
     const existing = allProgress[result.lessonId];
     const progress: LessonProgress = {
       bestScore: Math.max(result.totalScore, existing?.bestScore ?? 0),
@@ -31,11 +36,16 @@ export function useLessonProgress(lessonId?: string) {
       attempts: (existing?.attempts ?? 0) + 1,
     };
     setAllProgress(prev => ({ ...prev, [result.lessonId]: progress }));
-    if (!db) return;
     try {
-      await setDoc(doc(db, 'users', user.uid, 'lessonProgress', result.lessonId), progress);
-    } catch { /* firestore unavailable */ }
-  }, [user, firebaseReady, allProgress]);
+      await supabase.from('lesson_progress').upsert({
+        user_id: user.id,
+        lesson_id: result.lessonId,
+        best_score: progress.bestScore,
+        completed_at: progress.completedAt,
+        attempts: progress.attempts,
+      });
+    } catch { /* database unavailable */ }
+  }, [user, authReady, allProgress]);
 
   return { allProgress, progress: lessonId ? (allProgress[lessonId] ?? null) : null, save };
 }

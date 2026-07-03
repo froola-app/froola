@@ -5,10 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 // Signed out: one button into the Google popup (play state survives).
 // Signed in: first name, with sign-out tucked behind a click.
 export default function AuthButton() {
-  const { user, firebaseReady, signInWithGoogle, signOutUser } = useAuth();
+  const { user, authReady, signInWithGoogle, signOutUser } = useAuth();
   const [open, setOpen] = useState(false);
 
-  if (!firebaseReady) return null;
+  if (!authReady) return null;
 
   if (!user) {
     return (

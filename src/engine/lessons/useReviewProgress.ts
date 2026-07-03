@@ -1,32 +1,39 @@
 import { useCallback, useEffect, useState } from 'react';
-import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import type { DrillProgress } from './types';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLessonProgress } from './useLessonProgress';
 import { DRILL_BANK } from './drillBank';
 import { initialBoxState, nextBoxState, isDue } from './leitner';
-import { db } from '../../firebase';
+import { supabase, supabaseConfigured } from '../../supabase';
 
 // Drills the user is eligible to review (their introducing lesson is passed),
 // filtered down to the ones currently due, plus a function to record a
 // pass/fail and advance the Leitner schedule. Degrades gracefully — same
-// pattern as useLessonProgress — when Firebase isn't configured.
+// pattern as useLessonProgress — when Supabase isn't configured.
 export function useReviewProgress() {
-  const { user, firebaseReady } = useAuth();
+  const { user, authReady } = useAuth();
   const { allProgress: lessonProgress } = useLessonProgress();
   const [allProgress, setAllProgress] = useState<Record<string, DrillProgress>>({});
 
   useEffect(() => {
-    if (!firebaseReady || !user || !db) return;
+    if (!authReady || !user || !supabaseConfigured) return;
     let cancelled = false;
-    getDocs(collection(db, 'users', user.uid, 'reviewProgress')).then(snap => {
-      if (cancelled) return;
+    supabase?.from('review_progress').select('*').eq('user_id', user.id).then(({ data, error }) => {
+      if (cancelled || error) return;
       const map: Record<string, DrillProgress> = {};
-      snap.forEach(d => { map[d.id] = d.data() as DrillProgress; });
+      (data ?? []).forEach(row => {
+        map[row.drill_id] = {
+          box: row.box,
+          dueAt: row.due_at,
+          reviewCount: row.review_count,
+          lastResult: row.last_result,
+          lastReviewedAt: row.last_reviewed_at,
+        };
+      });
       setAllProgress(map);
-    }).catch(() => { /* firestore unavailable */ });
+    });
     return () => { cancelled = true; };
-  }, [user, firebaseReady]);
+  }, [user, authReady]);
 
   const completedLessonIds = new Set(
     Object.entries(lessonProgress)
@@ -52,11 +59,19 @@ export function useReviewProgress() {
       lastReviewedAt: Date.now(),
     };
     setAllProgress(prev => ({ ...prev, [drillId]: progress }));
-    if (!firebaseReady || !user || !db) return;
+    if (!authReady || !user || !supabase) return;
     try {
-      await setDoc(doc(db, 'users', user.uid, 'reviewProgress', drillId), progress);
-    } catch { /* firestore unavailable */ }
-  }, [allProgress, user, firebaseReady]);
+      await supabase.from('review_progress').upsert({
+        user_id: user.id,
+        drill_id: drillId,
+        box: progress.box,
+        due_at: progress.dueAt,
+        review_count: progress.reviewCount,
+        last_result: progress.lastResult,
+        last_reviewed_at: progress.lastReviewedAt,
+      });
+    } catch { /* database unavailable */ }
+  }, [allProgress, user, authReady]);
 
   return {
     allProgress,

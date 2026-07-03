@@ -8,11 +8,11 @@ const SEEN_KEY = 'froola.signinPromptSeen';
 // tab session — to sign in so their lesson progress gets saved. Signing
 // in (from anywhere) or dismissing kills it for the session.
 export default function SignInPrompt() {
-  const { user, firebaseReady, signInWithGoogle } = useAuth();
+  const { user, authReady, signInWithGoogle } = useAuth();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    if (!firebaseReady || user) return;
+    if (!authReady || user) return;
     let seen = false;
     try { seen = sessionStorage.getItem(SEEN_KEY) !== null; } catch { /* private mode */ }
     if (seen) return;
@@ -21,7 +21,7 @@ export default function SignInPrompt() {
       setShow(true);
     }, PROMPT_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [firebaseReady, user]);
+  }, [authReady, user]);
 
   if (!show || user) return null;
 
@@ -36,8 +36,7 @@ export default function SignInPrompt() {
           className="signin-prompt__google"
           onClick={() => {
             signInWithGoogle()
-              .then(() => setShow(false))
-              .catch(() => { /* popup blocked or closed — keep the prompt for retry */ });
+              .catch(() => { /* popup blocked — keep the prompt for retry */ });
           }}
         >
           <img src="/google-logo.svg" alt="" width={16} height={16} />

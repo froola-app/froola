@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
 
-// Firebase configured, nobody signed in — the exact state that used to
+// Supabase configured, nobody signed in — the exact state that used to
 // hard-gate behind SignInPage.
 vi.mock('./contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
@@ -11,7 +11,7 @@ vi.mock('./contexts/AuthContext', () => ({
     user: null,
     profile: null,
     loading: false,
-    firebaseReady: true,
+    authReady: true,
     signInWithGoogle: vi.fn(),
     signOutUser: vi.fn(),
     completeOnboarding: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock('./contexts/AuthContext', () => ({
 
 beforeEach(() => sessionStorage.clear());
 
-describe('App routing (Firebase configured, signed out)', () => {
+describe('App routing (Supabase configured, signed out)', () => {
   it('renders the landing page at / instead of a sign-in gate', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
