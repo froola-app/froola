@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
+import { createNodDetector, pitchFromMatrix } from './nodDetector';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -209,6 +210,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           numFaces: 1,
           minFaceDetectionConfidence: 0.5,
           minTrackingConfidence: 0.5,
+          outputFacialTransformationMatrixes: true,
         }),
       ]);
 
@@ -288,23 +290,18 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return canvas;
       }
 
-      const FACE_INTERVAL = 100;
+      // ~30Hz so a fast ~300ms nod lands on ~9 samples instead of aliasing away.
+      const FACE_INTERVAL = 33;
       let lastFaceInferenceTime = 0;
-      // -1 = not yet seeded; seeded from actual nose position on first detection
-      // to avoid a false NODDING_UP transition from converging away from 0.5.
-      let nodSmoothedY = -1;
-      let nodPrevY = -1;
-      let nodState: 'IDLE' | 'NODDING_DOWN' | 'NODDING_UP' = 'IDLE';
-      let nodDebounceUntil = 0;
-      const NOD_DOWN_THRESHOLD = 0.007;
-      // Smaller magnitude than the down threshold: nodding the head back/up is
-      // a physically smaller motion than nodding forward/down for most people,
-      // so a symmetric threshold under-triggers the "increase volume" gesture.
-      const NOD_UP_THRESHOLD = -0.005;
-      // Nose EMA time constant (ms) — equivalent to the old fixed alpha of
-      // 0.4 at the nominal 100 ms face interval, but stays correct when the
-      // interval stretches under load (see SMOOTH_TAU).
-      const FACE_TAU = 196;
+      // Set localStorage 'froola.debugNod' = '1' to log pitch and detector
+      // transitions (for verifying the pitch sign convention on a real camera).
+      const nodDebug = (() => {
+        try { return localStorage.getItem('froola.debugNod') === '1'; } catch { return false; }
+      })();
+      let lastNodLogMs = 0;
+      const nodDetector = createNodDetector(
+        nodDebug ? (msg) => console.log(`[nod] ${msg}`) : undefined,
+      );
 
       // Adaptive pacing: each delay stretches to a multiple of the measured
       // cost of the last detect call, so slow inference (WebKit's CPU
@@ -417,47 +414,26 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             signalRef.current = signals;
           }
         } else if (now - lastFaceInferenceTime >= faceDelay) {
-          // Face inference (~10 fps) for nod detection. `else if`, not `if`:
+          // Face inference (~30 fps) for nod detection. `else if`, not `if`:
           // the two detect calls must never share a rAF tick, or they stack
           // into one long main-thread stall — the periodic hitch that read as
           // jitter (mild on Chrome, severe on Safari's CPU delegate).
-          const dtFace = now - lastFaceInferenceTime;
           const faceResult = faceLandmarker.detectForVideo(inferenceSource(), now);
           lastFaceInferenceTime = now;
           faceDelay = Math.max(FACE_INTERVAL, (performance.now() - now) * 2);
 
-          if (faceResult.faceLandmarks.length > 0) {
-            const noseTip = faceResult.faceLandmarks[0][1];
-            if (nodSmoothedY < 0) {
-              // Seed EMA at actual nose position on first detection — same
-              // pattern as the hand EMA — so dy starts near zero instead of
-              // jumping from the 0.5 placeholder and false-triggering NODDING_UP.
-              nodSmoothedY = noseTip.y;
-              nodPrevY = noseTip.y;
-            } else {
-              const alpha = 1 - Math.exp(-dtFace / FACE_TAU);
-              nodSmoothedY = alpha * noseTip.y + (1 - alpha) * nodSmoothedY;
-              // Normalize the per-tick delta to per-FACE_INTERVAL units so the
-              // nod thresholds (tuned at 100 ms ticks) keep their meaning when
-              // the interval stretches under load.
-              const dy = (nodSmoothedY - nodPrevY) * (FACE_INTERVAL / dtFace);
-              nodPrevY = nodSmoothedY;
-
-              if (now > nodDebounceUntil) {
-                if (nodState === 'IDLE') {
-                  if (dy > NOD_DOWN_THRESHOLD) nodState = 'NODDING_DOWN';
-                  else if (dy < NOD_UP_THRESHOLD) nodState = 'NODDING_UP';
-                } else if (nodState === 'NODDING_DOWN' && dy < 0) {
-                  nodEventRef.current = 'down';
-                  nodState = 'IDLE';
-                  nodDebounceUntil = now + 750;
-                } else if (nodState === 'NODDING_UP' && dy > 0) {
-                  nodEventRef.current = 'up';
-                  nodState = 'IDLE';
-                  nodDebounceUntil = now + 750;
-                }
-              }
+          const matrix = faceResult.facialTransformationMatrixes?.[0];
+          if (faceResult.faceLandmarks.length > 0 && matrix) {
+            const pitch = pitchFromMatrix(matrix.data);
+            if (nodDebug && now - lastNodLogMs > 500) {
+              console.log(`[nod] pitch=${pitch.toFixed(1)}`);
+              lastNodLogMs = now;
             }
+            const ev = nodDetector.sample(pitch, now);
+            if (ev) nodEventRef.current = ev;
+          } else {
+            // Face lost: next detection re-seeds instead of firing on the gap.
+            nodDetector.reset();
           }
         }
         animFrameId = requestAnimationFrame(loop);
