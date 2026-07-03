@@ -1527,6 +1527,34 @@ body {
   color: var(--lrn-accent);
 }
 
+/* Echo trail after the headline — an infinite, fading "la la la…" that
+   shimmers and bobs like a musical echo dying away. The eyebrow above
+   carries the real "Froola" spelling, so this reads as deliberate. */
+.froo-echo {
+  color: var(--lrn-accent);
+}
+.froo-echo__la {
+  display: inline-block;
+  margin-left: 0.3em;   /* word-space between echoes (whitespace collapses) */
+  /* each echo a touch smaller and fainter than the last — trailing off */
+  font-size: calc(1em - var(--i) * 0.05em);
+  opacity: calc(0.5 - var(--i) * 0.08);
+}
+.froo-echo__inner {
+  display: inline-block;
+  animation: froo-la 2.2s ease-in-out infinite;
+  /* staggered so the shimmer travels outward, like the echo propagating */
+  animation-delay: calc(var(--i) * 0.16s);
+  will-change: transform, opacity;
+}
+@keyframes froo-la {
+  0%, 100% { opacity: 0.5; transform: translateY(0.05em); }
+  50%      { opacity: 1;   transform: translateY(-0.07em); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .froo-echo__inner { animation: none; opacity: 0.8; transform: none; }
+}
+
 .learn-subtitle {
   font-size: 1.02rem;
   color: var(--lrn-ink-soft);

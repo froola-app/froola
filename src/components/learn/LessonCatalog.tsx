@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LEARNING_PATH, starsForScore } from '../../engine/lessons/curriculum';
 import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
@@ -33,7 +34,18 @@ export default function LessonCatalog() {
           </button>
           <p className="learn-eyebrow">Froola Lessons</p>
           <h1 className="learn-title">
-            Froo la <em>la.</em>
+            Froo la <em>la</em>
+            <span className="froo-echo" aria-hidden="true">
+              {[0, 1, 2, 3].map(i => (
+                <span
+                  key={i}
+                  className="froo-echo__la"
+                  style={{ ['--i']: i } as CSSProperties}
+                >
+                  <span className="froo-echo__inner">la</span>
+                </span>
+              ))}
+            </span>
           </h1>
           <div className="learn-meter">
             <div className="learn-meter__track">
