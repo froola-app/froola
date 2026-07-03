@@ -1,72 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
 import { storedInputMode, storeInputMode, type InputMode } from '../engine/input';
 import FroolaLogo from './FroolaLogo';
+import HeroDials from './HeroDials';
 import PlayShell from './PlayShell';
 
-const WAVE_BARS = 40;
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
 const isTouchDevice = () => navigator.maxTouchPoints > 0;
 
 const STEPS = [
   {
-    num: '01',
     title: 'Allow camera',
-    body: 'Nothing is recorded or sent anywhere — all processing happens locally in your browser.',
+    body: 'One click and you’re in. No account, no install, no setup.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="2.5" y="6.5" width="13" height="11" rx="2.5" />
+        <path d="M15.5 10.5 21 7.8v8.4l-5.5-2.7" />
+      </svg>
+    ),
   },
   {
-    num: '02',
     title: 'Move your hands',
     body: 'Horizontal position picks the chord. Vertical height shapes the melody.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M7 11.5V5.8a1.6 1.6 0 0 1 3.2 0v5" />
+        <path d="M10.2 10.8V4.2a1.6 1.6 0 0 1 3.2 0v6.6" />
+        <path d="M13.4 11V5.4a1.6 1.6 0 0 1 3.2 0v7.8c0 4-2.4 6.6-5.7 6.6-2.7 0-4.2-1.3-5.6-3.9L3.6 12.7a1.5 1.5 0 0 1 2.6-1.5L7 12.9" />
+      </svg>
+    ),
   },
   {
-    num: '03',
     title: 'Make music',
     body: 'Real chords, real harmony, in real time. Every position sounds good by design.',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M9 18.5V5.5l11-2v13" />
+        <circle cx="6.5" cy="18.5" r="2.5" />
+        <circle cx="17.5" cy="16.5" r="2.5" />
+      </svg>
+    ),
   },
 ];
-
-function WaveVisual() {
-  const barsRef = useRef<HTMLDivElement[]>([]);
-  const frameRef = useRef<number>(0);
-
-  useEffect(() => {
-    const animate = (ts: number) => {
-      const t = ts / 1000;
-      barsRef.current.forEach((bar, i) => {
-        if (!bar) return;
-        const phase = (i / WAVE_BARS) * Math.PI * 3;
-        const h =
-          12 +
-          Math.sin(phase + t * 1.4) * 18 +
-          Math.sin(phase * 0.6 + t * 0.8) * 12 +
-          Math.sin(phase * 1.4 + t * 2.2) * 6;
-        bar.style.height = `${Math.max(3, h)}px`;
-      });
-      frameRef.current = requestAnimationFrame(animate);
-    };
-    frameRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frameRef.current);
-  }, []);
-
-  return (
-    <div className="lp3__wave">
-      {Array.from({ length: WAVE_BARS }).map((_, i) => (
-        <div
-          key={i}
-          ref={(el) => { if (el) barsRef.current[i] = el; }}
-          className="lp3__wave-bar"
-          style={{ background: i % 7 === 0 ? '#D4500A' : 'rgba(17,17,17,0.12)' }}
-        />
-      ))}
-    </div>
-  );
-}
 
 export default function LandingPage() {
   // Remembered per tab so leaving for /learn and coming back drops the user
   // straight into the instrument instead of the landing hero.
   const [input, setInput] = useState<InputMode | null>(storedInputMode);
+  const rootRef = useRef<HTMLDivElement>(null);
   const touch = isTouchDevice();
 
   const chooseInput = (mode: 'camera' | 'mouse') => {
@@ -74,91 +55,133 @@ export default function LandingPage() {
     setInput(mode);
   };
 
+  // Scroll reveals: sections fade-rise in once as they enter the viewport.
+  useEffect(() => {
+    if (input) return;
+    const root = rootRef.current;
+    if (!root) return;
+    const els = Array.from(root.querySelectorAll('[data-reveal]'));
+    if (typeof IntersectionObserver === 'undefined') {
+      els.forEach((el) => el.classList.add('is-in'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-in');
+            io.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+    );
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [input]);
+
   if (input) return <PlayShell initialInput={input} />;
 
+  const ctas = (
+    <div className="lp4__ctas">
+      <button className="lp4__pill" onClick={() => chooseInput('camera')}>
+        Enable camera
+      </button>
+      <button className="lp4__link-btn" onClick={() => chooseInput('mouse')}>
+        {touch ? 'Use touch instead' : 'Use mouse instead'}
+        <span aria-hidden="true"> ›</span>
+      </button>
+    </div>
+  );
+
   return (
-    <div className="lp3">
+    <div className="lp4" ref={rootRef}>
       {/* Nav */}
-      <nav className="lp3__nav">
-        <a href={`mailto:${CONTACT_EMAIL}`} className="lp3__nav-link">
-          Contact
-        </a>
+      <nav className="lp4__nav">
+        <div className="lp4__nav-inner">
+          <FroolaLogo size={16} />
+          <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
+            Contact
+          </a>
+        </div>
       </nav>
 
       {/* Hero */}
-      <section className="lp3__hero">
-        <FroolaLogo size={56} />
-
-        <h1 className="lp3__headline">Make music<br />with your hands.</h1>
-
-        <div className="lp3__wave-wrap">
-          <WaveVisual />
+      <header className="lp4__hero">
+        <h1 className="lp4__headline">
+          Make music
+          <br />
+          with your hands.
+        </h1>
+        <p className="lp4__subhead">
+          No instrument. No lessons. Just two hands, a camera, and real
+          harmony in real time.
+        </p>
+        {ctas}
+        <div className="lp4__stage">
+          <HeroDials />
+          <p className="lp4__stage-caption">
+            Two dials. Your left hand picks the chord, your right hand colors it.
+          </p>
         </div>
-
-        <div className="lp3__actions">
-          <button className="lp3__btn-primary" onClick={() => chooseInput('camera')}>
-            Enable camera
-          </button>
-          <button className="lp3__btn-secondary" onClick={() => chooseInput('mouse')}>
-            {touch ? 'Use touch instead' : 'Use mouse instead'}
-          </button>
-        </div>
-
-        <a href="#how" className="lp3__scroll-hint">
-          Scroll to see how it works
-        </a>
-      </section>
+      </header>
 
       {/* How it works */}
-      <section id="how" className="lp3__scroll-section">
-        <p className="lp3__label">How it works</p>
-        <div className="lp3__steps">
-          {STEPS.map((step) => (
-            <div key={step.num} className="lp3__step">
-              <span className="lp3__step-num">{step.num}</span>
-              <h3 className="lp3__step-heading">{step.title}</h3>
-              <p className="lp3__step-body">{step.body}</p>
+      <section className="lp4__section lp4__section--alt" data-reveal>
+        <h2 className="lp4__h2">How it works</h2>
+        <div className="lp4__cards">
+          {STEPS.map((step, i) => (
+            <div key={step.title} className="lp4__card">
+              <span className="lp4__card-icon">{step.icon}</span>
+              <span className="lp4__card-step">Step {i + 1}</span>
+              <h3 className="lp4__card-title">{step.title}</h3>
+              <p className="lp4__card-body">{step.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Why we built it */}
-      <section className="lp3__scroll-section">
-        <p className="lp3__label">Why we built it</p>
-        <div className="lp3__prose">
-          <p className="lp3__prose-body">
-            We think making music should be open to everyone, not just people
-            who own an instrument or took years of lessons. Froola is our
-            attempt at that: a way to play just by moving your hands.
-          </p>
-          <a href="#" className="lp3__byline">Built by two high school students.</a>
-        </div>
+      {/* Privacy */}
+      <section className="lp4__section" data-reveal>
+        <span className="lp4__lock" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="5" y="10.5" width="14" height="9.5" rx="2.5" />
+            <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+          </svg>
+        </span>
+        <h2 className="lp4__h2">Your camera stays yours.</h2>
+        <p className="lp4__prose">
+          Hand tracking runs entirely on your device. No video is ever
+          recorded, stored, or sent anywhere — close the tab and it&rsquo;s gone.
+        </p>
       </section>
 
-      {/* Get in touch */}
-      <section id="contact" className="lp3__scroll-section">
-        <p className="lp3__label">Get in touch</p>
-        <div className="lp3__prose">
-          <p className="lp3__prose-body">
-            Have a question, an idea, or just want to say hi? We would love to
-            hear from you.
-          </p>
-          <a className="lp3__email" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          <div className="lp3__actions lp3__actions--contact">
-            <button className="lp3__btn-primary" onClick={() => chooseInput('camera')}>
-              Enable camera
-            </button>
-            <button className="lp3__btn-secondary" onClick={() => chooseInput('mouse')}>
-              {touch ? 'Use touch instead' : 'Use mouse instead'}
-            </button>
-          </div>
-        </div>
+      {/* Why we built it */}
+      <section className="lp4__section lp4__section--alt" data-reveal>
+        <h2 className="lp4__h2">Why we built it</h2>
+        <p className="lp4__prose">
+          We think making music should be open to everyone, not just people
+          who own an instrument or took years of lessons. Froola is our
+          attempt at that: a way to play just by moving your hands.
+        </p>
+        <p className="lp4__byline">Built by two high school students.</p>
+      </section>
+
+      {/* Final CTA */}
+      <section className="lp4__section" data-reveal>
+        <h2 className="lp4__h2">Ready to play?</h2>
+        {ctas}
       </section>
 
       {/* Footer */}
-      <footer className="lp3__footer">
-        <span className="lp3__footer-copy">froola © 2026</span>
+      <footer className="lp4__footer">
+        <div className="lp4__footer-inner">
+          <span>
+            Questions or ideas?{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </span>
+          <span>froola © 2026</span>
+        </div>
       </footer>
     </div>
   );
