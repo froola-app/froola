@@ -33,11 +33,8 @@ export default function LessonCatalog() {
           </button>
           <p className="learn-eyebrow">Froola Lessons</p>
           <h1 className="learn-title">
-            From zero to <em>Wonderwall.</em>
+            Froo la <em>la.</em>
           </h1>
-          <p className="learn-subtitle">
-            One guided path of real songs — follow it in order, or jump straight to one you love.
-          </p>
           <div className="learn-meter">
             <div className="learn-meter__track">
               <div className="learn-meter__fill" style={{ width: `${pct}%` }} />
