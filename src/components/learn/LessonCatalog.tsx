@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { LEARNING_PATH, TECHNIQUE_PATH, SONG_PATH, starsForScore } from '../../engine/lessons/curriculum';
+import { LEARNING_PATH, starsForScore } from '../../engine/lessons/curriculum';
 import { useLessonProgress } from '../../engine/lessons/useLessonProgress';
-import { TechniqueCard, SongCard } from './LessonCard';
+import { JourneyCard, UpNextCard } from './LessonCard';
 import ReviewBanner from './ReviewBanner';
 
 export default function LessonCatalog() {
@@ -10,79 +10,69 @@ export default function LessonCatalog() {
 
   const isComplete = (id: string) => allProgress[id]?.completedAt != null;
 
-  // Every lesson is playable — the path order is a recommendation, and the
-  // first uncompleted lesson gets an "up next" nudge rather than a gate.
-  // The nudge is computed over the combined pedagogical order even though
-  // the two sections render separately below.
-  const upNextId = LEARNING_PATH.find(l => !isComplete(l.id))?.id;
-
+  // The learning path is one ordered journey — technique drills interleaved
+  // with the songs they prepare. The first uncompleted lesson is where the
+  // spine's orange fill stops and the "up next" card points.
+  const upNext = LEARNING_PATH.find(l => !isComplete(l.id));
+  const total = LEARNING_PATH.length;
   const completedCount = LEARNING_PATH.filter(l => isComplete(l.id)).length;
   const starCount = LEARNING_PATH.reduce((sum, l) => {
     const p = allProgress[l.id];
     return p?.completedAt != null ? sum + starsForScore(p.bestScore) : sum;
   }, 0);
+  const pct = Math.round((completedCount / total) * 100);
+  // Fresh start = nothing done yet; the very first lesson reads "Start here".
+  const isFreshStart = completedCount === 0;
 
   return (
     <div className="learn-page">
-      <div className="learn-page__blobs" aria-hidden="true">
-        <span className="learn-page__blob learn-page__blob--a" />
-        <span className="learn-page__blob learn-page__blob--b" />
-        <span className="learn-page__blob learn-page__blob--c" />
-        <span className="learn-page__blob learn-page__blob--d" />
-      </div>
       <div className="learn-page__inner">
         <header className="learn-header">
           <button className="learn-back-btn" onClick={() => navigate('/')}>
             ← back to play
           </button>
-          <p className="learn-eyebrow">froola lessons</p>
+          <p className="learn-eyebrow">Froola Lessons</p>
           <h1 className="learn-title">
             From zero to <em>Wonderwall.</em>
           </h1>
           <p className="learn-subtitle">
-            A guided path of real songs — follow it in order, or jump straight to one you love.
+            One guided path of real songs — follow it in order, or jump straight to one you love.
           </p>
-          <div className="learn-progress">
-            <span className="learn-progress__count">
-              {completedCount} / {LEARNING_PATH.length} complete
-            </span>
-            <span className="learn-progress__stars">★ {starCount} / {LEARNING_PATH.length * 3}</span>
+          <div className="learn-meter">
+            <div className="learn-meter__track">
+              <div className="learn-meter__fill" style={{ width: `${pct}%` }} />
+            </div>
+            <div className="learn-meter__stats">
+              <span className="learn-meter__count">
+                {completedCount}<span>/{total}</span> complete
+              </span>
+              <span className="learn-meter__stars">
+                ★ {starCount}<span>/{total * 3}</span>
+              </span>
+            </div>
           </div>
         </header>
 
         <ReviewBanner />
 
-        <div className="learn-columns">
-          <section className="learn-column">
-            <h2 className="learn-section__label">Technique drills</h2>
-            <ol className="technique-grid">
-              {TECHNIQUE_PATH.map((lesson, i) => (
-                <TechniqueCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  progress={allProgress[lesson.id] ?? null}
-                  index={i}
-                  isNext={lesson.id === upNextId}
-                />
-              ))}
-            </ol>
-          </section>
+        {upNext && (
+          <UpNextCard lesson={upNext} isStart={isFreshStart} />
+        )}
 
-          <section className="learn-column">
-            <h2 className="learn-section__label">Songs</h2>
-            <ol className="song-list">
-              {SONG_PATH.map((lesson, i) => (
-                <SongCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  progress={allProgress[lesson.id] ?? null}
-                  index={i}
-                  isNext={lesson.id === upNextId}
-                />
-              ))}
-            </ol>
-          </section>
-        </div>
+        <section className="journey">
+          <h2 className="journey__label">The journey</h2>
+          <ol className="journey__list">
+            {LEARNING_PATH.map(lesson => (
+              <JourneyCard
+                key={lesson.id}
+                lesson={lesson}
+                progress={allProgress[lesson.id] ?? null}
+                isNext={lesson.id === upNext?.id}
+                isComplete={isComplete(lesson.id)}
+              />
+            ))}
+          </ol>
+        </section>
       </div>
     </div>
   );

@@ -1336,12 +1336,13 @@ body {
   border-color: rgba(255, 255, 255, 0.35);
 }
 
-/* ── Learn system ──────────────────────────────────────────────
-   Monochrome Apple-style liquid glass: neutral white/grey surfaces,
-   near-black ink, DM Sans. Froola orange (design/tokens.json) is kept
-   as the single sparing accent — primary CTAs, the current-step
-   indicator — everything else (labels, titles, chips, cards) stays
-   greyscale so the glass reads as one calm system. */
+/* ── Learn system — "The Journey" ───────────────────────────────
+   Warm Froola personality: a paper-warm ground, confident brand
+   orange (design/tokens.json), DM Sans. The catalog is one ordered
+   path from your first chord to Wonderwall — a spine that fills
+   orange as you go, a bold "continue" card, technique waypoints and
+   song milestones. Playful and warm, but disciplined: orange is the
+   one bold move; everything else stays quiet and typographic. */
 
 .learn-page {
   /* body is overflow:hidden/touch-action:none for the play canvas —
@@ -1353,445 +1354,544 @@ body {
   touch-action: pan-y;
   user-select: text;
   -webkit-user-select: text;
-  background: linear-gradient(180deg, #F9F9FC 0%, #F3F3F6 100%);
-  color: #0B0B0C;
+
+  --lrn-bg: #FAF6F0;
+  --lrn-bg-warm: #F1E7D9;
+  --lrn-ink: #1C1712;
+  --lrn-ink-soft: #574E45;
+  --lrn-muted: #948A7D;
+  --lrn-accent: #D4500A;
+  --lrn-accent-deep: #A23B05;
+  --lrn-accent-bright: #F26516;
+  --lrn-card: #FFFFFF;
+  --lrn-hairline: rgba(64, 44, 22, 0.10);
+  --lrn-hairline-strong: rgba(64, 44, 22, 0.17);
+
+  background:
+    radial-gradient(120% 62% at 100% -4%, rgba(212, 80, 10, 0.11), transparent 55%),
+    radial-gradient(88% 48% at -6% 10%, rgba(242, 101, 22, 0.08), transparent 52%),
+    var(--lrn-bg);
+  color: var(--lrn-ink);
   font-family: 'DM Sans', system-ui, sans-serif;
-  padding: 3rem 1.5rem 5rem;
+  padding: 2.75rem 1.5rem 6rem;
   box-sizing: border-box;
 }
 
-.learn-page::after {
-  display: none;
-}
-
-.learn-page::before {
-  display: none;
-}
-
-/* Animated mesh — four large soft blobs that drift on independent, very
-   slow loops. This is what gives the glass something alive to refract;
-   a static gradient reads as flat no matter how many stops it has. */
-.learn-page__blobs {
-  display: none;
-}
-.learn-page__blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  will-change: transform;
-}
-.learn-page__blob--a {
-  top: -14%;
-  left: -10%;
-  width: 46rem;
-  height: 40rem;
-  background: radial-gradient(circle, rgba(255,255,255,0.95), transparent 68%);
-  animation: learn-blob-a 34s ease-in-out infinite alternate;
-}
-.learn-page__blob--b {
-  top: -8%;
-  right: -16%;
-  width: 40rem;
-  height: 40rem;
-  background: radial-gradient(circle, rgba(198,204,216,0.75), transparent 70%);
-  animation: learn-blob-b 40s ease-in-out infinite alternate;
-}
-.learn-page__blob--c {
-  bottom: -18%;
-  left: 6%;
-  width: 50rem;
-  height: 44rem;
-  background: radial-gradient(circle, rgba(20,20,24,0.09), transparent 70%);
-  animation: learn-blob-c 46s ease-in-out infinite alternate;
-}
-.learn-page__blob--d {
-  bottom: -16%;
-  right: 4%;
-  width: 42rem;
-  height: 38rem;
-  background: radial-gradient(circle, rgba(226,218,208,0.55), transparent 70%);
-  animation: learn-blob-d 38s ease-in-out infinite alternate;
-}
-@keyframes learn-blob-a {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(6%, 8%, 0) scale(1.12); }
-}
-@keyframes learn-blob-b {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(-8%, 6%, 0) scale(0.9); }
-}
-@keyframes learn-blob-c {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(5%, -6%, 0) scale(1.08); }
-}
-@keyframes learn-blob-d {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  100% { transform: translate3d(-6%, -5%, 0) scale(0.94); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .learn-page::before,
-  .learn-page__blob { animation: none; }
-}
-
-.learn-page__inner { position: relative; z-index: 1; }
+/* legacy decorative layers — retired in the warm redesign */
+.learn-page::after,
+.learn-page::before,
+.learn-page__blobs,
+.learn-page__blob { display: none; }
 
 .learn-page__inner {
-  max-width: 900px;
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
   margin: 0 auto;
 }
 
-.learn-header {
-  margin-bottom: 2.5rem;
-}
+/* ── Header ─── */
+.learn-header { margin-bottom: 2.25rem; }
 
 .learn-back-btn {
   background: none;
   border: none;
-  color: #999;
+  color: var(--lrn-muted);
   font-family: inherit;
   font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
   padding: 0;
-  margin-bottom: 2.25rem;
+  margin-bottom: 2rem;
   transition: color 0.15s;
 }
-.learn-back-btn:hover { color: #1C1C1E; }
+.learn-back-btn:hover { color: var(--lrn-accent); }
 
 .learn-eyebrow {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: #8E8E93;
-  margin: 0 0 0.6rem;
+  color: var(--lrn-accent);
+  margin: 0 0 0.7rem;
 }
 
 .learn-title {
-  font-size: clamp(2.1rem, 6vw, 3.2rem);
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
   font-weight: 900;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
+  letter-spacing: -0.04em;
+  line-height: 1.0;
   margin: 0;
-  color: #1C1C1E;
+  color: var(--lrn-ink);
+  text-wrap: balance;
   overflow-wrap: break-word;
 }
 .learn-title em {
   font-style: normal;
-  color: #8E8E93;
+  color: var(--lrn-accent);
 }
 
 .learn-subtitle {
-  font-size: 1rem;
-  color: #6E6E73;
-  line-height: 1.55;
-  margin: 0.9rem 0 0;
-  max-width: 46ch;
+  font-size: 1.02rem;
+  color: var(--lrn-ink-soft);
+  line-height: 1.5;
+  margin: 1rem 0 0;
+  max-width: 42ch;
 }
 
-.learn-progress {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+/* Progress meter — an orange bar that fills with the journey. */
+.learn-meter { margin-top: 1.9rem; }
+.learn-meter__track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--lrn-bg-warm);
+  border: 1px solid var(--lrn-hairline);
+  overflow: hidden;
 }
-.learn-progress__count {
-  font-size: 0.82rem;
+.learn-meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--lrn-accent-bright), var(--lrn-accent));
+  box-shadow: 0 1px 8px rgba(212, 80, 10, 0.45);
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.learn-meter__stats {
+  display: flex;
+  align-items: baseline;
+  gap: 1.15rem;
+  margin-top: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+.learn-meter__count {
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #1C1C1E;
+  color: var(--lrn-ink);
+}
+.learn-meter__count span,
+.learn-meter__stars span { color: var(--lrn-muted); font-weight: 500; }
+.learn-meter__stars {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--lrn-accent);
   letter-spacing: 0.02em;
 }
-.learn-progress__stars {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #48484A;
-  letter-spacing: 0.04em;
-}
 
-/* ── Review banner ─── */
-
+/* ── Review banner — warm ink slab, orange on hover ─── */
 .review-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
   width: 100%;
-  background: linear-gradient(155deg, rgba(75,75,78,0.92), rgba(15,15,17,0.9) 55%, rgba(45,45,48,0.92) 100%);
-  color: #FAFAFA;
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 18px;
-  padding: 0.9rem 1.2rem;
-  margin-bottom: 2rem;
+  background: var(--lrn-ink);
+  color: #FBF3EA;
+  border: none;
+  border-radius: 16px;
+  padding: 0.95rem 1.25rem;
+  margin-bottom: 1.5rem;
   font-family: inherit;
   cursor: pointer;
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.22),
-    inset 0 -1px 0 rgba(0,0,0,0.35),
-    0 14px 34px rgba(0,0,0,0.22);
-  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 6px 18px rgba(28, 23, 18, 0.16);
+  transition: background 0.15s, transform 0.15s;
 }
-.review-banner:hover { background: linear-gradient(155deg, rgba(230,110,30,0.95), rgba(160,58,7,0.92) 55%, rgba(212,80,10,0.95) 100%); }
-.review-banner__title {
-  font-size: 0.88rem;
-  font-weight: 700;
+.review-banner:hover {
+  background: var(--lrn-accent-deep);
+  transform: translateY(-1px);
 }
+.review-banner__title { font-size: 0.9rem; font-weight: 700; }
 .review-banner__cta {
   font-size: 0.82rem;
   font-weight: 500;
-  opacity: 0.75;
+  opacity: 0.8;
   white-space: nowrap;
 }
 
-/* ── Learn sections ─── shared with the landing page's editorial rhythm:
-   uppercase label, generous top border/spacing between sections. */
+/* ── "Up next" continue card — the orange centerpiece ─── */
+.upnext {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: #FFF6EE;
+  cursor: pointer;
+  border: none;
+  border-radius: 22px;
+  padding: 1.6rem 1.7rem;
+  margin-bottom: 2.75rem;
+  background:
+    linear-gradient(150deg, var(--lrn-accent-bright) 0%, var(--lrn-accent) 44%, var(--lrn-accent-deep) 100%);
+  box-shadow: 0 18px 40px rgba(212, 80, 10, 0.30);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s;
+}
+.upnext::after {
+  content: '';
+  position: absolute;
+  top: -45%;
+  right: -8%;
+  width: 55%;
+  height: 170%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.30), transparent 70%);
+  pointer-events: none;
+}
+.upnext:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 26px 54px rgba(212, 80, 10, 0.38);
+}
+.upnext > * { position: relative; z-index: 1; }
 
-.learn-columns {
-  border-top: 1px solid rgba(20,20,20,0.1);
-  padding-top: 2.5rem;
-  margin-top: 2.5rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: start;
+.upnext__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 246, 238, 0.9);
+  margin: 0 0 0.75rem;
+}
+.upnext__kind {
+  font-size: 0.6rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  letter-spacing: 0.14em;
+}
+.upnext__artist {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 246, 238, 0.92);
+  margin: 0 0 0.25rem;
+}
+.upnext__title {
+  font-size: clamp(1.7rem, 5vw, 2.35rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  margin: 0;
+}
+.upnext__subtitle {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: rgba(255, 246, 238, 0.86);
+  margin: 0.55rem 0 0;
+  max-width: 40ch;
+}
+.upnext__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+.upnext__bottom {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+.upnext__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #FFFFFF;
+  color: var(--lrn-accent-deep);
+  font-size: 0.95rem;
+  font-weight: 800;
+  padding: 0.7rem 1.45rem;
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(120, 40, 0, 0.22);
+}
+.upnext__meta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 246, 238, 0.82);
 }
 
-@media (max-width: 720px) {
-  .learn-columns { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+/* chip variant sitting on the orange card */
+.chip-on-accent {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #FFF6EE;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.30);
+  border-radius: 999px;
+  padding: 0.16rem 0.6rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.learn-column {
-  min-width: 0; /* grid track shrink guard — see .technique-grid note below */
-}
-
-.learn-section__label {
+/* ── The journey — one ordered path with a spine that fills ─── */
+.journey { position: relative; }
+.journey__label {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: #8E8E93;
-  margin: 0 0 1.5rem;
+  color: var(--lrn-muted);
+  margin: 0 0 1.4rem;
+}
+.journey__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-/* Shared star rating, used by both card types */
-.lesson-card__stars { display: flex; gap: 0.1rem; font-size: 0.95rem; }
-.lesson-card__star { color: rgba(20,20,25,0.15); }
-.lesson-card__star.is-earned { color: #1C1C1E; }
+.journey__item {
+  --nc: calc(1.4rem + 11px);   /* node center from item top */
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 1.1rem;
+  padding-bottom: 0.85rem;
+}
 
-.chord-chip {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: #1C1C1E;
-  background: linear-gradient(155deg, rgba(255,255,255,0.4), rgba(255,255,255,0.12) 60%, rgba(255,255,255,0.22) 100%);
-  border: 1px solid rgba(255,255,255,0.6);
+/* rail: a grey track with an orange "traveled" overlay */
+.journey__rail { position: relative; }
+.journey__rail::before,
+.journey__rail::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
   border-radius: 999px;
-  padding: 0.14rem 0.5rem;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  backdrop-filter: blur(10px) saturate(200%);
-  -webkit-backdrop-filter: blur(10px) saturate(200%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 3px rgba(0,0,0,0.06);
 }
-
-/* ── Technique drills — one card per row within its column (the
-   technique/songs split is now the two-column layout itself, so this no
-   longer needs its own internal 2-up grid). ─── */
-
-.technique-grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.journey__rail::before {           /* full-height grey track */
+  top: 0;
+  bottom: 0;
+  background: var(--lrn-hairline-strong);
 }
-
-.technique-card__btn {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 12px;
-  font-family: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  padding: 1.1rem 1.2rem;
-  box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+.journey__rail::after {            /* orange overlay, height by state */
+  top: 0;
+  height: 0;
+  background: linear-gradient(180deg, var(--lrn-accent-deep), var(--lrn-accent-bright));
 }
-.technique-card__btn::before {
-  display: none;
-}
-.technique-card__btn:hover {
-  background: rgba(255, 255, 255, 0.55);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
+.journey__item.is-complete .journey__rail::after { height: 100%; }
+.journey__item.is-next .journey__rail::after { height: var(--nc); }
 
-.technique-card.is-next .technique-card__btn {
-  border-color: rgba(212, 80, 10, 0.2);
-  background: rgba(255, 255, 255, 0.55);
-}
+/* spine starts at the first node and ends at the last node */
+.journey__item:first-child .journey__rail::before { top: var(--nc); }
+.journey__item:first-child .journey__rail::after { top: var(--nc); }
+.journey__item:first-child.is-complete .journey__rail::after { height: calc(100% - var(--nc)); }
+.journey__item:first-child.is-next .journey__rail::after { height: 0; }
+.journey__item:last-child .journey__rail::before { bottom: auto; height: var(--nc); }
+.journey__item:last-child.is-complete .journey__rail::after { height: var(--nc); }
 
-.technique-card__num {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: rgba(20,20,25,0.35);
-  letter-spacing: 0.06em;
-  font-variant-numeric: tabular-nums;
-}
-.technique-card.is-next .technique-card__num { color: #D4500A; }
-
-.technique-card__title {
-  font-weight: 900;
-  font-size: 1.02rem;
-  letter-spacing: -0.015em;
-  color: #1C1C1E;
-}
-
-.technique-card__subtitle {
-  font-size: 0.82rem;
-  color: #6E6E73;
-  line-height: 1.4;
-}
-
-.technique-card__status { margin-top: 0.3rem; }
-
-.technique-card__cta {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #8E8E93;
-}
-.technique-card.is-next .technique-card__cta {
-  color: #D4500A;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.72rem;
-}
-
-/* ── Songs — the headline content, more visual weight: real card
-   boundaries, bigger title, artist eyebrow. ─── */
-
-.song-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.song-card__btn {
-  position: relative;
-  overflow: hidden;
+/* the node dot */
+.journey__node {
+  position: absolute;
+  top: 1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--lrn-bg);
+  border: 3px solid var(--lrn-hairline-strong);
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  justify-content: center;
+  color: #fff;
+}
+.journey__item.is-complete .journey__node {
+  background: var(--lrn-accent);
+  border-color: var(--lrn-accent);
+}
+.journey__node-check { width: 11px; height: 11px; display: none; }
+.journey__item.is-complete .journey__node-check { display: block; }
+.journey__item.is-next .journey__node {
+  border-color: var(--lrn-accent);
+  background: var(--lrn-card);
+  box-shadow: 0 0 0 5px rgba(212, 80, 10, 0.15);
+}
+.journey__item.is-next .journey__node::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lrn-accent);
+}
+
+/* ── Lesson card (both kinds share the button shell) ─── */
+.jcard {
+  position: relative;
+  display: block;
   width: 100%;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 12px;
+  text-align: left;
   font-family: inherit;
   color: inherit;
-  text-align: left;
   cursor: pointer;
-  padding: 1.15rem 1.3rem;
-  box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  background: var(--lrn-card);
+  border: 1px solid var(--lrn-hairline);
+  border-radius: 16px;
+  box-shadow: 0 2px 10px rgba(64, 44, 22, 0.05);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
 }
-.song-card__btn::before {
-  display: none;
+.jcard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(64, 44, 22, 0.10);
+  border-color: var(--lrn-hairline-strong);
 }
-.song-card__btn:hover {
-  background: rgba(255, 255, 255, 0.6);
-  border-color: rgba(0, 0, 0, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-.song-card.is-next .song-card__btn {
-  border-color: rgba(212, 80, 10, 0.2);
-  background: rgba(255, 255, 255, 0.6);
+.journey__item.is-next .jcard {
+  border-color: rgba(212, 80, 10, 0.35);
+  box-shadow: 0 8px 22px rgba(212, 80, 10, 0.12);
 }
 
-.song-card__num {
-  font-size: 0.95rem;
-  font-weight: 900;
-  color: rgba(20,20,25,0.22);
-  letter-spacing: 0.02em;
-  width: 1.9rem;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
-}
-.song-card.is-next .song-card__num { color: #D4500A; }
-
-.song-card__main {
+/* technique waypoint — compact, quieter */
+.jcard--technique {
   display: flex;
-  flex-direction: column;
-  gap: 0.28rem;
-  flex: 1;
-  min-width: 0;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.85rem 1.05rem;
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
 }
-
-.song-card__artist {
-  font-size: 0.68rem;
+.jcard--technique:hover {
+  background: var(--lrn-card);
+  border-style: solid;
+  box-shadow: 0 8px 20px rgba(64, 44, 22, 0.08);
+}
+.jcard__badge {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: rgba(212, 80, 10, 0.10);
+  color: var(--lrn-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.jcard__badge svg { width: 18px; height: 18px; }
+.jcard__drill-main { flex: 1; min-width: 0; }
+.jcard__kind {
+  font-size: 0.62rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: #8E8E93;
+  letter-spacing: 0.16em;
+  color: var(--lrn-muted);
+  margin-bottom: 0.1rem;
+}
+.jcard__drill-title {
+  font-size: 0.99rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--lrn-ink);
+}
+.jcard__drill-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
-.song-card__title {
+/* song milestone — prominent */
+.jcard--song { padding: 1.2rem 1.35rem; }
+.jcard__song-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.jcard__artist {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--lrn-accent);
+  margin: 0 0 0.25rem;
+}
+.jcard__title {
+  font-size: 1.4rem;
   font-weight: 900;
-  font-size: 1.35rem;
-  letter-spacing: -0.015em;
-  color: #1C1C1E;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--lrn-ink);
+  margin: 0;
 }
-
-.song-card__progression {
+.jcard__chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  margin-top: 0.15rem;
+  margin-top: 0.85rem;
 }
 
-.song-card__status {
+/* difficulty pill */
+.jcard__diff {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-}
-
-.song-card__cta {
-  font-size: 0.8rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  color: #8E8E93;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
   white-space: nowrap;
 }
-.song-card.is-next .song-card__cta {
-  color: #D4500A;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.72rem;
+.jcard__diff--beginner { background: rgba(212, 80, 10, 0.10); color: var(--lrn-accent-deep); }
+.jcard__diff--intermediate { background: rgba(212, 80, 10, 0.18); color: var(--lrn-accent-deep); }
+.jcard__diff--advanced { background: var(--lrn-accent); color: #fff; }
+
+/* warm chord chip */
+.chord-chip {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--lrn-ink);
+  background: var(--lrn-bg-warm);
+  border: 1px solid var(--lrn-hairline);
+  border-radius: 999px;
+  padding: 0.16rem 0.55rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
+/* status row on the song card */
+.jcard__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--lrn-hairline);
+}
+.jcard__cta {
+  font-size: 0.83rem;
+  font-weight: 800;
+  color: var(--lrn-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.jcard__bpm {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--lrn-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* stars — shared */
+.lesson-card__stars { display: flex; gap: 0.12rem; font-size: 0.9rem; }
+.lesson-card__star { color: rgba(64, 44, 22, 0.16); }
+.lesson-card__star.is-earned { color: var(--lrn-accent); }
+
 @media (max-width: 480px) {
-  .song-card__btn { gap: 0.8rem; }
-  .song-card__title { font-size: 1.15rem; }
+  .journey__item { grid-template-columns: 24px 1fr; gap: 0.8rem; }
+  .jcard__title { font-size: 1.22rem; }
+  .upnext { padding: 1.4rem 1.35rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learn-meter__fill,
+  .upnext,
+  .jcard,
+  .review-banner { transition: none; }
 }
 
 /* ── In-lesson: start screen ─── */
