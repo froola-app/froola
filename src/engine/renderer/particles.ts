@@ -50,7 +50,7 @@ export class ParticleSystem {
         vy: Math.sin(angle) * speed,
         life: 1.0,
         decay: 0.015 + Math.random() * 0.01,
-        radius: 2 + Math.random() * 3,
+        radius: 1.5 + Math.random() * 2,
         r, g, b,
       });
     }
@@ -64,7 +64,7 @@ export class ParticleSystem {
       p.life -= p.decay;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${p.life.toFixed(3)})`;
+      ctx.fillStyle = `rgba(${p.r},${p.g},${p.b},${(p.life * 0.6).toFixed(3)})`;
       ctx.fill();
     }
     ctx.restore();
