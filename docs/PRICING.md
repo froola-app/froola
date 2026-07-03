@@ -14,7 +14,7 @@ Working doc for Froola's paid tiers. Status: **design agreed, not yet implemente
 
 Kept deliberately modest — good enough to be a nice experience and to generate shareable clips (free marketing via replay links), but visibly worse than paid on every axis (length, watermark, quantity, instrument choice).
 
-### Encore — $4.99/mo *(name not final, see Open questions)*
+### Plus — $4.99/mo
 
 The "I like this app, unlock a bit more" tier. Priced to be an easy impulse buy.
 
@@ -24,11 +24,11 @@ The "I like this app, unlock a bit more" tier. Priced to be an easy impulse buy.
 - Visual themes *(not built yet — placeholder feature)*
 - Monthly recording cap raised (exact number TBD, see Open questions)
 
-### Pro — $19.99/mo
+### Studio — $19.99/mo
 
 For people using Froola seriously / "professionally" — modeled on the Claude Pro/Max jump in value, not just quantity.
 
-- Everything in Encore
+- Everything in Plus
 - **Continuous/instant-replay recording** — flagship differentiator. Records into a rolling local buffer continuously; pressing a "keep that" button saves the last ~20s to a real recording. Older buffer content is discarded, never uploaded.
 - Unlimited recording length and quantity
 - Audio download (MP3 / WAV)
@@ -46,15 +46,14 @@ For people using Froola seriously / "professionally" — modeled on the Claude P
 ## Open questions
 
 - **Free tier recording allowance:** 3/mo is a starting proposal, not final — revisit after seeing real usage/storage cost data.
-- **Encore monthly recording cap:** needs an actual number (options discussed: flat monthly cap like 20, or no hard cap since recordings are still ≤3min watermark-free).
-- **Encore tier name:** "Encore" is the current front-runner (vs. "Jam Pass" / "Riff Pass"); not finalized.
+- **Plus monthly recording cap:** needs an actual number (options discussed: flat monthly cap like 20, or no hard cap since recordings are still ≤3min watermark-free).
 - **Trial length:** 7 vs 14 days not yet decided.
-- **Pro price:** $19.99 vs $24.99 — leaning $19.99 to stay under the Claude Pro anchor price, not finalized.
-- **Storage/cost model:** unlimited recordings on Pro (and raised caps on Encore) have real Firestore storage + bandwidth cost; no cap/quota-enforcement mechanism designed yet.
+- **Studio price:** $19.99 vs $24.99 — leaning $19.99 to stay under the Claude Pro anchor price, not finalized.
+- **Storage/cost model:** unlimited recordings on Studio (and raised caps on Plus) have real Firestore storage + bandwidth cost; no cap/quota-enforcement mechanism designed yet.
 
 ## Not yet built (dependencies before shipping this)
 
-- Piano needs a tuning/sound-quality pass before it can be used as an Encore selling point.
+- Piano needs a tuning/sound-quality pass before it can be used as a Plus selling point.
 - Visual themes don't exist yet.
-- Continuous/instant-replay recording (Pro's flagship feature) needs its own design — no rolling-buffer capture exists in the audio engine today.
+- Continuous/instant-replay recording (Studio's flagship feature) needs its own design — no rolling-buffer capture exists in the audio engine today.
 - No Stripe integration, webhook handler, or plan-gating logic exists in the codebase yet.

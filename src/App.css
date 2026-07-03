@@ -691,6 +691,12 @@ body {
   justify-content: space-between;
 }
 
+.lp4__nav-links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .lp4__nav-link {
   font-size: 12px;
   color: var(--lp-ink);
@@ -897,6 +903,96 @@ body {
   font-size: 15px;
   line-height: 1.5;
   color: var(--lp-gray);
+}
+
+/* Pricing section */
+.lp4__pricing-grid {
+  margin-top: 44px;
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .lp4__pricing-grid { grid-template-columns: 1fr; }
+}
+
+.lp4__pricing-card {
+  background: #ffffff;
+  border: 1px solid var(--lp-hairline);
+  border-radius: 18px;
+  padding: 32px 28px;
+}
+
+.lp4__pricing-card--highlight {
+  border-color: rgba(212, 80, 10, 0.35);
+  background: linear-gradient(180deg, rgba(212, 80, 10, 0.06), rgba(212, 80, 10, 0.01));
+}
+
+.lp4__pricing-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lp4__pricing-name {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__pricing-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--lp-accent);
+  background: rgba(212, 80, 10, 0.1);
+  border: 1px solid rgba(212, 80, 10, 0.25);
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lp4__pricing-price {
+  margin-top: 18px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lp-ink);
+}
+
+.lp4__pricing-period {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  margin-left: 0.15rem;
+}
+
+.lp4__pricing-features {
+  list-style: none;
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lp4__pricing-features li {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--lp-gray);
+  padding-left: 1.3rem;
+  position: relative;
+}
+
+.lp4__pricing-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--lp-accent);
+  font-weight: 700;
 }
 
 /* Privacy lock */

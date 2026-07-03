@@ -1,0 +1,45 @@
+import { useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { useScrollReveal } from '../useScrollReveal';
+import FroolaLogo from './FroolaLogo';
+import PricingSection from './PricingSection';
+
+const CONTACT_EMAIL = 'supportfroola@gmail.com';
+
+// Standalone /pricing route, styled to match the landing page (lp4) so
+// it reads as a real page rather than an onboarding step.
+export default function PricingPage() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  useScrollReveal(rootRef);
+  return (
+    <div className="lp4" ref={rootRef}>
+      <nav className="lp4__nav">
+        <div className="lp4__nav-inner">
+          <Link to="/" aria-label="Froola home">
+            <FroolaLogo size={16} />
+          </Link>
+          <div className="lp4__nav-links">
+            <Link to="/" className="lp4__nav-link">
+              Play now
+            </Link>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
+              Contact
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <PricingSection />
+
+      <footer className="lp4__footer">
+        <div className="lp4__footer-inner">
+          <span>
+            Questions or ideas?{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </span>
+          <span>froola © 2026</span>
+        </div>
+      </footer>
+    </div>
+  );
+}

@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { storedInputMode, storeInputMode, type InputMode } from '../engine/input';
+import { useScrollReveal } from '../useScrollReveal';
 import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
 import PlayShell from './PlayShell';
+import PricingSection from './PricingSection';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
@@ -56,29 +58,7 @@ export default function LandingPage() {
   };
 
   // Scroll reveals: sections fade-rise in once as they enter the viewport.
-  useEffect(() => {
-    if (input) return;
-    const root = rootRef.current;
-    if (!root) return;
-    const els = Array.from(root.querySelectorAll('[data-reveal]'));
-    if (typeof IntersectionObserver === 'undefined') {
-      els.forEach((el) => el.classList.add('is-in'));
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            e.target.classList.add('is-in');
-            io.unobserve(e.target);
-          }
-        }
-      },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [input]);
+  useScrollReveal(rootRef);
 
   if (input) return <PlayShell initialInput={input} />;
 
@@ -100,9 +80,14 @@ export default function LandingPage() {
       <nav className="lp4__nav">
         <div className="lp4__nav-inner">
           <FroolaLogo size={16} />
-          <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
-            Contact
-          </a>
+          <div className="lp4__nav-links">
+            <a href="#pricing" className="lp4__nav-link">
+              Pricing
+            </a>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
+              Contact
+            </a>
+          </div>
         </div>
       </nav>
 
@@ -166,6 +151,8 @@ export default function LandingPage() {
         </p>
         <p className="lp4__byline">Built by two high school students.</p>
       </section>
+
+      <PricingSection />
 
       {/* Final CTA */}
       <section className="lp4__section" data-reveal>

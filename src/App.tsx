@@ -7,6 +7,7 @@ import './App.css';
 // Everything off the critical path (`/` is the instrument) loads on demand.
 const ReplayShell = lazy(() => import('./components/ReplayShell'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
+const PricingPage = lazy(() => import('./components/PricingPage'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
@@ -25,6 +26,7 @@ function AppRoutes() {
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -47,6 +49,7 @@ function AppRoutes() {
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
