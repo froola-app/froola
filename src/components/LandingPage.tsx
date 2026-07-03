@@ -8,6 +8,7 @@ import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
 import PlayShell from './PlayShell';
 import PricingSection from './PricingSection';
+import ProfileButton from './ProfileButton';
 import ThemeToggle from './ThemeToggle';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
@@ -136,6 +137,7 @@ export default function LandingPage() {
           </div>
         </div>
       </nav>
+      <ProfileButton />
 
       {/* Hero */}
       <header className="lp4__hero">

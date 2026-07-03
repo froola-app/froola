@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import LandingPage from './LandingPage';
+import { useAuth } from '../contexts/AuthContext';
 
 // LandingPage calls useNavigate (learn/pricing links), so it needs a router.
 const render = (ui: React.ReactElement) =>
@@ -15,6 +16,19 @@ vi.mock('./PlayShell', () => ({
     <div>play shell: {initialInput}</div>
   ),
 }));
+
+// LandingPage renders ProfileButton (the nav sign-in entry point), which
+// needs AuthContext — mock it the same way ProfileButton.test.tsx does.
+vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mocked(useAuth).mockReturnValue({
+  user: null,
+  profile: null,
+  loading: false,
+  authReady: true,
+  signInWithGoogle: vi.fn().mockResolvedValue(undefined),
+  signOutUser: vi.fn(),
+  completeOnboarding: vi.fn(),
+});
 
 describe('LandingPage', () => {
   beforeEach(() => sessionStorage.clear());
