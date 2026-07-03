@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { Navigate, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './components/LandingPage';
+import AuthPopupDone from './components/AuthPopupDone';
 import './App.css';
 
 // Everything off the critical path (`/` is the instrument) loads on demand.
@@ -27,6 +28,7 @@ function AppRoutes() {
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/auth/popup" element={<AuthPopupDone />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -37,6 +39,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/onboarding" element={<OnboardingFlow />} />
+        <Route path="/auth/popup" element={<AuthPopupDone />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
@@ -50,6 +53,7 @@ function AppRoutes() {
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/auth/popup" element={<AuthPopupDone />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
