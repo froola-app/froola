@@ -121,13 +121,13 @@ describe('createNodDetector — robustness', () => {
 
   it('adapts a settled off-baseline posture (slow EMA) so a nod toward baseline still fires', () => {
     const det = createNodDetector();
-    // Seed at 0, then settle at +8° — inside the dead zone the old code left
-    // frozen forever (5° < 8° <= 12°). ~400 samples at 33ms lets the slow
-    // EMA (0.002 outside the 5° band, 0.02 once inside it) converge the
+    // Seed at 0, then settle at +8° — the off-baseline posture the original
+    // design left frozen forever. ~400 samples at 33ms lets the slow EMA
+    // (0.002 outside the 5° band, 0.02 once inside it) converge the
     // baseline to within a fraction of a degree of 8.
     const settle = Array(400).fill(8);
     // Nod from the new posture: down to -7° (dev from the ~7.8° baseline is
-    // ~-14.8°, past the 12° threshold) and back to 8°.
+    // ~-14.8°, past the deflection threshold) and back to 8°.
     const nod = [-7, -7, -7, -7, -7, 8, 8, 8];
     const events = runTrace(det, [0, ...settle, ...nod]);
     expect(events).toEqual(['up']);
@@ -142,6 +142,16 @@ describe('createNodDetector — robustness', () => {
     // baseline fast-nod case.
     const nod = [6, 13, 15, 15, 15, 13, 6, 0, 0];
     const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(0)], 3 * 33);
+    expect(events).toEqual(['down']);
+  });
+
+  it('fires early once the head is back within half of peak deflection, without a full return', () => {
+    const det = createNodDetector();
+    // Deflect to 16° (peak), then hover at 7° — never inside the 5° return
+    // threshold, but 7 ≤ 0.5 × 16, so the half-of-peak rule fires. Elapsed at
+    // the 7° sample is 4 × 33 = 132ms ≥ MIN_NOD_MS.
+    const nod = [10, 16, 16, 16, 7];
+    const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(7)]);
     expect(events).toEqual(['down']);
   });
 });

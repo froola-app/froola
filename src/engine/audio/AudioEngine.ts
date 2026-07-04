@@ -361,7 +361,8 @@ export class AudioEngine {
   }
 
   setVolume(v: number): void {
-    const clamped = Math.max(0, Math.min(1, v))
+    // Up to 2x boost; the output compressor catches peaks above unity.
+    const clamped = Math.max(0, Math.min(2, v))
     const now = this.ctx.currentTime
     this.masterGain.gain.cancelScheduledValues(now)
     this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now)

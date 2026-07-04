@@ -16,9 +16,10 @@ export function pitchFromMatrix(data: ArrayLike<number>): number {
 export const BASELINE_ALPHA = 0.02;      // baseline EMA weight (~2s time constant at 30Hz)
 export const BASELINE_SLOW_ALPHA = 0.002; // baseline EMA weight outside the band (BASELINE_ALPHA / 10)
 export const BASELINE_BAND_DEG = 5;      // baseline only adapts inside this band
-export const DEFLECT_THRESHOLD_DEG = 12; // deviation that starts a nod
-export const RETURN_THRESHOLD_DEG = 5;   // deviation must drop below this to complete
-export const MIN_NOD_MS = 150;           // faster return = jitter, not a nod
+export const DEFLECT_THRESHOLD_DEG = 8;  // deviation that starts a nod
+export const RETURN_THRESHOLD_DEG = 5;   // deviation below this always completes a nod
+export const RETURN_FRACTION = 0.5;      // ...or once the head is back within this fraction of peak deflection (fires earlier on big nods)
+export const MIN_NOD_MS = 100;           // faster return = jitter, not a nod
 export const MAX_NOD_MS = 900;           // no return by now = posture change
 export const REFRACTORY_MS = 500;        // no new deflection after a fire
 
@@ -35,6 +36,7 @@ export function createNodDetector(debugLog?: (msg: string) => void): NodDetector
   let state: 'IDLE' | 'DEFLECTED' = 'IDLE';
   let direction: NodEvent = 'down';
   let startMs = 0;
+  let peakDev = 0;
   let refractoryUntil = -Infinity;
 
   return {
@@ -59,6 +61,7 @@ export function createNodDetector(debugLog?: (msg: string) => void): NodDetector
           state = 'DEFLECTED';
           direction = dev > 0 ? 'down' : 'up';
           startMs = nowMs;
+          peakDev = Math.abs(dev);
           debugLog?.(`deflect ${direction} dev=${dev.toFixed(1)} baseline=${baseline.toFixed(1)}`);
         } else {
           // Outside the band but not deflecting (either mid-band-to-threshold,
@@ -79,7 +82,11 @@ export function createNodDetector(debugLog?: (msg: string) => void): NodDetector
         debugLog?.(`re-baseline to ${baseline.toFixed(1)} after ${elapsed}ms`);
         return null;
       }
-      if (Math.abs(dev) < RETURN_THRESHOLD_DEG) {
+      peakDev = Math.max(peakDev, Math.abs(dev));
+      // Fire as soon as the head is clearly on its way back: fully inside
+      // the return threshold, or (for bigger nods) back within half of the
+      // peak deflection — waiting for the full return reads as lag.
+      if (Math.abs(dev) < RETURN_THRESHOLD_DEG || Math.abs(dev) <= RETURN_FRACTION * peakDev) {
         state = 'IDLE';
         if (elapsed >= MIN_NOD_MS) {
           refractoryUntil = nowMs + REFRACTORY_MS;
