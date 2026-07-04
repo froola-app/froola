@@ -1361,16 +1361,39 @@ body {
 
 /* ── Onboarding (editorial light, on-brand) ─────────────────── */
 
+/* Onboarding borrows the landing (lp4) design tokens so it reads as the same
+   product, and follows the same manual light/dark theme. */
 .onboarding-shell {
+  --lp-bg: #ffffff;
+  --lp-bg-alt: #f5f5f7;
+  --lp-card: #ffffff;
+  --lp-ink: #1d1d1f;
+  --lp-gray: #6e6e73;
+  --lp-accent: #d4500a;
+  --lp-hairline: rgba(0, 0, 0, 0.1);
+  --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.04);
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background: #FAFAF8;
-  color: #111111;
-  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--lp-bg);
+  color: var(--lp-ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Helvetica Neue', 'DM Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+.onboarding-shell[data-theme='dark'] {
+  --lp-bg: #0b0b0d;
+  --lp-bg-alt: #0f1013;
+  --lp-card: #17181c;
+  --lp-ink: #f5f5f7;
+  --lp-gray: #a9a9b0;
+  --lp-accent: #f2650f;
+  --lp-hairline: rgba(255, 255, 255, 0.1);
+  --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.35);
 }
 
 /* faint breathing orange wash, echoes the landing canvas */
@@ -1394,6 +1417,12 @@ body {
   padding: 1.75rem 2rem 0;
 }
 
+.onboarding-header__end {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .onboarding-progress {
   display: flex;
   align-items: center;
@@ -1405,18 +1434,18 @@ body {
   height: 7px;
   border-radius: 999px;
   background: transparent;
-  border: 1.5px solid rgba(0, 0, 0, 0.18);
+  border: 1.5px solid var(--lp-hairline);
   transition: background 0.2s, border-color 0.2s, width 0.2s;
 }
 
 .onboarding-progress__dot.is-done {
-  background: rgba(212, 80, 10, 0.35);
+  background: color-mix(in srgb, var(--lp-accent) 35%, transparent);
   border-color: transparent;
 }
 
 .onboarding-progress__dot.is-active {
   width: 22px;
-  background: #D4500A;
+  background: var(--lp-accent);
   border-color: transparent;
 }
 
@@ -1428,13 +1457,6 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  transition: opacity 0.2s;
-}
-
-/* Brief read-before-you-click gate — see STEP_COOLDOWN_MS in OnboardingFlow. */
-.onboarding-main.is-cooling-down {
-  opacity: 0.55;
-  pointer-events: none;
 }
 
 .onboarding-step {
@@ -1447,25 +1469,44 @@ body {
   text-align: center;
 }
 
+/* Staggered fade-rise entrance, matching the landing hero. */
+@keyframes onboarding-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.onboarding-step > * {
+  animation: onboarding-rise 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+.onboarding-step > :nth-child(1) { animation-delay: 0s; }
+.onboarding-step > :nth-child(2) { animation-delay: 0.06s; }
+.onboarding-step > :nth-child(3) { animation-delay: 0.12s; }
+.onboarding-step > :nth-child(4) { animation-delay: 0.18s; }
+.onboarding-step > :nth-child(5) { animation-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-step > * { animation: none; }
+}
+
 .onboarding-eyebrow {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: #D4500A;
+  color: var(--lp-accent);
 }
 
 .onboarding-title {
   font-size: clamp(1.7rem, 4.5vw, 2.4rem);
-  font-weight: 800;
-  color: #111111;
-  letter-spacing: -0.03em;
+  font-weight: 700;
+  color: var(--lp-ink);
+  letter-spacing: -0.02em;
   line-height: 1.05;
   margin-top: -0.5rem;
 }
 
 .onboarding-subtitle {
-  color: #111111;
+  color: var(--lp-gray);
   font-size: 1rem;
   margin-top: -0.5rem;
 }
@@ -1484,49 +1525,52 @@ body {
   align-items: center;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
   border-radius: 14px;
+  box-shadow: var(--lp-card-shadow);
   cursor: pointer;
   text-align: left;
-  color: #111111;
+  color: var(--lp-ink);
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .user-type-card:hover {
-  border-color: #D4500A;
-  box-shadow: 0 6px 20px rgba(212, 80, 10, 0.12);
-  transform: translateY(-1px);
+  border-color: var(--lp-accent);
+  box-shadow: 0 10px 30px rgba(212, 80, 10, 0.16);
+  transform: translateY(-2px);
 }
+
+.user-type-card:active { transform: translateY(0); }
 
 .user-type-emoji { font-size: 1.6rem; flex-shrink: 0; }
 
 .user-type-text { flex: 1; }
 
 .user-type-label {
-  font-weight: 700;
+  font-weight: 600;
   font-size: 1rem;
   display: block;
 }
 
 .user-type-description {
   font-size: 0.85rem;
-  color: #111111;
+  color: var(--lp-gray);
   display: block;
   margin-top: 0.1rem;
 }
 
 .user-type-arrow {
   font-size: 1.1rem;
-  color: #111111;
+  color: var(--lp-gray);
   flex-shrink: 0;
-  transition: transform 0.15s, color 0.15s;
+  transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .user-type-card:hover .user-type-arrow {
-  color: #D4500A;
-  transform: translateX(3px);
+  color: var(--lp-accent);
+  transform: translateX(4px);
 }
 
 /* Learning curve tips */
@@ -1544,13 +1588,21 @@ body {
   display: flex;
   gap: 0.875rem;
   align-items: flex-start;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.07);
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
   border-radius: 12px;
   padding: 0.9rem 1.1rem;
   font-size: 0.95rem;
   line-height: 1.45;
-  color: #333333;
+  color: var(--lp-ink);
+  box-shadow: var(--lp-card-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.tip-item:hover {
+  border-color: var(--lp-accent);
+  box-shadow: 0 10px 30px rgba(212, 80, 10, 0.14);
+  transform: translateY(-2px);
 }
 
 .tip-icon { font-size: 1.2rem; flex-shrink: 0; }
@@ -1565,22 +1617,34 @@ body {
 }
 
 .pricing-card {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
   border-radius: 16px;
   padding: 1.4rem;
   text-align: left;
+  box-shadow: var(--lp-card-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.pricing-card:hover {
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
 }
 
 .pricing-card--pro {
   border-color: rgba(212, 80, 10, 0.35);
-  background: linear-gradient(180deg, rgba(212, 80, 10, 0.05), rgba(212, 80, 10, 0.01));
+  background: linear-gradient(180deg, rgba(212, 80, 10, 0.05), rgba(212, 80, 10, 0.01)), var(--lp-card);
+}
+
+.pricing-card--pro:hover {
+  border-color: var(--lp-accent);
+  box-shadow: 0 12px 34px rgba(212, 80, 10, 0.18);
 }
 
 .pricing-card h3 {
   font-size: 1.1rem;
-  font-weight: 800;
-  color: #111111;
+  font-weight: 700;
+  color: var(--lp-ink);
   letter-spacing: -0.01em;
   margin-bottom: 1rem;
   display: flex;
@@ -1602,8 +1666,8 @@ body {
 
 .pricing-card-price {
   font-size: 1.5rem;
-  font-weight: 800;
-  color: #111111;
+  font-weight: 700;
+  color: var(--lp-ink);
   letter-spacing: -0.02em;
   margin-bottom: 1rem;
 }
@@ -1611,7 +1675,7 @@ body {
 .pricing-card-period {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #777777;
+  color: var(--lp-gray);
   margin-left: 0.15rem;
 }
 
@@ -1624,33 +1688,37 @@ body {
 
 .pricing-card li {
   font-size: 0.85rem;
-  color: #555555;
+  color: var(--lp-gray);
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
   line-height: 1.35;
 }
 
-.check { color: #D4500A; font-weight: 700; flex-shrink: 0; }
+.check { color: var(--lp-accent); font-weight: 700; flex-shrink: 0; }
 
-/* On-brand onboarding button — matches landing primary */
+/* On-brand onboarding button — the landing's rounded accent pill. */
 .onboarding-btn {
   margin-top: 0.5rem;
-  padding: 0.85rem 2.75rem;
-  border-radius: 2px;
+  padding: 12px 28px;
+  border-radius: 980px;
   border: none;
-  background: #111111;
-  color: #FAFAF8;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  background: var(--lp-accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, transform 0.15s;
+  transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.onboarding-btn:hover { background: #D4500A; transform: translateY(-1px); }
+.onboarding-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(212, 80, 10, 0.28);
+}
+
+.onboarding-btn:active { transform: translateY(0); filter: brightness(0.94); }
 
 @media (max-width: 720px) {
   .pricing-cards { grid-template-columns: 1fr; }

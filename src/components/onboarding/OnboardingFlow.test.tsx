@@ -1,6 +1,5 @@
-import { render, screen, act, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { vi } from 'vitest';
 import { AuthProvider } from '../../contexts/AuthContext';
 import OnboardingFlow from './OnboardingFlow';
 
@@ -14,30 +13,31 @@ function renderFlow() {
   );
 }
 
-beforeEach(() => vi.useFakeTimers());
-afterEach(() => vi.useRealTimers());
-
-describe('OnboardingFlow — cooldown between steps', () => {
-  it('disables the step content immediately after it mounts', () => {
+describe('OnboardingFlow', () => {
+  it('shows the first step immediately, with no read-gate cooldown', () => {
     renderFlow();
-    expect(document.querySelector('.onboarding-main.is-cooling-down')).toBeInTheDocument();
+    expect(screen.getByText('How will you use Froola?')).toBeInTheDocument();
+    // The old cooldown dimmed the whole step and blocked clicks; it's gone now.
+    expect(document.querySelector('.onboarding-main.is-cooling-down')).toBeNull();
   });
 
-  it('enables the step content after the cooldown elapses', () => {
+  it('advances through the steps as the user clicks', () => {
     renderFlow();
-    act(() => { vi.advanceTimersByTime(1500); });
-    expect(document.querySelector('.onboarding-main.is-cooling-down')).not.toBeInTheDocument();
+
+    // Step 1 → 2: picking a user type is clickable right away.
+    fireEvent.click(screen.getByText('Just for fun'));
+    expect(screen.getByText('A quick heads-up')).toBeInTheDocument();
+
+    // Step 2 → 3.
+    fireEvent.click(screen.getByText('Got it →'));
+    expect(
+      screen.getByText("Free forever, upgrade when you're ready")
+    ).toBeInTheDocument();
+    expect(screen.getByText('Start playing →')).toBeInTheDocument();
   });
 
-  it('re-applies the cooldown when advancing to the next step', () => {
+  it('renders a theme toggle in the header', () => {
     renderFlow();
-    act(() => { vi.advanceTimersByTime(1500); });
-    expect(document.querySelector('.onboarding-main.is-cooling-down')).not.toBeInTheDocument();
-
-    act(() => { fireEvent.click(screen.getByText('Just for fun')); });
-
-    expect(document.querySelector('.onboarding-main.is-cooling-down')).toBeInTheDocument();
-    act(() => { vi.advanceTimersByTime(1500); });
-    expect(document.querySelector('.onboarding-main.is-cooling-down')).not.toBeInTheDocument();
+    expect(screen.getByRole('switch')).toBeInTheDocument();
   });
 });
