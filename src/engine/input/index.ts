@@ -2,7 +2,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
-import { createNodDetector, pitchFromMatrix } from './nodDetector';
+import { createNodDetector, createShakeDetector, pitchFromMatrix, yawFromMatrix } from './headGestures';
+
+// Discrete head-gesture events for volume control: any nod (up or down) means
+// volume up, a head-shake means volume down. Direction-agnostic nods sidestep
+// the MediaPipe pitch-sign question entirely.
+export type HeadGestureEvent = 'nod' | 'shake';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -52,7 +57,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   requestCamera: () => void;
   useMouse: () => void;
   cameraVideoRef: React.RefObject<HTMLVideoElement | null>;
-  nodEventRef: React.RefObject<'up' | 'down' | null>;
+  headGestureRef: React.RefObject<HeadGestureEvent | null>;
 } {
   const signalRef = useRef<GestureSignal[]>([]);
   // The input-mode choice itself is persisted one layer up, in LandingPage
@@ -61,7 +66,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   const [mode, setMode] = useState<InputMode>(initialMode);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
-  const nodEventRef = useRef<'up' | 'down' | null>(null);
+  const headGestureRef = useRef<HeadGestureEvent | null>(null);
 
   function switchToMouse() {
     setMode('mouse');
@@ -144,13 +149,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
       );
 
+      const videoConstraints = isWebKit
+        ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' as const }
+        : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' as const };
+
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: isWebKit
-            ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
-            : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
-        });
+        stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
       } catch {
         // Persisting this fallback is PlayShell's job (it syncs `mode` on
         // every change) — the hook itself only tracks live state.
@@ -302,6 +307,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       const nodDetector = createNodDetector(
         nodDebug ? (msg) => console.log(`[nod] ${msg}`) : undefined,
       );
+      const shakeDetector = createShakeDetector(
+        nodDebug ? (msg) => console.log(`[shake] ${msg}`) : undefined,
+      );
 
       // Adaptive pacing: each delay stretches to a multiple of the measured
       // cost of the last detect call, so slow inference (WebKit's CPU
@@ -313,8 +321,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       let handDelay = INFERENCE_INTERVAL;
       let faceDelay = FACE_INTERVAL;
 
+      // Set true while the tab is hidden: the camera stream is released and the
+      // detection loop is halted (see the visibilitychange handler below). Also
+      // short-circuits any late rAF callback so nothing advances while paused.
+      let paused = false;
+
       function loop() {
-        if (cancelled) return;
+        if (cancelled || paused) return;
         const now = performance.now();
         // Starvation guard: hand inference is due nearly every tick (its
         // interval is short and it takes priority below), so on a low
@@ -438,6 +451,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           if (faceResult.faceLandmarks.length === 0) {
             // Face lost: next detection re-seeds instead of firing on the gap.
             nodDetector.reset();
+            shakeDetector.reset();
           } else if (!matrix) {
             // Landmarks present but the transformation matrix hasn't arrived
             // yet (can lag a frame behind landmarks): skip this sample
@@ -449,19 +463,69 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             }
           } else {
             const pitch = pitchFromMatrix(matrix.data);
+            const yaw = yawFromMatrix(matrix.data);
             if (nodDebug && now - lastNodLogMs > 500) {
-              console.log(`[nod] pitch=${pitch.toFixed(1)}`);
+              console.log(`[nod] pitch=${pitch.toFixed(1)} yaw=${yaw.toFixed(1)}`);
               lastNodLogMs = now;
             }
-            const ev = nodDetector.sample(pitch, now);
-            if (ev) nodEventRef.current = ev;
+            // Mutual suppression: a firing gesture puts the other detector
+            // into refractory, so the pitch wobble of a vigorous shake (or
+            // the slight yaw of a nod) can't double-fire the volume.
+            const nod = nodDetector.sample(pitch, now);
+            const shake = shakeDetector.sample(yaw, now);
+            if (nod && !shake) {
+              headGestureRef.current = 'nod';
+              shakeDetector.suppress(now);
+            } else if (shake) {
+              headGestureRef.current = 'shake';
+              nodDetector.suppress(now);
+            }
           }
         }
         animFrameId = requestAnimationFrame(loop);
       }
       animFrameId = requestAnimationFrame(loop);
 
+      // Release the camera (turns the webcam light off) and pause detection
+      // while the tab is hidden; re-acquire and restart on return. The MediaPipe
+      // landmarkers are kept alive across the hide — only the stream is released
+      // — so returning costs a camera re-acquire, not a model reload.
+      let reacquiring = false;
+      const onVisibility = async () => {
+        if (document.hidden) {
+          if (paused) return;
+          paused = true;
+          cancelAnimationFrame(animFrameId);
+          stream.getTracks().forEach(t => t.stop());
+        } else {
+          if (!paused || reacquiring) return;
+          reacquiring = true;
+          try {
+            const next = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+            // Torn down (mode change / unmount) or hidden again mid-re-acquire:
+            // drop the freshly acquired stream instead of wiring it up.
+            if (cancelled || document.hidden) { next.getTracks().forEach(t => t.stop()); return; }
+            stream = next;
+            video.srcObject = stream;
+            await video.play();
+            if (cancelled || document.hidden) return;
+            // A detection gap shouldn't fire a phantom gesture on return.
+            nodDetector.reset();
+            shakeDetector.reset();
+            paused = false;
+            animFrameId = requestAnimationFrame(loop);
+          } catch {
+            // Camera unavailable on return (e.g. claimed by another app): stay
+            // paused; a later visibility flip retries.
+          } finally {
+            reacquiring = false;
+          }
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+
       cleanupRef.current = () => {
+        document.removeEventListener('visibilitychange', onVisibility);
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
         faceLandmarker.close();
@@ -479,5 +543,5 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, nodEventRef };
+  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, headGestureRef };
 }
