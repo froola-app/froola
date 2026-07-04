@@ -1,12 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { storedInputMode, storeInputMode, type InputMode } from '../engine/input';
+import { storeInputMode } from '../engine/input';
 import { SONG_PATH } from '../engine/lessons/curriculum';
 import { useScrollReveal } from '../useScrollReveal';
 import { useTheme } from '../useTheme';
 import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
-import PlayShell from './PlayShell';
 import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
 import ThemeToggle from './ThemeToggle';
@@ -88,23 +87,20 @@ const STEPS = [
 ];
 
 export default function LandingPage() {
-  // Remembered per tab so leaving for /learn and coming back drops the user
-  // straight into the instrument instead of the landing hero.
-  const [input, setInput] = useState<InputMode | null>(storedInputMode);
   const rootRef = useRef<HTMLDivElement>(null);
   const touch = isTouchDevice();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
+  // Remember the choice so PlayShell on /play skips its own prompt and drops
+  // the user straight into the instrument in the mode they picked.
   const chooseInput = (mode: 'camera' | 'mouse') => {
     storeInputMode(mode);
-    setInput(mode);
+    navigate('/play');
   };
 
   // Scroll reveals: sections fade-rise in once as they enter the viewport.
   useScrollReveal(rootRef);
-
-  if (input) return <PlayShell initialInput={input} />;
 
   const ctas = (
     <div className="lp4__ctas">
