@@ -79,6 +79,21 @@ export function useCoordinator(
     };
   }, []);
 
+  // Pause all audio while the tab is backgrounded: Web Audio keeps scheduling
+  // sound (sustained chords, arps, backing loops) even when rAF is throttled,
+  // so a hidden tab would keep playing. Suspending the context freezes the
+  // whole graph; resuming continues a held chord exactly where it was.
+  useEffect(() => {
+    const onVisibility = () => {
+      const engine = engineRef.current;
+      if (!engine) return;
+      if (document.hidden) engine.suspend();
+      else engine.resume();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
   // Hot path: rAF loop — reads dial selection + y-register, drives audio
   useEffect(() => {
     let rafId: number;
