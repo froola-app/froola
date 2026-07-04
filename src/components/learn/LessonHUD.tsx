@@ -1,4 +1,5 @@
 import type { LessonPhase } from '../../engine/lessons/types';
+import { useEncouragement } from './encouragement';
 
 type Props = {
   phase: LessonPhase;
@@ -37,6 +38,8 @@ export default function LessonHUD({
   sustained,
   onReady,
 }: Props) {
+  const cheer = useEncouragement(stepScore, phase === 'attempt');
+
   if (phase === 'preview') {
     return (
       <div className="lesson-hud lesson-hud--preview">
@@ -99,6 +102,8 @@ export default function LessonHUD({
         </div>
 
         {sustained && <p className="lesson-hud__lock">🔒 Chord locked</p>}
+
+        {cheer && <p key={cheer} className="lesson-hud__cheer">{cheer}</p>}
 
         {chordNow && (
           <div className="lesson-hud__chords">

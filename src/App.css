@@ -2548,6 +2548,23 @@ body {
   padding: 0.25rem 0.8rem;
   margin: 0.5rem 0 0;
 }
+.lesson-hud__cheer {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #34d399;
+  background: rgba(6,24,18,0.72);
+  border: 1px solid rgba(52,211,153,0.35);
+  border-radius: 999px;
+  padding: 0.3rem 0.95rem;
+  margin: 0.5rem 0 0;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+  animation: lesson-cheer-pop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes lesson-cheer-pop {
+  0% { opacity: 0; transform: translateY(6px) scale(0.85); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
 .lesson-hud__hint {
   font-size: 0.85rem;
   color: rgba(255,255,255,0.6);
