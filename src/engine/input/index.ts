@@ -320,8 +320,11 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         // interval is short and it takes priority below), so on a low
         // refresh-rate display the face branch could be due forever and
         // never get to run. Once it's gone three intervals unserved, force
-        // it through this tick and let the hand branch skip instead.
-        const faceStarved = now - lastFaceInferenceTime >= 3 * FACE_INTERVAL;
+        // it through this tick and let the hand branch skip instead. Scaled
+        // by the adaptive faceDelay so the guard never forces face inference
+        // faster than the slow-delegate backoff allows.
+        const faceStarved =
+          now - lastFaceInferenceTime >= Math.max(3 * FACE_INTERVAL, 1.5 * faceDelay);
         if (!faceStarved && now - lastInferenceTime >= handDelay) {
           const result = landmarker.detectForVideo(inferenceSource(), now);
           lastInferenceTime = now;
