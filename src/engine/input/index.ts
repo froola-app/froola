@@ -149,13 +149,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
       );
 
+      const videoConstraints = isWebKit
+        ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' as const }
+        : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' as const };
+
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: isWebKit
-            ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
-            : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' },
-        });
+        stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
       } catch {
         // Persisting this fallback is PlayShell's job (it syncs `mode` on
         // every change) — the hook itself only tracks live state.
@@ -321,8 +321,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       let handDelay = INFERENCE_INTERVAL;
       let faceDelay = FACE_INTERVAL;
 
+      // Set true while the tab is hidden: the camera stream is released and the
+      // detection loop is halted (see the visibilitychange handler below). Also
+      // short-circuits any late rAF callback so nothing advances while paused.
+      let paused = false;
+
       function loop() {
-        if (cancelled) return;
+        if (cancelled || paused) return;
         const now = performance.now();
         // Starvation guard: hand inference is due nearly every tick (its
         // interval is short and it takes priority below), so on a low
@@ -481,7 +486,46 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       }
       animFrameId = requestAnimationFrame(loop);
 
+      // Release the camera (turns the webcam light off) and pause detection
+      // while the tab is hidden; re-acquire and restart on return. The MediaPipe
+      // landmarkers are kept alive across the hide — only the stream is released
+      // — so returning costs a camera re-acquire, not a model reload.
+      let reacquiring = false;
+      const onVisibility = async () => {
+        if (document.hidden) {
+          if (paused) return;
+          paused = true;
+          cancelAnimationFrame(animFrameId);
+          stream.getTracks().forEach(t => t.stop());
+        } else {
+          if (!paused || reacquiring) return;
+          reacquiring = true;
+          try {
+            const next = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+            // Torn down (mode change / unmount) or hidden again mid-re-acquire:
+            // drop the freshly acquired stream instead of wiring it up.
+            if (cancelled || document.hidden) { next.getTracks().forEach(t => t.stop()); return; }
+            stream = next;
+            video.srcObject = stream;
+            await video.play();
+            if (cancelled || document.hidden) return;
+            // A detection gap shouldn't fire a phantom gesture on return.
+            nodDetector.reset();
+            shakeDetector.reset();
+            paused = false;
+            animFrameId = requestAnimationFrame(loop);
+          } catch {
+            // Camera unavailable on return (e.g. claimed by another app): stay
+            // paused; a later visibility flip retries.
+          } finally {
+            reacquiring = false;
+          }
+        }
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+
       cleanupRef.current = () => {
+        document.removeEventListener('visibilitychange', onVisibility);
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
         faceLandmarker.close();
