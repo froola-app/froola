@@ -192,7 +192,7 @@ export function useCoordinator(
       const nod = nodEventRef.current;
       if (nod && engine) {
         volumeRef.current = nod === 'up'
-          ? Math.min(volumeRef.current + 0.1, 1.0)
+          ? Math.min(volumeRef.current + 0.1, 2.0)
           : Math.max(volumeRef.current - 0.1, 0.0);
         volumeRef.current = Math.round(volumeRef.current * 10) / 10;
         engine.setVolume(volumeRef.current);

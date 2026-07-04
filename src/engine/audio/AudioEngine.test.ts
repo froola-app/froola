@@ -264,12 +264,17 @@ describe('AudioEngine — setVolume', () => {
     )
   })
 
-  it('clamps volume above 1.0 to 1.0', () => {
+  it('allows boost up to 2.0 and clamps above it', () => {
     const engine = new AudioEngine()
     const gainNode = mockAudioContext.createGain.mock.results[0].value
     engine.setVolume(1.5)
     expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      1.0,
+      1.5,
+      expect.any(Number),
+    )
+    engine.setVolume(2.5)
+    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
+      2.0,
       expect.any(Number),
     )
   })
