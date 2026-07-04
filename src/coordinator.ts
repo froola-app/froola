@@ -55,7 +55,7 @@ export function useCoordinator(
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
-  const { mode, requestCamera, useMouse, cameraVideoRef, nodEventRef } = input;
+  const { mode, requestCamera, useMouse, cameraVideoRef, headGestureRef } = input;
 
   // Pointer modes (mouse/touch) have a single pointer that can't hold the
   // extension wheel while playing the note wheel, so the chosen extension has
@@ -188,16 +188,16 @@ export function useCoordinator(
       const sustained = spaceHeld || sustainToggle;
       sustainedRef.current = sustained;
 
-      // Nod gesture → discrete volume step
-      const nod = nodEventRef.current;
-      if (nod && engine) {
-        volumeRef.current = nod === 'up'
+      // Head gesture → discrete volume step: any nod = up, head-shake = down.
+      const headGesture = headGestureRef.current;
+      if (headGesture && engine) {
+        volumeRef.current = headGesture === 'nod'
           ? Math.min(volumeRef.current + 0.1, 2.0)
           : Math.max(volumeRef.current - 0.1, 0.0);
         volumeRef.current = Math.round(volumeRef.current * 10) / 10;
         engine.setVolume(volumeRef.current);
         onVolumeChange?.(volumeRef.current);
-        nodEventRef.current = null;
+        headGestureRef.current = null;
       }
 
       // Left hand on its wheel = chord plays. Right hand on its wheel modifies
@@ -271,7 +271,7 @@ export function useCoordinator(
       // eslint-disable-next-line react-hooks/exhaustive-deps
       arpRef?.current?.stop();
     };
-  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, nodEventRef, onVolumeChange, arpRef, arpEnabledRef]);
+  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, headGestureRef, onVolumeChange, arpRef, arpEnabledRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,

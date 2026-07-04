@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { pitchFromMatrix, createNodDetector, type NodEvent } from './nodDetector';
+import {
+  pitchFromMatrix,
+  yawFromMatrix,
+  createNodDetector,
+  createShakeDetector,
+  type NodEvent,
+} from './headGestures';
 
 // Column-major 4x4 rotation about the x-axis by `deg` degrees.
 // Rx = [[1,0,0],[0,c,-s],[0,s,c]]; column-major layout: data[col*4 + row].
@@ -153,5 +159,164 @@ describe('createNodDetector — robustness', () => {
     const nod = [10, 16, 16, 16, 7];
     const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(7)]);
     expect(events).toEqual(['down']);
+  });
+
+  it('suppress() blocks a nod inside the refractory window, allows one after', () => {
+    const nod = [13, 15, 15, 15, 13, 6, 0];
+    const det = createNodDetector();
+    runTrace(det, IDLE10); // seeded, last sample at t = 9 × 33 = 297ms
+    det.suppress(297);
+    // Nod starting on the very next sample (~33ms later) → inside refractory.
+    expect(runTrace(det, [...nod, ...Array(3).fill(0)], 10 * 33)).toEqual([]);
+    // Same nod starting >500ms after the suppress → fires.
+    expect(runTrace(det, [...nod, ...Array(3).fill(0)], 297 + 550)).toEqual(['down']);
+  });
+});
+
+// Column-major 4x4 rotation about the y-axis by `deg` degrees.
+// Ry = [[c,0,s],[0,1,0],[-s,0,c]]; column-major layout: data[col*4 + row].
+function ry(deg: number): Float32Array {
+  const r = (deg * Math.PI) / 180;
+  const c = Math.cos(r);
+  const s = Math.sin(r);
+  return new Float32Array([
+    c, 0, -s, 0, // col 0
+    0, 1,  0, 0, // col 1
+    s, 0,  c, 0, // col 2
+    0, 0,  0, 1, // col 3
+  ]);
+}
+
+// Column-major 4x4 product a·b.
+function matmul(a: Float32Array, b: Float32Array): Float32Array {
+  const out = new Float32Array(16);
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 4; row++) {
+      let sum = 0;
+      for (let k = 0; k < 4; k++) sum += a[k * 4 + row] * b[col * 4 + k];
+      out[col * 4 + row] = sum;
+    }
+  }
+  return out;
+}
+
+describe('yawFromMatrix', () => {
+  it('returns 0 for the identity matrix', () => {
+    expect(yawFromMatrix(ry(0))).toBeCloseTo(0, 5);
+  });
+
+  it('returns +25 for a +25° rotation about y', () => {
+    expect(yawFromMatrix(ry(25))).toBeCloseTo(25, 5);
+  });
+
+  it('returns -25 for a -25° rotation about y', () => {
+    expect(yawFromMatrix(ry(-25))).toBeCloseTo(-25, 5);
+  });
+});
+
+describe('compound rotation (yaw ∘ pitch)', () => {
+  it('recovers both angles exactly from Ry(30)·Rx(20)', () => {
+    const m = matmul(ry(30), rx(20));
+    expect(pitchFromMatrix(m)).toBeCloseTo(20, 4);
+    expect(yawFromMatrix(m)).toBeCloseTo(30, 4);
+  });
+
+  it('recovers both angles exactly from Ry(-30)·Rx(-20)', () => {
+    const m = matmul(ry(-30), rx(-20));
+    expect(pitchFromMatrix(m)).toBeCloseTo(-20, 4);
+    expect(yawFromMatrix(m)).toBeCloseTo(-30, 4);
+  });
+});
+
+// Feed a yaw trace at 33ms steps (~30Hz); count fired shakes.
+function runShakeTrace(
+  det: ReturnType<typeof createShakeDetector>,
+  yaws: number[],
+  startMs = 0,
+): number {
+  let fires = 0;
+  yaws.forEach((y, i) => {
+    if (det.sample(y, startMs + i * 33)) fires++;
+  });
+  return fires;
+}
+
+// One full head-shake around a `center` yaw: swing past +8° then past −8°
+// within ~200ms, then settle back.
+const shakeAround = (center: number) =>
+  [10, 12, 4, -10, -12, -4, 0, 0].map(d => center + d);
+
+describe('createShakeDetector — core detection', () => {
+  it('fires exactly once for a two-sided swing within the window', () => {
+    const det = createShakeDetector();
+    expect(runShakeTrace(det, [...IDLE10, ...shakeAround(0), ...Array(10).fill(0)])).toBe(1);
+  });
+
+  it('fires exactly once when the shake keeps oscillating (sustained shake)', () => {
+    const det = createShakeDetector();
+    // Two full left-right cycles back to back — second opposite-crossing lands
+    // ~300ms after the fire, inside the 700ms refractory.
+    const sustained = [10, 12, 4, -10, -12, -4, 4, 10, 12, 4, -10, -4, 0, 0];
+    expect(runShakeTrace(det, [...IDLE10, ...sustained, ...Array(10).fill(0)])).toBe(1);
+  });
+
+  it('never fires on a one-sided glance (out and back on the same side)', () => {
+    const det = createShakeDetector();
+    const glance = [6, 12, 15, 15, 15, 12, 6, 0];
+    expect(runShakeTrace(det, [...IDLE10, ...glance, ...Array(10).fill(0)])).toBe(0);
+  });
+
+  it('never fires when the two sides are crossed more than the window apart', () => {
+    const det = createShakeDetector();
+    // Left cross, back to center for ~750ms, then right cross — too slow.
+    const slow = [12, 12, ...Array(23).fill(0), -12, -12, ...Array(10).fill(0)];
+    expect(runShakeTrace(det, [...IDLE10, ...slow])).toBe(0);
+  });
+});
+
+describe('createShakeDetector — robustness', () => {
+  it('sustained side-look re-baselines silently; a shake from the new posture fires', () => {
+    const det = createShakeDetector();
+    const lookAside = Array(35).fill(20); // > window deflected → re-baseline
+    const settle = Array(10).fill(20);
+    const trace = [...IDLE10, ...lookAside, ...settle, ...shakeAround(20), ...Array(10).fill(20)];
+    expect(runShakeTrace(det, trace)).toBe(1);
+  });
+
+  it('suppresses a second shake inside the refractory, allows it after', () => {
+    const det = createShakeDetector();
+    // Back-to-back shakes ~130ms apart → one fire.
+    expect(runShakeTrace(det, [...IDLE10, ...shakeAround(0), ...shakeAround(0), ...Array(5).fill(0)])).toBe(1);
+    // Spaced >700ms apart at baseline → both fire.
+    const det2 = createShakeDetector();
+    const spaced = [...IDLE10, ...shakeAround(0), ...Array(25).fill(0), ...shakeAround(0), ...Array(5).fill(0)];
+    expect(runShakeTrace(det2, spaced)).toBe(2);
+  });
+
+  it('never fires on small jitter around baseline', () => {
+    const det = createShakeDetector();
+    const jitter = Array.from({ length: 90 }, (_, i) => 3 * Math.sin(i * 1.3));
+    expect(runShakeTrace(det, [0, ...jitter])).toBe(0);
+  });
+
+  it('suppress() blocks a shake inside the refractory window, allows one after', () => {
+    const det = createShakeDetector();
+    runShakeTrace(det, IDLE10); // seeded, last sample at 297ms
+    det.suppress(297);
+    expect(runShakeTrace(det, [...shakeAround(0), ...Array(3).fill(0)], 10 * 33)).toBe(0);
+    expect(runShakeTrace(det, [...shakeAround(0), ...Array(3).fill(0)], 297 + 750)).toBe(1);
+  });
+
+  it('ignores NaN samples and seeds normally once real data arrives', () => {
+    const det = createShakeDetector();
+    expect(runShakeTrace(det, [NaN, NaN, NaN])).toBe(0);
+    expect(runShakeTrace(det, [...IDLE10, ...shakeAround(0), ...Array(10).fill(0)], 3 * 33)).toBe(1);
+  });
+
+  it('reset() re-seeds: a new resting yaw after reset does not fire', () => {
+    const det = createShakeDetector();
+    runShakeTrace(det, IDLE10);
+    det.reset(); // face lost
+    expect(runShakeTrace(det, Array(10).fill(-30), 10 * 33)).toBe(0);
   });
 });

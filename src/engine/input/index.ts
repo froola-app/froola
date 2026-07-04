@@ -2,7 +2,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
-import { createNodDetector, pitchFromMatrix } from './nodDetector';
+import { createNodDetector, createShakeDetector, pitchFromMatrix, yawFromMatrix } from './headGestures';
+
+// Discrete head-gesture events for volume control: any nod (up or down) means
+// volume up, a head-shake means volume down. Direction-agnostic nods sidestep
+// the MediaPipe pitch-sign question entirely.
+export type HeadGestureEvent = 'nod' | 'shake';
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -52,7 +57,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   requestCamera: () => void;
   useMouse: () => void;
   cameraVideoRef: React.RefObject<HTMLVideoElement | null>;
-  nodEventRef: React.RefObject<'up' | 'down' | null>;
+  headGestureRef: React.RefObject<HeadGestureEvent | null>;
 } {
   const signalRef = useRef<GestureSignal[]>([]);
   // The input-mode choice itself is persisted one layer up, in LandingPage
@@ -61,7 +66,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   const [mode, setMode] = useState<InputMode>(initialMode);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
-  const nodEventRef = useRef<'up' | 'down' | null>(null);
+  const headGestureRef = useRef<HeadGestureEvent | null>(null);
 
   function switchToMouse() {
     setMode('mouse');
@@ -302,6 +307,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       const nodDetector = createNodDetector(
         nodDebug ? (msg) => console.log(`[nod] ${msg}`) : undefined,
       );
+      const shakeDetector = createShakeDetector(
+        nodDebug ? (msg) => console.log(`[shake] ${msg}`) : undefined,
+      );
 
       // Adaptive pacing: each delay stretches to a multiple of the measured
       // cost of the last detect call, so slow inference (WebKit's CPU
@@ -438,6 +446,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           if (faceResult.faceLandmarks.length === 0) {
             // Face lost: next detection re-seeds instead of firing on the gap.
             nodDetector.reset();
+            shakeDetector.reset();
           } else if (!matrix) {
             // Landmarks present but the transformation matrix hasn't arrived
             // yet (can lag a frame behind landmarks): skip this sample
@@ -449,12 +458,23 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             }
           } else {
             const pitch = pitchFromMatrix(matrix.data);
+            const yaw = yawFromMatrix(matrix.data);
             if (nodDebug && now - lastNodLogMs > 500) {
-              console.log(`[nod] pitch=${pitch.toFixed(1)}`);
+              console.log(`[nod] pitch=${pitch.toFixed(1)} yaw=${yaw.toFixed(1)}`);
               lastNodLogMs = now;
             }
-            const ev = nodDetector.sample(pitch, now);
-            if (ev) nodEventRef.current = ev;
+            // Mutual suppression: a firing gesture puts the other detector
+            // into refractory, so the pitch wobble of a vigorous shake (or
+            // the slight yaw of a nod) can't double-fire the volume.
+            const nod = nodDetector.sample(pitch, now);
+            const shake = shakeDetector.sample(yaw, now);
+            if (nod && !shake) {
+              headGestureRef.current = 'nod';
+              shakeDetector.suppress(now);
+            } else if (shake) {
+              headGestureRef.current = 'shake';
+              nodDetector.suppress(now);
+            }
           }
         }
         animFrameId = requestAnimationFrame(loop);
@@ -479,5 +499,5 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, nodEventRef };
+  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, headGestureRef };
 }
