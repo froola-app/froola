@@ -14,6 +14,7 @@ function authState(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
     loading: false,
     authReady: true,
     signInWithGoogle: vi.fn().mockResolvedValue(undefined),
+    signInWithEmail: vi.fn().mockResolvedValue(undefined),
     signOutUser: vi.fn(),
     completeOnboarding: vi.fn(),
     ...overrides,

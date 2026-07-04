@@ -28,6 +28,7 @@ interface AuthContextValue {
   loading: boolean;
   authReady: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   completeOnboarding: (userType: UserType) => Promise<void>;
 }
@@ -137,6 +138,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!popup) throw new Error('popup blocked');
   }
 
+  async function signInWithEmail(email: string) {
+    if (!supabase) return;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/popup` },
+    });
+    if (error) throw error;
+  }
+
   async function signOutUser() {
     if (!supabase) return;
     await supabase.auth.signOut();
@@ -159,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       authReady: supabaseConfigured,
       signInWithGoogle,
+      signInWithEmail,
       signOutUser,
       completeOnboarding,
     }}>

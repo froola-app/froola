@@ -3470,3 +3470,62 @@ body {
 .signin-prompt__dismiss:hover {
   color: #111;
 }
+
+.signin-prompt__divider {
+  margin: 0.15rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(17, 17, 17, 0.4);
+  text-align: center;
+}
+.signin-prompt__email-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.signin-prompt__email-input {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #111;
+  background: #ffffff;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+}
+.signin-prompt__email-input:focus {
+  outline: none;
+  border-color: rgba(17, 17, 17, 0.4);
+}
+.signin-prompt__email-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111;
+  background: #ffffff;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.signin-prompt__email-submit:hover {
+  border-color: rgba(17, 17, 17, 0.4);
+}
+.signin-prompt__email-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.signin-prompt__email-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #b3261e;
+  text-align: center;
+}
+.signin-prompt__email-sent {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(17, 17, 17, 0.7);
+  text-align: center;
+}

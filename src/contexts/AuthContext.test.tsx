@@ -9,6 +9,7 @@ const h = vi.hoisted(() => {
     getSession: vi.fn(),
     onAuthStateChange: vi.fn(() => ({ data: { subscription } })),
     signInWithOAuth: vi.fn(),
+    signInWithOtp: vi.fn(),
     signOut: vi.fn().mockResolvedValue({ error: null }),
   };
   const maybeSingle = vi.fn();
@@ -123,5 +124,31 @@ describe('AuthContext (Supabase)', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     await expect(result.current.signInWithGoogle()).rejects.toThrow('popup blocked');
     openSpy.mockRestore();
+  });
+
+  it('signInWithEmail sends a magic link via signInWithOtp', async () => {
+    h.auth.getSession.mockResolvedValue({ data: { session: null } });
+    h.auth.signInWithOtp.mockResolvedValue({ data: {}, error: null });
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => createElement(AuthProvider, null, children),
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await result.current.signInWithEmail('lela@example.com');
+    expect(h.auth.signInWithOtp).toHaveBeenCalledWith({
+      email: 'lela@example.com',
+      options: { emailRedirectTo: `${window.location.origin}/auth/popup` },
+    });
+  });
+
+  it('signInWithEmail throws when Supabase returns an error', async () => {
+    h.auth.getSession.mockResolvedValue({ data: { session: null } });
+    h.auth.signInWithOtp.mockResolvedValue({
+      data: {}, error: new Error('rate limited'),
+    });
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: ({ children }) => createElement(AuthProvider, null, children),
+    });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await expect(result.current.signInWithEmail('lela@example.com')).rejects.toThrow('rate limited');
   });
 });

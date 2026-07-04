@@ -38,6 +38,59 @@ function GoogleButton({ onDone }: { onDone?: () => void }) {
   );
 }
 
+type EmailSignInStatus = 'idle' | 'sending' | 'sent';
+
+function EmailSignIn() {
+  const { signInWithEmail } = useAuth();
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<EmailSignInStatus>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  if (status === 'sent') {
+    return (
+      <p className="signin-prompt__email-sent">
+        Check your email for a sign-in link.
+      </p>
+    );
+  }
+
+  return (
+    <form
+      className="signin-prompt__email-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        setStatus('sending');
+        signInWithEmail(email)
+          .then(() => setStatus('sent'))
+          .catch(() => {
+            setStatus('idle');
+            setError("Couldn't send the link. Try again.");
+          });
+      }}
+    >
+      <input
+        type="email"
+        required
+        placeholder="you@example.com"
+        aria-label="Email address"
+        value={email}
+        disabled={status === 'sending'}
+        onChange={(e) => setEmail(e.target.value)}
+        className="signin-prompt__email-input"
+      />
+      <button
+        type="submit"
+        className="signin-prompt__email-submit"
+        disabled={status === 'sending'}
+      >
+        {status === 'sending' ? 'Sending…' : 'Send magic link'}
+      </button>
+      {error && <p className="signin-prompt__email-error">{error}</p>}
+    </form>
+  );
+}
+
 function DrawerHeader({ onClose }: { onClose: () => void }) {
   const { user, authReady } = useAuth();
   return (
@@ -63,7 +116,13 @@ function DrawerHeader({ onClose }: { onClose: () => void }) {
           ×
         </button>
       </div>
-      {authReady && !user && <GoogleButton />}
+      {authReady && !user && (
+        <>
+          <GoogleButton />
+          <div className="signin-prompt__divider">or</div>
+          <EmailSignIn />
+        </>
+      )}
     </header>
   );
 }
