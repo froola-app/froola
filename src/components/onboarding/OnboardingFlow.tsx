@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserType } from '../../contexts/AuthContext';
+import { useTheme } from '../../useTheme';
 import FroolaLogo from '../FroolaLogo';
+import ThemeToggle from '../ThemeToggle';
 import UserTypeStep from './UserTypeStep';
 import LearningCurveStep from './LearningCurveStep';
 import PricingStep from './PricingStep';
@@ -11,22 +13,12 @@ type Step = 'user-type' | 'learning-curve' | 'pricing';
 
 const ORDER: Step[] = ['user-type', 'learning-curve', 'pricing'];
 
-// Minimum time a step stays on screen before its buttons/cards respond —
-// otherwise nothing stops someone from clicking through all 3 steps (and
-// the pricing comparison) without reading any of it.
-const STEP_COOLDOWN_MS = 1400;
-
 export default function OnboardingFlow() {
   const [step, setStep] = useState<Step>('user-type');
   const [selectedType, setSelectedType] = useState<UserType>(null);
   const { completeOnboarding } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), STEP_COOLDOWN_MS);
-    return () => { clearTimeout(t); setReady(false); };
-  }, [step]);
 
   async function handleUserTypeSelect(type: UserType) {
     setSelectedType(type);
@@ -43,25 +35,29 @@ export default function OnboardingFlow() {
   }
 
   const stepIndex = ORDER.indexOf(step);
+  const inkColor = theme === 'dark' ? '#f5f5f7' : '#1d1d1f';
 
   return (
-    <div className="onboarding-shell">
+    <div className="onboarding-shell" data-theme={theme}>
       <header className="onboarding-header">
-        <FroolaLogo size={40} />
-        <div className="onboarding-progress" aria-label={`Step ${stepIndex + 1} of ${ORDER.length}`}>
-          {ORDER.map((s, i) => (
-            <span
-              key={s}
-              className={
-                'onboarding-progress__dot' +
-                (i === stepIndex ? ' is-active' : i < stepIndex ? ' is-done' : '')
-              }
-            />
-          ))}
+        <FroolaLogo size={40} color={inkColor} />
+        <div className="onboarding-header__end">
+          <div className="onboarding-progress" aria-label={`Step ${stepIndex + 1} of ${ORDER.length}`}>
+            {ORDER.map((s, i) => (
+              <span
+                key={s}
+                className={
+                  'onboarding-progress__dot' +
+                  (i === stepIndex ? ' is-active' : i < stepIndex ? ' is-done' : '')
+                }
+              />
+            ))}
+          </div>
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>
 
-      <main className={'onboarding-main' + (ready ? '' : ' is-cooling-down')}>
+      <main className="onboarding-main">
         {step === 'user-type' && (
           <UserTypeStep onSelect={handleUserTypeSelect} />
         )}
