@@ -321,9 +321,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       let handDelay = INFERENCE_INTERVAL;
       let faceDelay = FACE_INTERVAL;
 
-      // Set true while the tab is hidden: the camera stream is released and the
-      // detection loop is halted (see the visibilitychange handler below). Also
-      // short-circuits any late rAF callback so nothing advances while paused.
+      // Set true while the tab is hidden: the detection loop is halted (and the
+      // camera released after a grace period — see the visibilitychange handler
+      // below). Also short-circuits any late rAF callback so nothing advances
+      // while paused.
       let paused = false;
 
       function loop() {
@@ -486,19 +487,51 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       }
       animFrameId = requestAnimationFrame(loop);
 
-      // Release the camera (turns the webcam light off) and pause detection
-      // while the tab is hidden; re-acquire and restart on return. The MediaPipe
-      // landmarkers are kept alive across the hide — only the stream is released
-      // — so returning costs a camera re-acquire, not a model reload.
+      // Pause detection while the tab is hidden, but keep the camera for a
+      // grace period so a quick tab switch doesn't flicker the webcam light
+      // or cost a re-acquire. Only after the tab has stayed hidden this long
+      // do we actually release the stream (turning the webcam light off).
+      // The MediaPipe landmarkers are kept alive across the hide either way,
+      // so returning after a release costs a camera re-acquire, not a model
+      // reload.
+      const RELEASE_DELAY_MS = 2 * 60 * 1000;
       let reacquiring = false;
+      let released = false;
+      let releaseTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const clearReleaseTimer = () => {
+        if (releaseTimer !== null) { clearTimeout(releaseTimer); releaseTimer = null; }
+      };
+
       const onVisibility = async () => {
         if (document.hidden) {
-          if (paused) return;
-          paused = true;
-          cancelAnimationFrame(animFrameId);
-          stream.getTracks().forEach(t => t.stop());
+          if (!paused) {
+            paused = true;
+            cancelAnimationFrame(animFrameId);
+          }
+          // Defer the actual camera release; returning before it fires cancels it.
+          if (releaseTimer === null && !released) {
+            releaseTimer = setTimeout(() => {
+              releaseTimer = null;
+              if (!document.hidden || cancelled) return;
+              released = true;
+              stream.getTracks().forEach(t => t.stop());
+            }, RELEASE_DELAY_MS);
+          }
         } else {
+          clearReleaseTimer();
           if (!paused || reacquiring) return;
+          // Came back within the grace period — the stream is still live, so
+          // just reset the detectors (a gap shouldn't fire a phantom gesture)
+          // and resume detection without touching the camera.
+          if (!released) {
+            nodDetector.reset();
+            shakeDetector.reset();
+            paused = false;
+            animFrameId = requestAnimationFrame(loop);
+            return;
+          }
+          // Past the grace period — the camera was released, so re-acquire it.
           reacquiring = true;
           try {
             const next = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
@@ -506,6 +539,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             // drop the freshly acquired stream instead of wiring it up.
             if (cancelled || document.hidden) { next.getTracks().forEach(t => t.stop()); return; }
             stream = next;
+            released = false;
             video.srcObject = stream;
             await video.play();
             if (cancelled || document.hidden) return;
@@ -526,6 +560,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
 
       cleanupRef.current = () => {
         document.removeEventListener('visibilitychange', onVisibility);
+        clearReleaseTimer();
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
         faceLandmarker.close();
