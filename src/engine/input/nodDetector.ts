@@ -5,12 +5,16 @@
  * Pitch in degrees from a 16-element column-major 4x4 head-pose matrix.
  * R[row][col] = data[col*4 + row]; pitch = atan2(R[2][1], R[2][2]).
  * Contract: a pure rotation about the x-axis by θ returns θ.
+ * Both atan2 terms scale with cos(yaw), so pitch extraction attenuates at
+ * large yaw — a side-facing nod reads as a smaller pitch swing than a
+ * face-on one.
  */
 export function pitchFromMatrix(data: ArrayLike<number>): number {
   return Math.atan2(data[6], data[10]) * (180 / Math.PI);
 }
 
 export const BASELINE_ALPHA = 0.02;      // baseline EMA weight (~2s time constant at 30Hz)
+export const BASELINE_SLOW_ALPHA = 0.002; // baseline EMA weight outside the band (BASELINE_ALPHA / 10)
 export const BASELINE_BAND_DEG = 5;      // baseline only adapts inside this band
 export const DEFLECT_THRESHOLD_DEG = 12; // deviation that starts a nod
 export const RETURN_THRESHOLD_DEG = 5;   // deviation must drop below this to complete
@@ -40,6 +44,7 @@ export function createNodDetector(debugLog?: (msg: string) => void): NodDetector
       refractoryUntil = -Infinity;
     },
     sample(pitchDeg, nowMs) {
+      if (!Number.isFinite(pitchDeg)) return null;
       if (!seeded) {
         seeded = true;
         baseline = pitchDeg;
@@ -55,6 +60,12 @@ export function createNodDetector(debugLog?: (msg: string) => void): NodDetector
           direction = dev > 0 ? 'down' : 'up';
           startMs = nowMs;
           debugLog?.(`deflect ${direction} dev=${dev.toFixed(1)} baseline=${baseline.toFixed(1)}`);
+        } else {
+          // Outside the band but not deflecting (either mid-band-to-threshold,
+          // or blocked by the refractory period): adapt slowly so a settled
+          // posture eventually re-centers instead of freezing the baseline
+          // forever, without polluting it during a real nod's rising edge.
+          baseline += BASELINE_SLOW_ALPHA * dev;
         }
         return null;
       }

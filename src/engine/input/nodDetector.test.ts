@@ -118,4 +118,30 @@ describe('createNodDetector — robustness', () => {
     const events = runTrace(det, Array(10).fill(-30), 10 * 33);
     expect(events).toEqual([]);
   });
+
+  it('adapts a settled off-baseline posture (slow EMA) so a nod toward baseline still fires', () => {
+    const det = createNodDetector();
+    // Seed at 0, then settle at +8° — inside the dead zone the old code left
+    // frozen forever (5° < 8° <= 12°). ~400 samples at 33ms lets the slow
+    // EMA (0.002 outside the 5° band, 0.02 once inside it) converge the
+    // baseline to within a fraction of a degree of 8.
+    const settle = Array(400).fill(8);
+    // Nod from the new posture: down to -7° (dev from the ~7.8° baseline is
+    // ~-14.8°, past the 12° threshold) and back to 8°.
+    const nod = [-7, -7, -7, -7, -7, 8, 8, 8];
+    const events = runTrace(det, [0, ...settle, ...nod]);
+    expect(events).toEqual(['up']);
+  });
+
+  it('ignores NaN samples — no poisoned baseline, seeds normally once real data arrives', () => {
+    const det = createNodDetector();
+    const nanEvents = runTrace(det, [NaN, NaN, NaN]);
+    expect(nanEvents).toEqual([]);
+    // The NaNs must not have seeded or otherwise perturbed state: the next
+    // real sample seeds fresh, and detection works exactly as in the
+    // baseline fast-nod case.
+    const nod = [6, 13, 15, 15, 15, 13, 6, 0, 0];
+    const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(0)], 3 * 33);
+    expect(events).toEqual(['down']);
+  });
 });

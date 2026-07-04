@@ -316,7 +316,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       function loop() {
         if (cancelled) return;
         const now = performance.now();
-        if (now - lastInferenceTime >= handDelay) {
+        // Starvation guard: hand inference is due nearly every tick (its
+        // interval is short and it takes priority below), so on a low
+        // refresh-rate display the face branch could be due forever and
+        // never get to run. Once it's gone three intervals unserved, force
+        // it through this tick and let the hand branch skip instead.
+        const faceStarved = now - lastFaceInferenceTime >= 3 * FACE_INTERVAL;
+        if (!faceStarved && now - lastInferenceTime >= handDelay) {
           const result = landmarker.detectForVideo(inferenceSource(), now);
           lastInferenceTime = now;
           handDelay = Math.max(INFERENCE_INTERVAL, (performance.now() - now) * 1.5);
@@ -413,17 +419,32 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             }
             signalRef.current = signals;
           }
-        } else if (now - lastFaceInferenceTime >= faceDelay) {
-          // Face inference (~30 fps) for nod detection. `else if`, not `if`:
+        } else if (now - lastFaceInferenceTime >= faceDelay || faceStarved) {
+          // Face inference (~30Hz) for nod detection. `else if`, not `if`:
           // the two detect calls must never share a rAF tick, or they stack
           // into one long main-thread stall — the periodic hitch that read as
-          // jitter (mild on Chrome, severe on Safari's CPU delegate).
+          // jitter (mild on Chrome, severe on Safari's CPU delegate). The
+          // `faceStarved` guard above already forces this branch — and skips
+          // the hand branch — once the face branch has gone unserved for
+          // three intervals, so it isn't starved out by hand priority.
           const faceResult = faceLandmarker.detectForVideo(inferenceSource(), now);
           lastFaceInferenceTime = now;
           faceDelay = Math.max(FACE_INTERVAL, (performance.now() - now) * 2);
 
           const matrix = faceResult.facialTransformationMatrixes?.[0];
-          if (faceResult.faceLandmarks.length > 0 && matrix) {
+          if (faceResult.faceLandmarks.length === 0) {
+            // Face lost: next detection re-seeds instead of firing on the gap.
+            nodDetector.reset();
+          } else if (!matrix) {
+            // Landmarks present but the transformation matrix hasn't arrived
+            // yet (can lag a frame behind landmarks): skip this sample
+            // rather than resetting, so an in-flight nod isn't killed by a
+            // transient gap.
+            if (nodDebug && now - lastNodLogMs > 500) {
+              console.log('[nod] no matrix');
+              lastNodLogMs = now;
+            }
+          } else {
             const pitch = pitchFromMatrix(matrix.data);
             if (nodDebug && now - lastNodLogMs > 500) {
               console.log(`[nod] pitch=${pitch.toFixed(1)}`);
@@ -431,9 +452,6 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             }
             const ev = nodDetector.sample(pitch, now);
             if (ev) nodEventRef.current = ev;
-          } else {
-            // Face lost: next detection re-seeds instead of firing on the gap.
-            nodDetector.reset();
           }
         }
         animFrameId = requestAnimationFrame(loop);
