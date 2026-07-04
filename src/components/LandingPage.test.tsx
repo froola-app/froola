@@ -5,17 +5,16 @@ import { MemoryRouter } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import { useAuth } from '../contexts/AuthContext';
 
-// LandingPage calls useNavigate (learn/pricing links), so it needs a router.
+// LandingPage's CTAs navigate to /play; capture the navigation instead of
+// mounting the real router destination.
+const navigate = vi.fn();
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useNavigate: () => navigate,
+}));
+
 const render = (ui: React.ReactElement) =>
   rtlRender(ui, { wrapper: MemoryRouter });
-
-// PlayShell pulls in the audio/canvas coordinator, so stub it: we only care that
-// the landing page swaps to it inline (same URL) with the chosen input mode.
-vi.mock('./PlayShell', () => ({
-  default: ({ initialInput }: { initialInput?: string }) => (
-    <div>play shell: {initialInput}</div>
-  ),
-}));
 
 // LandingPage renders ProfileButton (the nav sign-in entry point), which
 // needs AuthContext — mock it the same way ProfileButton.test.tsx does.
@@ -31,19 +30,16 @@ vi.mocked(useAuth).mockReturnValue({
 });
 
 describe('LandingPage', () => {
-  beforeEach(() => sessionStorage.clear());
-
-  it('remembers the session input mode and skips the hero', () => {
-    sessionStorage.setItem('froola.inputMode', 'camera');
-    render(<LandingPage />);
-    expect(screen.getByText('play shell: camera')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+  beforeEach(() => {
+    sessionStorage.clear();
+    navigate.mockClear();
   });
 
-  it('stores the chosen input mode for the session', async () => {
+  it('renders the marketing hero even with a stored input mode', () => {
+    sessionStorage.setItem('froola.inputMode', 'camera');
     render(<LandingPage />);
-    await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
-    expect(sessionStorage.getItem('froola.inputMode')).toBe('camera');
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('renders the headline and both input choices', () => {
@@ -53,15 +49,17 @@ describe('LandingPage', () => {
     expect(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i }).length).toBeGreaterThan(0);
   });
 
-  it('starts playing in camera mode inline when enabling the camera', async () => {
+  it('stores camera mode and navigates to /play when enabling the camera', async () => {
     render(<LandingPage />);
     await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
-    expect(screen.getByText('play shell: camera')).toBeInTheDocument();
+    expect(sessionStorage.getItem('froola.inputMode')).toBe('camera');
+    expect(navigate).toHaveBeenCalledWith('/play');
   });
 
-  it('starts playing in pointer mode inline when choosing pointer input', async () => {
+  it('stores pointer mode and navigates to /play when choosing pointer input', async () => {
     render(<LandingPage />);
     await userEvent.click(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i })[0]);
-    expect(screen.getByText('play shell: mouse')).toBeInTheDocument();
+    expect(sessionStorage.getItem('froola.inputMode')).toBe('mouse');
+    expect(navigate).toHaveBeenCalledWith('/play');
   });
 });

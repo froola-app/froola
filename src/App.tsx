@@ -1,10 +1,13 @@
 import { Suspense, lazy } from 'react';
 import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { storedInputMode } from './engine/input';
 import LandingPage from './components/LandingPage';
 import './App.css';
 
-// Everything off the critical path (`/` is the instrument) loads on demand.
+// `/` is the marketing page; the instrument and everything else off the
+// critical path load on demand.
+const PlayShell = lazy(() => import('./components/PlayShell'));
 const ReplayShell = lazy(() => import('./components/ReplayShell'));
 const AuthPopup = lazy(() => import('./components/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
@@ -30,6 +33,7 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/play" element={<PlayShell initialInput={storedInputMode() ?? 'asking'} />} />
         <Route path="/replay" element={<ReplayShell />} />
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
@@ -53,6 +57,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/play" element={<PlayShell initialInput={storedInputMode() ?? 'asking'} />} />
       <Route path="/replay" element={<ReplayShell />} />
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />
