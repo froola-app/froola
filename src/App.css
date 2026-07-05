@@ -3495,28 +3495,32 @@ body {
   --lp-accent: var(--pd-accent);
   --lp-hairline: var(--pd-hairline);
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
+  top: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
   z-index: 61;
-  width: min(21rem, 88vw);
+  width: min(21rem, calc(100vw - 1.5rem));
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: var(--pd-surface);
   backdrop-filter: blur(30px) saturate(200%);
   -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border-left: 1px solid var(--pd-edge);
+  border: 1px solid var(--pd-edge);
+  border-radius: 24px;
   color: var(--pd-ink);
   font-family: 'DM Sans', system-ui, sans-serif;
   box-shadow:
     inset 0 1px 0 var(--pd-top-glint),
     inset 0 -1px 0 rgba(0, 0, 0, 0.04),
-    -24px 0 70px rgba(0, 0, 0, 0.4);
-  /* park it past its own shadow so nothing bleeds in while closed */
-  transform: translateX(calc(100% + 5rem));
+    0 24px 70px rgba(0, 0, 0, 0.45);
+  /* closed = collapsed into the profile icon's corner */
+  transform: scale(0.1);
+  transform-origin: calc(100% - 1.6rem) 1.6rem;
+  opacity: 0;
   visibility: hidden;
-  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
-              visibility 0s 0.28s;
+  transition: transform 0.22s ease-in, opacity 0.16s ease-in,
+              visibility 0s 0.22s;
   outline: none;
 }
 .profile-drawer[data-theme='dark'] {
@@ -3541,8 +3545,7 @@ body {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .profile-drawer { background: var(--pd-surface-solid); }
 }
-/* diagonal sheen, same read as the lesson glass cards — cut as an angled
-   gradient on an inset layer so the drawer needs no overflow clipping */
+/* diagonal sheen, same read as the lesson glass cards */
 .profile-drawer::before {
   content: '';
   position: absolute;
@@ -3550,26 +3553,14 @@ body {
   background: linear-gradient(100deg, transparent 62%, var(--pd-sheen) 79%, transparent 96%);
   pointer-events: none;
 }
-/* glass strip bleeding past the viewport edge so the open-spring's
-   overshoot never flashes the page behind the drawer's right side */
-.profile-drawer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: -2rem;
-  width: 2.5rem;
-  background: var(--pd-surface);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  pointer-events: none;
-}
 .profile-drawer > * { position: relative; z-index: 1; }
 .profile-drawer.is-open {
-  transform: translateX(0);
+  transform: scale(1);
+  opacity: 1;
   visibility: visible;
-  /* springy in (slight overshoot), straight ease out on close above */
+  /* springs out of the profile icon (slight overshoot); ease back in above */
   transition: transform 0.45s cubic-bezier(0.3, 1.36, 0.44, 1),
+              opacity 0.2s ease-out,
               visibility 0s;
 }
 @media (prefers-reduced-motion: reduce) {
