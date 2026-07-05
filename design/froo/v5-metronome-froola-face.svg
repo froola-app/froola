@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 140" width="660" height="420">
+  <rect width="110" height="140" fill="#efece6"/>
+  <rect x="110" width="110" height="140" fill="#1a1c22"/>
+  <g transform="translate(5,12)" stroke-linecap="round">
+    <path d="M 39.5 10 H 60.5 Q 65.5 10 66.3 15 L 78.2 92 Q 79.5 100.5 70.8 100.5 H 29.2 Q 20.5 100.5 21.8 92 L 33.7 15 Q 34.5 10 39.5 10 Z"
+      fill="rgba(252,250,246,0.60)" stroke="rgba(24,22,19,0.92)" stroke-width="2.5"/>
+    <g transform="rotate(-9 50 62)">
+      <line x1="50" y1="62" x2="50" y2="18" stroke="rgba(24,22,19,0.92)" stroke-width="2"/>
+      <rect x="45.8" y="26" width="8.4" height="12" rx="2.6" fill="#D4500A"/>
+    </g>
+    <circle cx="50" cy="62" r="2.6" fill="rgba(24,22,19,0.92)"/>
+    <circle cx="41" cy="78" r="5.6" fill="none" stroke="rgba(24,22,19,0.92)" stroke-width="2.4"/>
+    <circle cx="41" cy="78" r="1.9" fill="rgba(24,22,19,0.92)"/>
+    <circle cx="59" cy="78" r="5.6" fill="none" stroke="rgba(24,22,19,0.92)" stroke-width="2.4"/>
+    <circle cx="59" cy="78" r="1.9" fill="rgba(24,22,19,0.92)"/>
+    <path d="M 43.5 89 Q 50 94.5 56.5 89" fill="none" stroke="#D4500A" stroke-width="2.6"/>
+  </g>
+  <g transform="translate(115,12)" stroke-linecap="round">
+    <path d="M 39.5 10 H 60.5 Q 65.5 10 66.3 15 L 78.2 92 Q 79.5 100.5 70.8 100.5 H 29.2 Q 20.5 100.5 21.8 92 L 33.7 15 Q 34.5 10 39.5 10 Z"
+      fill="rgba(19,21,27,0.55)" stroke="rgba(255,255,255,0.92)" stroke-width="2.5"/>
+    <g transform="rotate(9 50 62)">
+      <line x1="50" y1="62" x2="50" y2="18" stroke="rgba(255,255,255,0.92)" stroke-width="2"/>
+      <rect x="45.8" y="26" width="8.4" height="12" rx="2.6" fill="#D4500A"/>
+    </g>
+    <circle cx="50" cy="62" r="2.6" fill="rgba(255,255,255,0.92)"/>
+    <circle cx="41" cy="78" r="5.6" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2.4"/>
+    <circle cx="41" cy="78" r="1.9" fill="rgba(255,255,255,0.92)"/>
+    <circle cx="59" cy="78" r="5.6" fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="2.4"/>
+    <circle cx="59" cy="78" r="1.9" fill="rgba(255,255,255,0.92)"/>
+    <path d="M 43.5 89 Q 50 94.5 56.5 89" fill="none" stroke="#D4500A" stroke-width="2.6"/>
+  </g>
+</svg>

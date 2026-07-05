@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120" width="720" height="360">
+  <rect width="240" height="120" fill="#c9c2b6"/>
+  <!-- light theme chip -->
+  <g transform="translate(15,10)">
+    <rect width="100" height="100" rx="38" fill="rgba(252,250,246,0.78)" stroke="rgba(24,22,19,0.12)"/>
+    <g fill="none" stroke="rgba(24,22,19,0.92)" stroke-width="6.5">
+      <circle cx="33" cy="42" r="13"/><circle cx="67" cy="42" r="13"/>
+    </g>
+    <circle cx="33" cy="42" r="4.2" fill="rgba(24,22,19,0.92)"/>
+    <circle cx="67" cy="42" r="4.2" fill="rgba(24,22,19,0.92)"/>
+    <path d="M33 68 Q 50 82 67 68" fill="none" stroke="#D4500A" stroke-width="6.5" stroke-linecap="round"/>
+  </g>
+  <!-- dark theme chip -->
+  <g transform="translate(125,10)">
+    <rect width="100" height="100" rx="38" fill="rgba(19,21,27,0.82)" stroke="rgba(255,255,255,0.16)"/>
+    <g fill="none" stroke="rgba(255,255,255,0.92)" stroke-width="6.5">
+      <circle cx="33" cy="42" r="13"/><circle cx="67" cy="42" r="13"/>
+    </g>
+    <circle cx="33" cy="42" r="4.2" fill="rgba(255,255,255,0.92)"/>
+    <circle cx="67" cy="42" r="4.2" fill="rgba(255,255,255,0.92)"/>
+    <path d="M33 68 Q 50 82 67 68" fill="none" stroke="#D4500A" stroke-width="6.5" stroke-linecap="round"/>
+  </g>
+</svg>
