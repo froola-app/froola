@@ -199,3 +199,13 @@ export function createShakeDetector(debugLog?: (msg: string) => void): ShakeDete
     },
   };
 }
+
+// Discrete head-gesture events for volume control. A nod carries its direction
+// (the detector already computes it): tilt up = louder, tilt down = quieter.
+// A side-to-side shake is kept as a redundant "quieter" path.
+export type HeadGestureEvent = 'nod-up' | 'nod-down' | 'shake';
+
+/** Volume step for a head gesture: up = +0.1, down (nod or shake) = -0.1. */
+export function volumeDeltaForGesture(gesture: HeadGestureEvent): number {
+  return gesture === 'nod-up' ? 0.1 : -0.1;
+}

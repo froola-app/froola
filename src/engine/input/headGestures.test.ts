@@ -4,6 +4,7 @@ import {
   yawFromMatrix,
   createNodDetector,
   createShakeDetector,
+  volumeDeltaForGesture,
   type NodEvent,
 } from './headGestures';
 
@@ -318,5 +319,19 @@ describe('createShakeDetector — robustness', () => {
     runShakeTrace(det, IDLE10);
     det.reset(); // face lost
     expect(runShakeTrace(det, Array(10).fill(-30), 10 * 33)).toBe(0);
+  });
+});
+
+describe('volumeDeltaForGesture', () => {
+  it('nod-up raises volume', () => {
+    expect(volumeDeltaForGesture('nod-up')).toBeCloseTo(0.1);
+  });
+
+  it('nod-down lowers volume', () => {
+    expect(volumeDeltaForGesture('nod-down')).toBeCloseTo(-0.1);
+  });
+
+  it('shake lowers volume (redundant secondary path)', () => {
+    expect(volumeDeltaForGesture('shake')).toBeCloseTo(-0.1);
   });
 });
