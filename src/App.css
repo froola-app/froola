@@ -3611,9 +3611,6 @@ body {
   pointer-events: all;
 }
 
-/* the smile hangs below the eyes' box — leave room so it clears the text */
-.tutorial-card .froo { margin-bottom: 0.5rem; }
-
 .tutorial-step-count {
   font-size: 0.72rem;
   font-weight: 700;
@@ -3676,74 +3673,104 @@ body {
 }
 
 /* ── Froo — the froola mascot ─────────────────────────────────────
-   The living-logo face without the letters: two o-eyes and the brand
-   smile, sized via font-size on .froo (all geometry in em). Ink
-   follows the HUD theme; the smile stays brand orange. */
+   A little orange gumdrop character (SVG, see FroolaMascot.tsx):
+   leaf sprout, big blinking eyes with tracked pupils, blush, stubby
+   arms. Everything below is motion — the drawing lives in the SVG. */
 .froo {
   position: relative;
   display: inline-block;
-  color: var(--lg-top-ink);
-  line-height: 1;
+  line-height: 0;
   user-select: none;
   -webkit-user-select: none;
   pointer-events: none;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
 }
 
-.froo__eye {
-  display: inline-block;
-  width: 0.56em;
-  height: 0.56em;
-  margin: 0 0.03em;
-  border: 0.115em solid currentColor;
-  border-radius: 50%;
-  position: relative;
-  transform-origin: 50% 68%;
-  transition: transform 0.09s ease-out;
-}
-
-.froo__pupil {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0.145em;
-  height: 0.145em;
-  margin: -0.0725em 0 0 -0.0725em;
-  border-radius: 50%;
-  background: currentColor;
-  will-change: transform;
-}
-
-.froo__smile {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 0.6em;
-  height: 0.2em;
-  transform: translateX(-50%) translateY(0.03em);
-  transform-origin: 50% 0;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+.froo__svg {
+  display: block;
+  width: 100%;
+  height: auto;
   overflow: visible;
 }
 
-.froo__smile path {
-  stroke: #d4500a;
-  stroke-width: 11;
+/* SVG groups animate around their own box, not the viewBox origin */
+.froo__body, .froo__arm, .froo__eye, .froo__smile, .froo__sprout {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.froo.is-happy .froo__smile {
-  transform: translateX(-50%) translateY(0.04em) scale(1.22, 1.4);
+/* idle: a slow gentle breathing bob */
+.froo__body {
+  transform-origin: 50% 100%;
+  animation: froo-breathe 3.4s ease-in-out infinite;
 }
 
-.froo.is-happy .froo__eye {
-  transform: scale(1.06);
+@keyframes froo-breathe {
+  0%, 100% { transform: scale(1, 1); }
+  50%      { transform: scale(1.015, 0.975); }
+}
+
+/* eyes blink by squashing; pupils are translated from JS */
+.froo__eye {
+  transition: transform 0.09s ease-out;
 }
 
 .froo__eye.is-blinking {
-  transform: scaleY(0.1);
+  transform: scaleY(0.08);
 }
 
-.froo.is-nodding {
-  animation: ll-nod 0.9s cubic-bezier(0.3, 1.2, 0.5, 1) both;
+.froo__smile {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.froo.is-happy .froo__smile {
+  transform: scale(1.25, 1.45);
+}
+
+/* arms: pinned at the shoulder; the right one waves once in a while */
+.froo__arm {
+  transform-origin: 50% 15%;
+}
+
+.froo__arm--r {
+  animation: froo-wave 9s ease-in-out infinite;
+}
+
+@keyframes froo-wave {
+  0%, 86%, 100% { transform: rotate(0deg); }
+  89%  { transform: rotate(-38deg); }
+  92%  { transform: rotate(-16deg); }
+  95%  { transform: rotate(-38deg); }
+  98%  { transform: rotate(0deg); }
+}
+
+/* happy: one springy squash-and-bounce of the whole character */
+.froo.is-bouncing .froo__svg {
+  animation: froo-bounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes froo-bounce {
+  0%   { transform: translateY(0) scale(1, 1); }
+  25%  { transform: translateY(2px) scale(1.08, 0.88); }
+  55%  { transform: translateY(-7px) scale(0.96, 1.06); }
+  80%  { transform: translateY(1px) scale(1.03, 0.97); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* the sprout perks up when happy */
+.froo__sprout {
+  transform-origin: 50% 100%;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.froo.is-happy .froo__sprout {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .froo__body, .froo__arm--r, .froo.is-bouncing .froo__svg {
+    animation: none;
+  }
 }
 
 /* the guide: froo + a glass speech bubble in the bottom-left corner */
@@ -3765,11 +3792,21 @@ body {
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-.froo-guide .froo {
+/* the mascot itself is a button — poke Froo for a tip once the tour ends */
+.froo-guide__poke {
   flex-shrink: 0;
-  /* leave room under the eyes for the smile */
-  padding-bottom: 0.55rem;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+.froo-guide__poke:disabled { cursor: default; }
+
+.froo-guide__poke:hover:not(:disabled) { transform: translateY(-2px); }
+
+.froo-guide__poke:active:not(:disabled) { transform: scale(0.92); }
 
 .froo-guide__bubble {
   position: relative;

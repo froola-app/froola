@@ -144,7 +144,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode, onDone 
     return (
       <div className="tutorial-overlay">
         <div className="tutorial-card">
-          <FroolaMascot size={44} mood="happy" />
+          <FroolaMascot size={64} mood="happy" />
           <h2 className="tutorial-headline">You're ready. Have fun!</h2>
         </div>
       </div>
@@ -155,7 +155,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode, onDone 
     return (
       <div className="tutorial-overlay">
         <div className="tutorial-card tutorial-card--complete">
-          <FroolaMascot size={44} mood="happy" />
+          <FroolaMascot size={64} mood="happy" />
           <span className="tutorial-checkmark">✓</span>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode, onDone 
   return (
     <div className="tutorial-overlay">
       <div className="tutorial-card">
-        <FroolaMascot size={44} />
+        <FroolaMascot size={64} />
         <p className="tutorial-step-count">{step + 1} / {STEPS.length}</p>
         <h2 className="tutorial-headline">{current.headline}</h2>
         <p className="tutorial-body">{current.body}</p>
