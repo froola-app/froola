@@ -154,7 +154,8 @@ body {
   z-index: 2;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.82rem;
-  color: rgba(229, 231, 235, 0.6);
+  color: var(--lg-bottom-ink-dim, rgba(229, 231, 235, 0.6));
+  transition: color 0.3s;
 }
 
 .link-btn {
@@ -212,10 +213,71 @@ body {
   margin: 0;
 }
 
-/* In-app HUD buttons sit over a transparent canvas — the live camera feed
-   (often a bright wall) or the dark mouse-mode background shows through.
-   A frosted dark pill + visible border + drop shadow keeps them legible
-   on any background instead of washing out against light scenes. */
+/* ── Liquid glass HUD ────────────────────────────────────────────
+   In-app controls float over the live camera feed (or the dark
+   mouse-mode background). The glass recipe is: near-clear fill,
+   heavy blur + saturation pulling real color through, a specular
+   top rim (inset highlight), a hairline stroke, and a soft drop
+   shadow — so the pill reads as a lens over the scene, not a matte
+   sticker on it.
+
+   Readability is adaptive: useAmbientLuminance samples the camera
+   feed and stamps data-hud-top / data-hud-bottom = "light" | "dark"
+   on <html>. Every variable below has a dark-backdrop default
+   (white ink) and a light-backdrop override (near-black ink), per
+   zone, so the top corner buttons and the bottom control row flip
+   independently. See design/liquid-glass-hud.md. */
+:root {
+  /* top zone — corner buttons + center badges (dark-backdrop defaults) */
+  --lg-top-ink: rgba(255, 255, 255, 0.92);
+  --lg-top-ink-dim: rgba(255, 255, 255, 0.75);
+  --lg-top-fill: rgba(255, 255, 255, 0.08);
+  --lg-top-fill-hover: rgba(255, 255, 255, 0.18);
+  --lg-top-stroke: rgba(255, 255, 255, 0.30);
+  --lg-top-rim: rgba(255, 255, 255, 0.40);
+  --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --lg-top-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.45);
+  --lg-top-inner: rgba(255, 255, 255, 0.14);
+  --lg-top-inner-hover: rgba(255, 255, 255, 0.28);
+  /* bottom zone — hud-bottom row + loop panel */
+  --lg-bottom-ink: rgba(255, 255, 255, 0.92);
+  --lg-bottom-ink-dim: rgba(255, 255, 255, 0.75);
+  --lg-bottom-fill: rgba(255, 255, 255, 0.08);
+  --lg-bottom-fill-hover: rgba(255, 255, 255, 0.18);
+  --lg-bottom-stroke: rgba(255, 255, 255, 0.30);
+  --lg-bottom-rim: rgba(255, 255, 255, 0.40);
+  --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --lg-bottom-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.45);
+  --lg-bottom-inner: rgba(255, 255, 255, 0.14);
+  --lg-bottom-inner-hover: rgba(255, 255, 255, 0.28);
+}
+
+:root[data-hud-top='light'] {
+  --lg-top-ink: rgba(19, 21, 27, 0.92);
+  --lg-top-ink-dim: rgba(19, 21, 27, 0.70);
+  --lg-top-fill: rgba(255, 255, 255, 0.34);
+  --lg-top-fill-hover: rgba(255, 255, 255, 0.52);
+  --lg-top-stroke: rgba(15, 18, 25, 0.16);
+  --lg-top-rim: rgba(255, 255, 255, 0.85);
+  --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  --lg-top-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.20);
+  --lg-top-inner: rgba(15, 18, 25, 0.08);
+  --lg-top-inner-hover: rgba(15, 18, 25, 0.16);
+}
+
+:root[data-hud-bottom='light'] {
+  --lg-bottom-ink: rgba(19, 21, 27, 0.92);
+  --lg-bottom-ink-dim: rgba(19, 21, 27, 0.70);
+  --lg-bottom-fill: rgba(255, 255, 255, 0.34);
+  --lg-bottom-fill-hover: rgba(255, 255, 255, 0.52);
+  --lg-bottom-stroke: rgba(15, 18, 25, 0.16);
+  --lg-bottom-rim: rgba(255, 255, 255, 0.85);
+  --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  --lg-bottom-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.20);
+  --lg-bottom-inner: rgba(15, 18, 25, 0.08);
+  --lg-bottom-inner-hover: rgba(15, 18, 25, 0.16);
+}
+
 /* sits below the profile button, mirroring the left column's rhythm */
 .share-btn {
   position: fixed;
@@ -223,23 +285,32 @@ body {
   right: 1rem;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
   border-radius: 999px;
   padding: 0.4rem 1rem;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
   z-index: 20;
 }
 
 .share-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
 }
 
 /* bottom-center HUD row — holds instrument / key / scale pickers + octave stepper */
@@ -260,27 +331,35 @@ body {
 .instrument-select {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--lg-bottom-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
   border-radius: 999px;
   padding: 0.4rem 1.1rem;
   cursor: pointer;
   outline: none;
   appearance: none;
   -webkit-appearance: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-bottom-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-bottom-shadow);
   text-align: center;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .instrument-select:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill-hover);
+  box-shadow:
+    inset 0 1px 0 var(--lg-bottom-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-bottom-shadow-hover);
 }
 
 /* native dropdown list renders on the OS surface — keep its rows readable */
@@ -292,26 +371,32 @@ body {
 .instrument-loading {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--lg-bottom-ink-dim);
   padding: 0 0.2rem;
   white-space: nowrap;
 }
 
-/* octave stepper — frosted pill matching the other HUD controls */
+/* octave stepper — glass pill matching the other HUD controls */
 .octave-control {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--lg-bottom-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
   border-radius: 999px;
   padding: 0.25rem 0.45rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-bottom-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-bottom-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .octave-value {
@@ -329,20 +414,46 @@ body {
   height: 1.6rem;
   border-radius: 999px;
   border: none;
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: var(--lg-bottom-inner);
+  color: var(--lg-bottom-ink);
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 1.05rem;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: color 0.3s, background 0.3s;
 }
 
-.octave-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.26); }
+.octave-btn:hover:not(:disabled) { background: var(--lg-bottom-inner-hover); }
 
 .octave-btn:disabled {
   opacity: 0.35;
   cursor: default;
+}
+
+/* arp toggle — stands alone on the video (not inside a pill), so it
+   carries the full glass treatment itself */
+.arp-btn {
+  width: auto;
+  height: auto;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-bottom-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-bottom-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.arp-btn:hover:not(:disabled) {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill-hover);
 }
 
 
@@ -359,7 +470,8 @@ body {
   gap: 0.5rem;
   max-width: calc(100vw - 2rem);
   font-family: 'DM Sans', system-ui, sans-serif;
-  color: #ffffff;
+  color: var(--lg-bottom-ink);
+  transition: color 0.3s;
 }
 
 /* At medium widths .hud-bottom's pills wrap to 2 rows, and at narrow widths
@@ -399,56 +511,68 @@ body {
   padding: 0.25rem 0.6rem;
   font-size: 0.82rem;
   border-radius: 999px;
-  background: rgba(17, 17, 17, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  background: var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--lg-bottom-rim);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, transform 0.15s;
 }
 
 .loop-slot--active {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--lg-bottom-ink);
   color: #111111;
-  border-color: #ffffff;
+  border-color: var(--lg-bottom-ink);
   transform: translateY(-2px);
 }
+
+:root[data-hud-bottom='light'] .loop-slot--active { color: #fafaf8; }
 
 .loop-controls {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
   border-radius: 999px;
   padding: 0.3rem 0.5rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-bottom-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-bottom-shadow);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .loop-btn {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--lg-bottom-ink);
+  background: var(--lg-bottom-inner);
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition: color 0.3s, background 0.3s;
 }
 
-.loop-btn:hover:not(:disabled) { color: #ffffff; background: rgba(255, 255, 255, 0.25); }
+.loop-btn:hover:not(:disabled) { background: var(--lg-bottom-inner-hover); }
 
 .loop-btn:disabled {
   opacity: 0.35;
   cursor: default;
 }
 
+/* playing = inverted: ink-colored chip so it pops on any backdrop */
 .loop-btn--play.is-playing {
-  background: #ffffff;
+  background: var(--lg-bottom-ink);
   color: #111111;
 }
+
+:root[data-hud-bottom='light'] .loop-btn--play.is-playing { color: #fafaf8; }
 
 .loop-bpm {
   display: inline-flex;
@@ -476,41 +600,50 @@ body {
   border-radius: 999px;
   padding: 0.4rem 1rem;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
   z-index: 20;
   border: 1px solid transparent;
 }
 
 .record-btn:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
 }
 
-/* status dot inside the record control — white & static when idle */
+/* status dot inside the record control — ink-colored & static when idle */
 .rec-dot {
   display: inline-block;
   width: 9px;
   height: 9px;
   border-radius: 999px;
-  background: #ffffff;
+  background: var(--lg-top-ink);
   border: 1px solid rgba(17, 17, 17, 0.4);
   flex-shrink: 0;
+  transition: background 0.3s;
 }
 
-/* idle = frosted clear glass with a white dot; no red so it never reads
+/* idle = clear glass with an ink dot; no red so it never reads
    as "currently recording" */
 .record-btn--idle {
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
 }
 
 .record-btn--idle:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.35);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
 }
 
 /* recording = the whole button shifts to a red shade (static); the dot
@@ -577,35 +710,43 @@ body {
   border-radius: 999px;
   padding: 0.4rem 1rem;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
   z-index: 20;
   border: 1px solid transparent;
   white-space: nowrap;
 }
 
 .vid-record-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
 }
 
 .vid-record-btn--idle {
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
 }
 
 .vid-record-btn--idle:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.35);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
 }
 
 .vid-record-btn--requesting {
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--lg-top-ink-dim);
+  background: var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
   cursor: wait;
 }
 
@@ -1733,22 +1874,27 @@ body {
   left: 1rem;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
   border-radius: 999px;
   padding: 0.4rem 1rem;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
   z-index: 20;
-  transition: color 0.2s, background 0.2s, border-color 0.2s;
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .learn-nav-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.35);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
 }
 
 /* ── Learn system — "The Journey" ───────────────────────────────
@@ -3002,8 +3148,12 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: rgba(20, 20, 30, 0.85);
-  color: #E5E7EB;
+  background: var(--lg-top-fill);
+  color: var(--lg-top-ink);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid var(--lg-top-stroke);
+  box-shadow: inset 0 1px 0 var(--lg-top-rim), var(--lg-top-shadow);
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
@@ -3022,8 +3172,12 @@ body {
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: rgba(20, 20, 30, 0.7);
-  color: rgba(229, 231, 235, 0.85);
+  background: var(--lg-top-fill);
+  color: var(--lg-top-ink);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid var(--lg-top-stroke);
+  box-shadow: inset 0 1px 0 var(--lg-top-rim), var(--lg-top-shadow);
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 500;
@@ -3052,18 +3206,20 @@ body {
 
 .tutorial-skip {
   margin-top: 0.75rem;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
+  color: var(--lg-top-ink);
   font-size: 0.85rem;
   cursor: pointer;
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   pointer-events: all;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--lg-top-rim), var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s;
 }
-.tutorial-skip:hover { color: #fff; background: rgba(255,255,255,0.25); }
+.tutorial-skip:hover { background: var(--lg-top-fill-hover); }
 
 .tutorial-card {
   background: transparent;
@@ -3222,22 +3378,30 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
   border-radius: 50%;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
   z-index: 20;
-  transition: color 0.2s, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .profile-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
 }
 
 /* nav variant — inline in a page nav (e.g. the landing page) rather than

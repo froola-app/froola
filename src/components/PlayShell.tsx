@@ -15,6 +15,7 @@ import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
 import HandTiltPopup from './HandTiltPopup';
+import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -131,6 +132,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+
+  // Watch the camera feed's brightness and flag the HUD zones on <html> so
+  // the glass controls flip to dark ink over bright scenes (see App.css).
+  useAmbientLuminance(cameraVideoRef, mode);
 
   // Track the piano sampler download so the select can say it's loading
   // instead of silently doing nothing. preloadSampler de-dupes concurrent
@@ -323,7 +328,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           </button>
         </div>
         <button
-          className="octave-btn"
+          className="octave-btn arp-btn"
           onClick={toggleArp}
           aria-pressed={arpEnabled}
           aria-label="Toggle arpeggiator"
