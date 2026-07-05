@@ -4,11 +4,13 @@ import FroolaMascot from './FroolaMascot';
 
 const STEP_KEY = 'froola.guideStep';
 const DONE_KEY = 'froola.guideDone';
-const TIPS_KEY = 'froola.tipsSeen';
+const INTRO_KEY = 'froola.frooIntroSeen';
+const CURSOR_KEY = 'froola.tipCursor';
+const CYCLED_KEY = 'froola.tipsCycled';
 
 // One tour, told by Froo. Steps that can be observed advance themselves
 // (watching the looper); the rest offer a quiet "got it". Progress persists
-// so a returning user never re-hears a tip they finished.
+// so a returning user never re-hears a step they finished.
 const STEPS: {
   text: string;
   /** Advance automatically when this becomes true. */
@@ -37,36 +39,48 @@ const STEPS: {
   },
 ];
 
-// After the tour, Froo stays in the corner and occasionally offers one of
-// these — each once ever, dismiss any time, or poke Froo for the next one.
-// The intro comes first (and quickly, see TIP_INTRO_MS) so new arrivals
-// learn that clicking Froo is how you ask for help.
-const TIPS: { id: string; text: string }[] = [
-  { id: 'intro', text: 'Hi, I’m Froo. I keep time down here. Click me whenever you want a tip.' },
-  { id: 'theme', text: 'Not feeling light mode? Dark mode lives in your profile, top right.' },
-  { id: 'enter', text: 'Press Enter to drop the chord you’re holding straight into the loop.' },
-  { id: 'octave', text: 'Arrow keys nudge the octave up and down.' },
-  { id: 'scale', text: 'Feeling moody? Try switching major to minor down below.' },
-  { id: 'learn', text: 'Want to play real songs? The Learn button has lessons.' },
+// Shown once ever, shortly after the tour ends — the only bubble with an ×.
+const INTRO_TEXT = 'Hi, I’m Froo. I keep time down here. Tap me whenever you want a tip.';
+
+// Tapping Froo cycles through these, one per tap, wrapping around. A few
+// also surface on their own (one every few minutes) until the cycle has
+// wrapped once; after that Froo only speaks when poked.
+const TIPS: string[] = [
+  'Not feeling light mode? Dark mode lives in your profile, top right.',
+  'Left wheel picks the chord, right wheel shapes it. That’s the whole instrument.',
+  'Press Enter to drop the chord you’re holding straight into the loop.',
+  'Make a fist to lock your chord while you move around.',
+  'Nod up or down to change the volume. Your hands never leave the music.',
+  'Try a 7th on the right wheel. Instant jazz.',
+  'Feeling moody? Switch major to minor down below.',
+  'Songs live in keys. Try trading C for something braver.',
+  'Arrow keys nudge the octave up and down.',
+  'Synth not your thing? There’s a piano in the bottom row.',
+  'arp on breaks your chord into a rolling pattern. Off gives you a soft pad.',
+  'Loop dragging? The minus and plus around bpm set the pace. I’ll keep up.',
+  'Added a clunker? The backspace button removes the last chord.',
+  'clear wipes the loop when you want to build something new.',
+  'Record, top left, captures your jam as audio you can share.',
+  'Record video grabs the whole performance, wheels and all.',
+  'Share, top right, makes a link your friends can listen to.',
+  'Want to play real songs? The Learn button has lessons.',
+  'sus2 and sus4 float. Resolve them to a triad and feel the landing.',
+  'Miss the tutorial? Replay it any time from your profile settings.',
 ];
 
 const TIP_INTRO_MS = 6_000;    // the intro shows soon after the tour ends
-const TIP_FIRST_MS = 75_000;   // quiet stretch before the first real tip
-const TIP_EVERY_MS = 180_000;  // and between tips after that
-const TIP_SHOW_MS = 15_000;    // how long a tip stays up unattended
+const TIP_FIRST_MS = 75_000;   // quiet stretch before the first auto tip
+const TIP_EVERY_MS = 180_000;  // and between auto tips after that
+const TIP_SHOW_MS = 14_000;    // how long a tip stays up untouched
 
 function storedStep(): number {
   const n = Number(localStorage.getItem(STEP_KEY));
   return Number.isInteger(n) && n >= 0 && n < STEPS.length ? n : 0;
 }
 
-function storedTipsSeen(): Set<string> {
-  try {
-    const raw = JSON.parse(localStorage.getItem(TIPS_KEY) ?? '[]');
-    return new Set(Array.isArray(raw) ? raw : []);
-  } catch {
-    return new Set();
-  }
+function storedCursor(): number {
+  const n = Number(localStorage.getItem(CURSOR_KEY));
+  return Number.isInteger(n) && n >= 0 && n < TIPS.length ? n : 0;
 }
 
 interface Props {
@@ -81,8 +95,11 @@ export default function FroolaGuide({ loopState, active }: Props) {
   const [happy, setHappy] = useState(false);
   const happyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [tip, setTip] = useState<{ id: string; text: string } | null>(null);
-  const tipsSeenRef = useRef(storedTipsSeen());
+  const [introSeen, setIntroSeen] = useState(() => !!localStorage.getItem(INTRO_KEY));
+  const [showIntro, setShowIntro] = useState(false);
+  const [tip, setTip] = useState<string | null>(null);
+  const cursorRef = useRef(storedCursor());
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const finishTour = () => {
     try { localStorage.setItem(DONE_KEY, '1'); } catch { /* private mode */ }
@@ -125,69 +142,71 @@ export default function FroolaGuide({ loopState, active }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, tourDone, step]);
 
-  const nextUnseenTip = () =>
-    TIPS.find(t => !tipsSeenRef.current.has(t.id)) ?? null;
-
-  const closeTip = () => {
-    setTip(t => {
-      if (t) {
-        tipsSeenRef.current.add(t.id);
-        try {
-          localStorage.setItem(TIPS_KEY, JSON.stringify([...tipsSeenRef.current]));
-        } catch { /* private mode */ }
-      }
-      return null;
-    });
+  const dismissIntro = () => {
+    try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* private mode */ }
+    setIntroSeen(true);
+    setShowIntro(false);
   };
 
-  // Occasional tips: a long quiet stretch, then one unseen tip at a time.
-  // Each tip auto-hides and is marked seen so Froo never repeats himself.
-  useEffect(() => {
-    if (!active || !tourDone) return;
-    let show: ReturnType<typeof setTimeout> | null = null;
-    let hide: ReturnType<typeof setTimeout> | null = null;
+  // Show the next tip in the cycle and restart the auto-hide clock.
+  const showNextTip = () => {
+    const i = cursorRef.current;
+    setTip(TIPS[i]);
+    const next = (i + 1) % TIPS.length;
+    cursorRef.current = next;
+    try {
+      localStorage.setItem(CURSOR_KEY, String(next));
+      // A full lap means every tip has had its airtime — stop volunteering.
+      if (next === 0) localStorage.setItem(CYCLED_KEY, '1');
+    } catch { /* private mode */ }
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setTip(null), TIP_SHOW_MS);
+  };
 
-    const scheduleNext = (delay: number) => {
-      show = setTimeout(() => {
-        const next = nextUnseenTip();
-        if (!next) return;
-        setTip(next);
-        hide = setTimeout(() => {
-          closeTip();
-          scheduleNext(TIP_EVERY_MS);
-        }, TIP_SHOW_MS);
+  // The one-time introduction, shortly after the tour wraps.
+  useEffect(() => {
+    if (!active || !tourDone || introSeen) return;
+    const t = setTimeout(() => setShowIntro(true), TIP_INTRO_MS);
+    return () => clearTimeout(t);
+  }, [active, tourDone, introSeen]);
+
+  // Occasional unprompted tips, until the cycle has wrapped once.
+  useEffect(() => {
+    if (!active || !tourDone || !introSeen) return;
+    if (localStorage.getItem(CYCLED_KEY)) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const schedule = (delay: number) => {
+      timer = setTimeout(() => {
+        if (localStorage.getItem(CYCLED_KEY)) return;
+        showNextTip();
+        schedule(TIP_EVERY_MS);
       }, delay);
     };
-    // If Froo hasn't introduced himself yet, do that first and soon.
-    scheduleNext(tipsSeenRef.current.has('intro') ? TIP_FIRST_MS : TIP_INTRO_MS);
+    schedule(TIP_FIRST_MS);
 
-    return () => {
-      if (show) clearTimeout(show);
-      if (hide) clearTimeout(hide);
-    };
+    return () => { if (timer) clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, tourDone]);
+  }, [active, tourDone, introSeen]);
 
-  // Poking Froo asks for a tip right now (or hides the current one).
+  // Tapping Froo: dismiss the intro if it's up, otherwise cycle to the
+  // next tip. No × needed — another tap brings the next one.
   const poke = () => {
     if (!tourDone) return;
-    if (tip) {
-      closeTip();
-      return;
-    }
-    const next = nextUnseenTip() ?? TIPS[Math.floor(Math.random() * TIPS.length)];
     beHappy();
-    setTip(next);
+    if (showIntro) dismissIntro();
+    showNextTip();
   };
 
   useEffect(() => () => {
     if (happyTimer.current) clearTimeout(happyTimer.current);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
   }, []);
 
   if (!active) return null;
 
   const inTour = !tourDone;
-  const bubbleText = inTour ? current.text : tip?.text;
+  const bubbleText = inTour ? current.text : showIntro ? INTRO_TEXT : tip;
   const needsButton = inTour && !current.observe && !current.dwellMs;
 
   return (
@@ -197,7 +216,7 @@ export default function FroolaGuide({ loopState, active }: Props) {
         onClick={poke}
         disabled={inTour}
         aria-label="Froo, the froola guide"
-        title={inTour ? undefined : 'Ask Froo for a tip'}
+        title={inTour ? undefined : 'Tap Froo for a tip'}
       >
         <FroolaMascot
           size={inTour ? 52 : 44}
@@ -211,13 +230,24 @@ export default function FroolaGuide({ loopState, active }: Props) {
           {needsButton && (
             <button className="froo-guide__ok" onClick={advance}>got it</button>
           )}
-          <button
-            className="froo-guide__close"
-            onClick={inTour ? finishTour : closeTip}
-            aria-label={inTour ? 'Dismiss guide' : 'Dismiss tip'}
-          >
-            ×
-          </button>
+          {inTour && (
+            <button
+              className="froo-guide__close"
+              onClick={finishTour}
+              aria-label="Skip tour"
+            >
+              ×
+            </button>
+          )}
+          {!inTour && showIntro && (
+            <button
+              className="froo-guide__close"
+              onClick={dismissIntro}
+              aria-label="Dismiss introduction"
+            >
+              ×
+            </button>
+          )}
         </div>
       )}
     </div>
