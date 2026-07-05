@@ -145,11 +145,14 @@ export default function LivingLogo({ excited = false }: Props) {
   return (
     <div
       className={`living-logo${excited ? ' is-excited' : ''}`}
-      ref={faceRef}
       onPointerDown={poke}
       aria-label="froola"
       role="img"
     >
+      {/* Nod/poke animate this wrapper, not the root: swapping the root's
+          animation would replay its entrance animation when the class comes
+          off (React rewrites className whenever `excited` changes). */}
+      <div className="living-logo__face" ref={faceRef}>
       <span className="living-logo__text">fr</span>
       <span className="living-logo__eyes">
         <span className="living-logo__eye" ref={eyeLRef}>
@@ -167,6 +170,7 @@ export default function LivingLogo({ excited = false }: Props) {
         </svg>
       </span>
       <span className="living-logo__text">la</span>
+      </div>
     </div>
   );
 }

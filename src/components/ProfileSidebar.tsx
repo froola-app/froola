@@ -95,8 +95,8 @@ function DrawerHeader({ onClose, theme }: { onClose: () => void; theme: Theme })
     <header className="profile-drawer__header">
       <div className="profile-drawer__identity">
         {authReady || user
-          ? <Avatar size={48} />
-          : <FroolaLogo size={44} color={theme === 'dark' ? '#FAFAF8' : '#111111'} />}
+          ? <Avatar size={40} />
+          : <FroolaLogo size={36} color={theme === 'dark' ? '#FAFAF8' : '#111111'} />}
         <div className="profile-drawer__who">
           {user ? (
             <>
