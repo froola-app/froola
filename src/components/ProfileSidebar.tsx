@@ -210,7 +210,7 @@ function SettingsPanel({ play, onClose, theme, onToggleTheme }: {
 }) {
   return (
     <>
-      <SettingsRow label="Theme" hint="Landing and pricing pages">
+      <SettingsRow label="Theme">
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </SettingsRow>
       {play && (

@@ -39,8 +39,19 @@ export function useTheme() {
 
   useEffect(() => {
     const onChange = (e: Event) => setTheme((e as CustomEvent<Theme>).detail);
+    // Same-window instances sync via the custom event; `storage` only fires
+    // in *other* tabs, so together they keep every froola tab interconnected.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === KEY && (e.newValue === 'dark' || e.newValue === 'light')) {
+        setTheme(e.newValue);
+      }
+    };
     window.addEventListener(EVENT, onChange);
-    return () => window.removeEventListener(EVENT, onChange);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(EVENT, onChange);
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   const toggleTheme = () => {
