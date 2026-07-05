@@ -7,6 +7,7 @@ import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
 import { buildCommand, melodyMidi, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
+import { volumeDeltaForGesture } from './engine/input/headGestures';
 import type { Arpeggiator } from './engine/arp';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
@@ -203,12 +204,12 @@ export function useCoordinator(
       const sustained = spaceHeld || sustainToggle;
       sustainedRef.current = sustained;
 
-      // Head gesture → discrete volume step: any nod = up, head-shake = down.
+      // Head gesture → discrete volume step: nod up = louder, nod down /
+      // head-shake = quieter.
       const headGesture = headGestureRef.current;
       if (headGesture && engine) {
-        volumeRef.current = headGesture === 'nod'
-          ? Math.min(volumeRef.current + 0.1, 2.0)
-          : Math.max(volumeRef.current - 0.1, 0.0);
+        const next = volumeRef.current + volumeDeltaForGesture(headGesture);
+        volumeRef.current = Math.min(Math.max(next, 0.0), 2.0);
         volumeRef.current = Math.round(volumeRef.current * 10) / 10;
         engine.setVolume(volumeRef.current);
         onVolumeChange?.(volumeRef.current);

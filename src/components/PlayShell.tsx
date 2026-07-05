@@ -243,7 +243,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         <div className="volume-badge">vol {volumeDisplay}%</div>
       )}
       {mode === 'camera' && showNodHint && volumeDisplay === null && (
-        <div className="nod-hint">nod ↕ volume up · shake ↔ volume down</div>
+        <div className="nod-hint">nod up ↑ louder · nod down ↓ quieter</div>
       )}
       {mode === 'asking' && (
         <CameraPrompt onCamera={requestCamera} onMouse={useMouse} />
