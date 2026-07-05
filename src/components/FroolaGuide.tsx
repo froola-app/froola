@@ -39,7 +39,10 @@ const STEPS: {
 
 // After the tour, Froo stays in the corner and occasionally offers one of
 // these — each once ever, dismiss any time, or poke Froo for the next one.
+// The intro comes first (and quickly, see TIP_INTRO_MS) so new arrivals
+// learn that clicking Froo is how you ask for help.
 const TIPS: { id: string; text: string }[] = [
+  { id: 'intro', text: 'Hi, I’m Froo. I keep time down here. Click me whenever you want a tip.' },
   { id: 'theme', text: 'Not feeling light mode? Dark mode lives in your profile, top right.' },
   { id: 'enter', text: 'Press Enter to drop the chord you’re holding straight into the loop.' },
   { id: 'octave', text: 'Arrow keys nudge the octave up and down.' },
@@ -47,7 +50,8 @@ const TIPS: { id: string; text: string }[] = [
   { id: 'learn', text: 'Want to play real songs? The Learn button has lessons.' },
 ];
 
-const TIP_FIRST_MS = 75_000;   // quiet stretch before the first tip
+const TIP_INTRO_MS = 6_000;    // the intro shows soon after the tour ends
+const TIP_FIRST_MS = 75_000;   // quiet stretch before the first real tip
 const TIP_EVERY_MS = 180_000;  // and between tips after that
 const TIP_SHOW_MS = 15_000;    // how long a tip stays up unattended
 
@@ -154,7 +158,8 @@ export default function FroolaGuide({ loopState, active }: Props) {
         }, TIP_SHOW_MS);
       }, delay);
     };
-    scheduleNext(TIP_FIRST_MS);
+    // If Froo hasn't introduced himself yet, do that first and soon.
+    scheduleNext(tipsSeenRef.current.has('intro') ? TIP_FIRST_MS : TIP_INTRO_MS);
 
     return () => {
       if (show) clearTimeout(show);

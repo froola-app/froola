@@ -22,6 +22,8 @@ export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const eyeLRef = useRef<SVGGElement>(null);
   const eyeRRef = useRef<SVGGElement>(null);
+  const pupilLRef = useRef<SVGCircleElement>(null);
+  const pupilRRef = useRef<SVGCircleElement>(null);
   const wasHappy = useRef(false);
 
   // Nod once each time the mood flips to happy.
@@ -38,7 +40,8 @@ export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
 
   useEffect(() => {
     const eyes = [eyeLRef.current, eyeRRef.current];
-    if (eyes.some(e => !e)) return;
+    const pupils = [pupilLRef.current, pupilRRef.current];
+    if (eyes.some(e => !e) || pupils.some(p => !p)) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (reduceMotion.matches) return;
@@ -60,10 +63,11 @@ export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
 
       for (let i = 0; i < 2; i++) {
         const eye = eyes[i]!;
+        const pupil = pupils[i]!;
         const rect = eye.getBoundingClientRect();
         if (rect.width === 0) continue;
-        // The whole dot glances, so keep the travel small and quiet.
-        const maxOffset = rect.width * 0.35;
+        // Pupil travel stays inside the ring.
+        const maxOffset = rect.width * 0.18;
 
         let tx: number;
         let ty: number;
@@ -76,7 +80,7 @@ export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
           let dx = pointer!.x - cx;
           let dy = pointer!.y - cy;
           const dist = Math.hypot(dx, dy) || 1;
-          const mag = Math.min(dist / (rect.width * 4), 1) * maxOffset;
+          const mag = Math.min(dist / (rect.width * 1.5), 1) * maxOffset;
           dx = (dx / dist) * mag;
           dy = (dy / dist) * mag;
           tx = dx;
@@ -85,7 +89,7 @@ export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
 
         gaze[i].x += (tx - gaze[i].x) * 0.1;
         gaze[i].y += (ty - gaze[i].y) * 0.1;
-        eye.style.setProperty(
+        pupil.style.setProperty(
           'translate',
           `${gaze[i].x.toFixed(2)}px ${gaze[i].y.toFixed(2)}px`,
         );
@@ -151,39 +155,52 @@ export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
           stroke="currentColor"
           strokeWidth="2.5"
         />
-        {/* base hairline */}
-        <line x1="25.5" y1="88" x2="74.5" y2="88" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
 
-        {/* pendulum: ink arm, brand-orange weight, pinned at the base */}
+        {/* pendulum: ink arm, brand-orange weight; it pivots above the
+            face so the swing never crosses the eyes or the smile */}
         <g className="froo__pendulum">
-          <line x1="50" y1="94" x2="50" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <rect x="45.8" y="34" width="8.4" height="12" rx="2.6" fill="#D4500A" />
+          <line x1="50" y1="62" x2="50" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <rect x="45.8" y="26" width="8.4" height="12" rx="2.6" fill="#D4500A" />
         </g>
-        <circle cx="50" cy="94" r="3.1" fill="#D4500A" />
+        <circle cx="50" cy="62" r="2.6" fill="currentColor" />
 
-        {/* the face: two dot eyes beside the arm, nothing else */}
+        {/* the froola face: the wordmark's ring o-eyes and the brand smile */}
         <g className="froo__eye" ref={eyeLRef}>
-          <circle className="froo__eye-dot" cx="39" cy="76" r="3" fill="currentColor" />
+          <g className="froo__eye-dot">
+            <circle cx="41" cy="78" r="5.6" fill="none" stroke="currentColor" strokeWidth="2.4" />
+            <circle ref={pupilLRef} cx="41" cy="78" r="1.9" fill="currentColor" />
+          </g>
           <path
             className="froo__eye-arc"
-            d="M 35.6 77.2 Q 39 73.6 42.4 77.2"
+            d="M 35.4 79.6 Q 41 74 46.6 79.6"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2.2"
+            strokeWidth="2.4"
             strokeLinecap="round"
           />
         </g>
         <g className="froo__eye" ref={eyeRRef}>
-          <circle className="froo__eye-dot" cx="61" cy="76" r="3" fill="currentColor" />
+          <g className="froo__eye-dot">
+            <circle cx="59" cy="78" r="5.6" fill="none" stroke="currentColor" strokeWidth="2.4" />
+            <circle ref={pupilRRef} cx="59" cy="78" r="1.9" fill="currentColor" />
+          </g>
           <path
             className="froo__eye-arc"
-            d="M 57.6 77.2 Q 61 73.6 64.4 77.2"
+            d="M 53.4 79.6 Q 59 74 64.6 79.6"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2.2"
+            strokeWidth="2.4"
             strokeLinecap="round"
           />
         </g>
+        <path
+          className="froo__smile"
+          d="M 43.5 89 Q 50 94.5 56.5 89"
+          fill="none"
+          stroke="#D4500A"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );
