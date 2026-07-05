@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, type Theme } from '../useTheme';
+import { openBillingPortal } from '../billing';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
+
+const PLAN_LABEL: Record<string, string> = { free: 'Free', plus: 'Plus', studio: 'Studio' };
 
 // Play-screen actions the Settings tab can offer. Optional so the drawer
 // stays portable — mount it on a screen without these and the rows
@@ -139,7 +143,38 @@ function SettingsRow({ label, hint, children }: {
   );
 }
 
-function ProfilePanel() {
+function PlanRow({ onClose }: { onClose: () => void }) {
+  const { profile } = useAuth();
+  const [pending, setPending] = useState(false);
+  const plan = profile?.plan ?? 'free';
+
+  if (plan === 'free') {
+    return (
+      <SettingsRow label="Plan" hint="Free">
+        <Link className="profile-drawer__row-btn" to="/pricing" onClick={onClose}>
+          Upgrade
+        </Link>
+      </SettingsRow>
+    );
+  }
+
+  return (
+    <SettingsRow label="Plan" hint={PLAN_LABEL[plan] ?? plan}>
+      <button
+        className="profile-drawer__row-btn"
+        disabled={pending}
+        onClick={() => {
+          setPending(true);
+          void openBillingPortal().finally(() => setPending(false));
+        }}
+      >
+        {pending ? 'Loading…' : 'Manage billing'}
+      </button>
+    </SettingsRow>
+  );
+}
+
+function ProfilePanel({ onClose }: { onClose: () => void }) {
   const { user, authReady, signOutUser } = useAuth();
   if (!authReady) {
     return (
@@ -157,6 +192,7 @@ function ProfilePanel() {
   }
   return (
     <>
+      <PlanRow onClose={onClose} />
       <SettingsRow label="Signed in" hint={user.email ?? undefined}>
         <button className="profile-drawer__row-btn" onClick={() => void signOutUser()}>
           Sign out
@@ -247,7 +283,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
         <div className="profile-drawer__panel">
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Account</h3>
-            <ProfilePanel />
+            <ProfilePanel onClose={onClose} />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Settings</h3>

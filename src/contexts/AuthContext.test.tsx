@@ -74,6 +74,8 @@ describe('AuthContext (Supabase)', () => {
       userType: 'casual',
       onboardingComplete: true,
       avatarUrl: null,
+      plan: 'free',
+      subscriptionStatus: null,
     });
     expect(probeState().authReady).toBe(true);
   });

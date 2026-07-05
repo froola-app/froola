@@ -1,3 +1,5 @@
+import type { PlanId } from '../api/_lib/stripe.ts';
+
 export interface PricingTier {
   name: string;
   price: string;
@@ -5,6 +7,9 @@ export interface PricingTier {
   badge?: string;
   features: string[];
   highlight?: boolean;
+  /** Present only on paid tiers — drives the checkout button in
+      PricingSection.tsx. Absent on Free, which has nothing to buy. */
+  planId?: PlanId;
 }
 
 export const PRICING_TIERS: PricingTier[] = [
@@ -22,7 +27,7 @@ export const PRICING_TIERS: PricingTier[] = [
     name: 'Plus',
     price: '$4.99',
     period: '/mo',
-    badge: 'coming soon',
+    planId: 'plus',
     features: [
       'Everything in Free',
       'Piano instrument unlocked',
@@ -34,7 +39,7 @@ export const PRICING_TIERS: PricingTier[] = [
     name: 'Studio',
     price: '$19.99',
     period: '/mo',
-    badge: 'coming soon',
+    planId: 'studio',
     highlight: true,
     features: [
       'Everything in Plus',

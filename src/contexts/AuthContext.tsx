@@ -4,6 +4,10 @@ import { supabase, supabaseConfigured } from '../supabase';
 
 export type UserType = 'casual' | 'creator' | 'learner' | null;
 
+// Mirrors profiles.plan (docs/PRICING.md tiers); 'free' is the DB default
+// so it covers users who signed up before billing existed too.
+export type Plan = 'free' | 'plus' | 'studio';
+
 // App-owned user shape — keeps components decoupled from the SDK's type.
 export interface AppUser {
   id: string;
@@ -20,6 +24,12 @@ interface UserProfile {
       Always null until the profiles table grows an avatar_url column
       and an upload flow exists; the UI fallback chain already handles it. */
   avatarUrl: string | null;
+  plan: Plan;
+  /** Raw Stripe subscription status (e.g. 'trialing', 'past_due',
+      'canceled') — null if never subscribed. `plan` already reflects
+      whether access should be paid or free; this is for UI copy only
+      (e.g. showing a "past due" warning). */
+  subscriptionStatus: string | null;
 }
 
 interface AuthContextValue {
@@ -65,6 +75,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     let cancelled = false;
 
+    // Selecting a column that doesn't exist yet fails the whole PostgREST
+    // query (data comes back null), which would null the profile and
+    // re-run onboarding — so the billing columns are tried first and this
+    // falls back to the pre-billing column set if migration
+    // 0002_billing.sql hasn't been applied to this Supabase project yet
+    // (see supabase/migrations conventions: not auto-applied).
+    async function fetchProfileRow(userId: string): Promise<{
+      user_type: string | null;
+      onboarding_complete: boolean;
+      plan?: string | null;
+      subscription_status?: string | null;
+    } | null> {
+      if (!supabase) return null;
+      const full = await supabase
+        .from('profiles')
+        .select('user_type, onboarding_complete, plan, subscription_status')
+        .eq('id', userId)
+        .maybeSingle();
+      if (!full.error) return full.data;
+      const base = await supabase
+        .from('profiles')
+        .select('user_type, onboarding_complete')
+        .eq('id', userId)
+        .maybeSingle();
+      return base.error ? null : base.data;
+    }
+
     // Fetch the profile BEFORE committing user + profile together, so the
     // onboarding check in App.tsx never sees a signed-in user with a
     // missing profile mid-fetch (would flash an existing user through
@@ -74,11 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let nextProfile: UserProfile | null = null;
       if (nextUser && supabase) {
         try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('user_type, onboarding_complete')
-            .eq('id', nextUser.id)
-            .maybeSingle();
+          const data = await fetchProfileRow(nextUser.id);
           if (data) {
             nextProfile = {
               userType: (data.user_type ?? null) as UserType,
@@ -88,6 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // which would null the profile and re-run onboarding.
               // Add avatar_url to the select once the column ships.
               avatarUrl: null,
+              plan: (data.plan ?? 'free') as Plan,
+              subscriptionStatus: data.subscription_status ?? null,
             };
           }
         } catch { /* profile stays null */ }
@@ -159,7 +194,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user_type: userType,
       onboarding_complete: true,
     });
-    if (!error) setProfile({ userType, onboardingComplete: true, avatarUrl: null });
+    if (!error) {
+      setProfile(prev => ({
+        userType,
+        onboardingComplete: true,
+        avatarUrl: null,
+        plan: prev?.plan ?? 'free',
+        subscriptionStatus: prev?.subscriptionStatus ?? null,
+      }));
+    }
   }
 
   return (
