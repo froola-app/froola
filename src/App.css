@@ -964,9 +964,9 @@ body {
 /* Wow hero — the living logo owns the first screen */
 .lp4__wow {
   position: relative;
-  /* Slightly under one viewport so the headline section peeks above the
-     fold — the peek plus the labeled cue makes "this scrolls" obvious. */
-  min-height: calc(86svh - 49px);
+  /* Fill the first screen exactly: the section boundary sits at the fold
+     and the labeled cue at the bottom makes "this scrolls" obvious. */
+  min-height: 100svh;
   padding: 0 22px 76px;
   display: flex;
   flex-direction: column;
@@ -979,7 +979,9 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(60% 55% at 50% 42%, rgba(212, 80, 10, 0.08), rgba(212, 80, 10, 0) 70%);
+  /* Fade all the way to the box edge — a hard stop short of 100% paints a
+     visible elliptical ring on the dark theme. */
+  background: radial-gradient(60% 55% at 50% 42%, rgba(212, 80, 10, 0.08), rgba(212, 80, 10, 0));
   pointer-events: none;
 }
 
@@ -1153,12 +1155,15 @@ body {
 .lp4__hero::before {
   content: '';
   position: absolute;
-  top: -10%;
+  /* Starts at the section boundary and fades downward — starting above it
+     slices the gradient at the box edge and draws a floating line. Same
+     reason the fade runs all the way to 100%: no hard stop, no visible edge. */
+  top: 0;
   left: 50%;
   width: 140%;
   height: 120%;
   transform: translateX(-50%);
-  background: radial-gradient(50% 50% at 50% 0%, rgba(212, 80, 10, 0.07), rgba(212, 80, 10, 0) 70%);
+  background: radial-gradient(50% 50% at 50% 0%, rgba(212, 80, 10, 0.07), rgba(212, 80, 10, 0));
   pointer-events: none;
   z-index: 0;
 }
