@@ -29,6 +29,12 @@ vi.mocked(useAuth).mockReturnValue({
   completeOnboarding: vi.fn(),
 });
 
+// PricingSection calls useAuth, which needs an AuthProvider these tests
+// don't set up — not relevant to input-mode behavior, so stub it out.
+vi.mock('./PricingSection', () => ({
+  default: () => <div>pricing section</div>,
+}));
+
 describe('LandingPage', () => {
   beforeEach(() => {
     sessionStorage.clear();

@@ -137,6 +137,20 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   // the glass controls flip to dark ink over bright scenes (see App.css).
   useAmbientLuminance(cameraVideoRef, mode);
 
+  // Browsers keep the audio context suspended until a user gesture they
+  // accept. The coordinator retries resume() on every interaction, but if the
+  // context is still stuck shortly after mount (e.g. a hard reload straight
+  // into camera mode, where hands never touch the page), the player just
+  // hears nothing — say so instead.
+  const [audioStuck, setAudioStuck] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => {
+      const st = engineRef.current?.audioState();
+      setAudioStuck(st === 'suspended' && !document.hidden);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [engineRef]);
+
   // Track the piano sampler download so the select can say it's loading
   // instead of silently doing nothing. preloadSampler de-dupes concurrent
   // calls, so it's safe to call again here even if the select's onChange
@@ -247,7 +261,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {volumeDisplay !== null && (
         <div className="volume-badge">vol {volumeDisplay}%</div>
       )}
-      {mode === 'camera' && showNodHint && volumeDisplay === null && (
+      {audioStuck && (
+        <div className="nod-hint">tap anywhere for sound</div>
+      )}
+      {!audioStuck && mode === 'camera' && showNodHint && volumeDisplay === null && (
         <div className="nod-hint">nod up ↑ louder · nod down ↓ quieter</div>
       )}
       {mode === 'asking' && (

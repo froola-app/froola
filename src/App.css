@@ -802,6 +802,7 @@ body {
   --lp-accent: #d4500a;
   --lp-hairline: rgba(0, 0, 0, 0.1);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.04);
+  --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.07), 0 18px 44px rgba(0, 0, 0, 0.09);
   position: fixed;
   inset: 0;
   background: var(--lp-bg);
@@ -829,6 +830,7 @@ body {
   --lp-accent: #f2650f;
   --lp-hairline: rgba(255, 255, 255, 0.1);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.35);
+  --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.45);
 }
 
 /* Nav */
@@ -928,6 +930,182 @@ body {
 .theme-toggle.is-dark .theme-toggle__icon--sun { opacity: 0; }
 .theme-toggle.is-dark .theme-toggle__icon--moon { opacity: 1; }
 
+/* Wow hero — the living logo owns the first screen */
+.lp4__wow {
+  position: relative;
+  /* Slightly under one viewport so the headline section peeks above the
+     fold — the peek plus the labeled cue makes "this scrolls" obvious. */
+  min-height: calc(86svh - 49px);
+  padding: 0 22px 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.lp4__wow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 55% at 50% 42%, rgba(212, 80, 10, 0.08), rgba(212, 80, 10, 0) 70%);
+  pointer-events: none;
+}
+
+.lp4__wow > * {
+  position: relative;
+}
+
+.lp4__wow-ctas {
+  margin-top: clamp(36px, 6vh, 64px);
+  animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.35s both;
+}
+
+.lp4__scroll-cue {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  padding: 8px 14px;
+  /* Keeps the button centered when reduced-motion disables the animation. */
+  transform: translateX(-50%);
+  animation: lp4-cue 2.4s ease-in-out infinite;
+  transition: color 0.2s ease;
+}
+
+.lp4__scroll-cue:hover { color: var(--lp-accent); }
+
+.lp4__scroll-cue svg { width: 20px; height: 20px; }
+
+@keyframes lp4-cue {
+  0%, 100% { transform: translate(-50%, 0); opacity: 0.65; }
+  50% { transform: translate(-50%, 6px); opacity: 1; }
+}
+
+/* Living logo: the wordmark as a face. The o's are eyes, the smile is the
+   brand smile. All geometry is in em so it scales with the font size. */
+.living-logo {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: clamp(58px, 15.5vw, 210px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--lp-ink);
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  touch-action: manipulation;
+  animation: lp4-logo-in 0.9s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.living-logo__eyes {
+  position: relative;
+  display: inline-block;
+}
+
+.living-logo__eye {
+  display: inline-block;
+  width: 0.56em;
+  height: 0.56em;
+  margin: 0 0.012em;
+  border: 0.115em solid currentColor;
+  border-radius: 50%;
+  position: relative;
+  transform-origin: 50% 68%;
+  transition: transform 0.09s ease-out;
+}
+
+.living-logo__pupil {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.145em;
+  height: 0.145em;
+  margin: -0.0725em 0 0 -0.0725em;
+  border-radius: 50%;
+  background: currentColor;
+  will-change: transform;
+}
+
+.living-logo__smile {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0.6em;
+  height: 0.2em;
+  transform: translateX(-50%) translateY(0.055em);
+  transform-origin: 50% 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: visible;
+}
+
+.living-logo__smile path {
+  stroke: var(--lp-accent);
+  stroke-width: 11;
+}
+
+/* Excited: bigger smile, slightly wider eyes */
+.living-logo.is-excited .living-logo__smile {
+  transform: translateX(-50%) translateY(0.065em) scale(1.22, 1.4);
+}
+
+.living-logo.is-excited .living-logo__eye {
+  transform: scale(1.06);
+}
+
+/* Blink wins over the excited eye-widen */
+.living-logo__eye.is-blinking {
+  transform: scaleY(0.1);
+}
+
+.living-logo.is-nodding {
+  animation: ll-nod 0.9s cubic-bezier(0.3, 1.2, 0.5, 1) both;
+}
+
+@keyframes ll-nod {
+  0% { transform: translateY(0) rotate(0deg); }
+  28% { transform: translateY(0.055em) rotate(-1.4deg); }
+  55% { transform: translateY(-0.012em) rotate(0.7deg); }
+  78% { transform: translateY(0.028em) rotate(-0.5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+
+.living-logo.is-poked {
+  animation: ll-poke 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ll-poke {
+  0% { transform: scale(1, 1); }
+  30% { transform: scale(1.045, 0.9); }
+  62% { transform: scale(0.975, 1.04); }
+  100% { transform: scale(1, 1); }
+}
+
+@media (max-width: 640px) {
+  .living-logo { font-size: 20vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .living-logo,
+  .living-logo.is-nodding,
+  .living-logo.is-poked,
+  .lp4__scroll-cue,
+  .lp4__wow-ctas { animation: none; }
+  .living-logo__eye,
+  .living-logo__smile { transition: none; }
+}
+
 /* Hero */
 .lp4__hero {
   position: relative;
@@ -959,18 +1137,9 @@ body {
   z-index: 1;
 }
 
-.lp4__hero-logo {
-  margin-bottom: 20px;
-  animation: lp4-logo-in 0.9s cubic-bezier(0.25, 0.1, 0.25, 1) both;
-}
-
 @keyframes lp4-logo-in {
   from { opacity: 0; transform: translateY(10px) scale(0.92); }
   to { opacity: 1; transform: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lp4__hero-logo { animation: none; }
 }
 
 .lp4__headline {
@@ -1386,6 +1555,33 @@ body {
   font-weight: 700;
 }
 
+.lp4__pricing-cta {
+  margin-top: 24px;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  background: var(--lp-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 999px;
+  transition: filter 0.2s;
+}
+
+.lp4__pricing-cta:hover:not(:disabled) { filter: brightness(1.08); }
+.lp4__pricing-cta:active:not(:disabled) { filter: brightness(0.94); }
+.lp4__pricing-cta:disabled { opacity: 0.6; cursor: default; }
+
+.lp4__pricing-current {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lp-gray);
+}
+
 /* Privacy lock */
 .lp4__lock {
   width: 44px;
@@ -1429,6 +1625,111 @@ body {
   transform: none;
 }
 
+/* Staggered child reveals: cards pop in one after another once their
+   section is in view, then keep a springy hover lift afterwards. */
+.lp4 [data-reveal] :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
+  opacity: 0;
+  transform: translateY(26px) scale(0.98);
+  transition:
+    opacity 0.55s ease,
+    transform 0.5s cubic-bezier(0.3, 1.25, 0.5, 1),
+    background 0.35s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
+  opacity: 1;
+  transform: none;
+}
+
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):nth-child(2) { transition-delay: 0.1s; }
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):nth-child(3) { transition-delay: 0.2s; }
+
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover {
+  transform: translateY(-6px);
+  box-shadow: var(--lp-card-shadow-hover);
+  transition-delay: 0s;
+}
+
+/* Card icons come alive on hover */
+.lp4__card:hover .lp4__card-icon {
+  animation: lp4-wiggle 0.7s ease;
+  transform-origin: 50% 85%;
+}
+
+.lp4__feature:hover .lp4__feature-icon {
+  animation: lp4-bounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lp4__card-step { transition: color 0.25s ease; }
+.lp4__card:hover .lp4__card-step { color: var(--lp-accent); }
+
+@keyframes lp4-wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  55% { transform: rotate(8deg); }
+  80% { transform: rotate(-4deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes lp4-bounce {
+  0% { transform: none; }
+  40% { transform: translateY(-7px) scale(1.12); }
+  75% { transform: translateY(1px) scale(0.96); }
+  100% { transform: none; }
+}
+
+/* Song chips: the marquee pauses while you browse, chips pop on hover */
+.lp4__marquee:hover .lp4__marquee-row { animation-play-state: paused; }
+
+.lp4__song-chip {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.lp4__song-chip:hover {
+  transform: translateY(-4px) rotate(-1.2deg);
+  border-color: var(--lp-accent);
+  box-shadow: var(--lp-card-shadow-hover);
+}
+
+.lp4__song-chip:nth-child(even):hover { transform: translateY(-4px) rotate(1.2deg); }
+
+/* Smile accent under headings — draws itself in on reveal */
+.lp4__smile-accent {
+  display: block;
+  width: 46px;
+  height: 14px;
+  margin: 16px auto 0;
+  color: var(--lp-accent);
+  overflow: visible;
+}
+
+.lp4__smile-accent path {
+  stroke: currentColor;
+  stroke-width: 5.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+}
+
+.lp4 [data-reveal].is-in .lp4__smile-accent path {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.35s;
+  stroke-dashoffset: 0;
+}
+
+/* Mini living face reprise in the CTA band — white on the orange field */
+.lp4__cta-band .living-logo {
+  font-size: clamp(40px, 5.5vw, 64px);
+  color: #fff;
+  animation: none;
+  /* The smile hangs below the wordmark's flow box — leave room for it. */
+  margin-bottom: 0.42em;
+}
+
+.lp4__cta-band .living-logo__smile path { stroke: #fff; }
+
 @keyframes lp4-rise {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
@@ -1436,6 +1737,18 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .lp4 [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .lp4 [data-reveal] :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .lp4__card:hover .lp4__card-icon,
+  .lp4__feature:hover .lp4__feature-icon { animation: none; }
+  .lp4__song-chip { transition: none; }
+  .lp4__song-chip:hover,
+  .lp4__song-chip:nth-child(even):hover { transform: none; }
+  .lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover { transform: none; }
+  .lp4__smile-accent path { stroke-dashoffset: 0; transition: none; }
   .lp4__headline,
   .lp4__subhead,
   .lp4__ctas,
@@ -1513,6 +1826,7 @@ body {
   --lp-accent: #d4500a;
   --lp-hairline: rgba(0, 0, 0, 0.1);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.04);
+  --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.07), 0 18px 44px rgba(0, 0, 0, 0.09);
   position: fixed;
   inset: 0;
   display: flex;
@@ -1535,6 +1849,7 @@ body {
   --lp-accent: #f2650f;
   --lp-hairline: rgba(255, 255, 255, 0.1);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.35);
+  --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.45);
 }
 
 /* faint breathing orange wash, echoes the landing canvas */
@@ -3686,6 +4001,7 @@ body {
 /* glass ghost pill — matches .step-result__btn--ghost */
 .profile-drawer__row-btn {
   flex: none;
+  display: inline-block;
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 600;
@@ -3695,6 +4011,7 @@ body {
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
   cursor: pointer;
+  text-decoration: none;
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   transition: border-color 0.15s, background 0.15s;

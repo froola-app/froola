@@ -65,18 +65,30 @@ export function useCoordinator(
   const stickyExtensionRef = useRef(mode === 'mouse');
   useEffect(() => { stickyExtensionRef.current = mode === 'mouse'; }, [mode]);
 
-  // Create AudioEngine once; resume on first user pointer event
+  // Create AudioEngine once. Browsers create the context suspended until the
+  // page has user activation. The landing-page CTA click happens before this
+  // mounts (client-side navigation), which grants sticky activation — so try
+  // resuming immediately, then keep retrying on any interaction until the
+  // context is running. Camera users may never press anything on /play, so
+  // waiting for a single pointerdown here would leave them in silence.
   useEffect(() => {
     const engine = new AudioEngine();
     engineRef.current = engine;
     analyserRef.current = engine.getAnalyser();
 
-    const resume = () => engine.resume();
-    window.addEventListener('pointerdown', resume, { once: true });
+    const events = ['pointerdown', 'pointermove', 'keydown', 'touchstart'] as const;
+    const resume = () => {
+      engine.resume();
+      if (engine.audioState() === 'running') {
+        for (const ev of events) window.removeEventListener(ev, resume);
+      }
+    };
+    engine.resume();
+    for (const ev of events) window.addEventListener(ev, resume);
 
     return () => {
       engine.suspend();
-      window.removeEventListener('pointerdown', resume);
+      for (const ev of events) window.removeEventListener(ev, resume);
     };
   }, []);
 

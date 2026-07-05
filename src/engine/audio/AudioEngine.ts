@@ -373,6 +373,13 @@ export class AudioEngine {
     this.ctx.resume()
   }
 
+  /** Whether the underlying context is actually producing sound. Browsers
+   *  keep a context suspended until a user gesture; callers use this to
+   *  retry resume() and to surface an "unmute" hint when it stays stuck. */
+  audioState(): AudioContextState {
+    return this.ctx.state
+  }
+
   suspend(): void {
     this.ctx.suspend()
   }

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storeInputMode } from '../engine/input';
 import { SONG_PATH } from '../engine/lessons/curriculum';
@@ -6,8 +6,10 @@ import { useScrollReveal } from '../useScrollReveal';
 import { useTheme } from '../useTheme';
 import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
+import LivingLogo from './LivingLogo';
 import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
+import SmileAccent from './SmileAccent';
 import ThemeToggle from './ThemeToggle';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
@@ -89,6 +91,10 @@ const STEPS = [
 export default function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
   const touch = isTouchDevice();
+  // Cursor is hovering a primary CTA — the nearest living face perks up.
+  const [logoExcited, setLogoExcited] = useState(false);
+  const [bandExcited, setBandExcited] = useState(false);
+  const introRef = useRef<HTMLElement>(null);
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -135,11 +141,32 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <header className="lp4__hero">
-        <div className="lp4__hero-logo">
-          <FroolaLogo size={52} color={inkColor} />
+      {/* Wow hero: the living logo owns the first screen. */}
+      <header className="lp4__wow">
+        <LivingLogo excited={logoExcited} />
+        <div
+          className="lp4__wow-ctas"
+          onPointerEnter={() => setLogoExcited(true)}
+          onPointerLeave={() => setLogoExcited(false)}
+        >
+          {ctas}
         </div>
+        <button
+          className="lp4__scroll-cue"
+          onClick={() => introRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          aria-label="Scroll to learn more"
+        >
+          <span>There’s more</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m5 9 7 7 7-7" />
+          </svg>
+        </button>
+      </header>
+
+      {/* Headline */}
+      {/* No data-reveal here: this section peeks above the fold as the
+          scroll affordance, so it must be visible from the start. */}
+      <section className="lp4__hero" ref={introRef}>
         <h1 className="lp4__headline">
           Make music
           <br />
@@ -161,11 +188,12 @@ export default function LandingPage() {
             Two dials. Your left hand picks the chord, your right hand colors it.
           </p>
         </div>
-      </header>
+      </section>
 
       {/* How it works */}
       <section className="lp4__section lp4__section--alt" data-reveal>
         <h2 className="lp4__h2">How it works</h2>
+        <SmileAccent />
         <div className="lp4__cards">
           {STEPS.map((step, i) => (
             <div key={step.title} className="lp4__card">
@@ -182,6 +210,7 @@ export default function LandingPage() {
       <section className="lp4__songs" data-reveal>
         <div className="lp4__songs-head">
           <h2 className="lp4__h2">Songs you already love.</h2>
+          <SmileAccent />
           <p className="lp4__prose">
             A guided path of real songs, from your first chord to the last
             chorus. Learn one, then play it end to end.
@@ -216,6 +245,7 @@ export default function LandingPage() {
       {/* Privacy */}
       <section className="lp4__section lp4__section--alt" data-reveal>
         <h2 className="lp4__h2">Your camera stays yours.</h2>
+        <SmileAccent />
         <p className="lp4__prose">
           Everything runs locally, so making music never means handing over
           your video or your data.
@@ -234,6 +264,7 @@ export default function LandingPage() {
       {/* Why we built it */}
       <section className="lp4__section" data-reveal>
         <h2 className="lp4__h2">Why we built it</h2>
+        <SmileAccent />
         <p className="lp4__prose">
           We think making music should be open to everyone, not just people
           who own an instrument or took years of lessons. Froola is our
@@ -247,12 +278,18 @@ export default function LandingPage() {
       {/* Final CTA */}
       <div className="lp4__cta-band-wrap" data-reveal>
         <section className="lp4__cta-band">
+          <LivingLogo excited={bandExcited} />
           <h2 className="lp4__h2">Ready to play?</h2>
           <p className="lp4__cta-band-sub">
             Your first chord is one click away. Turn on the camera and start
             making music.
           </p>
-          {ctas}
+          <div
+            onPointerEnter={() => setBandExcited(true)}
+            onPointerLeave={() => setBandExcited(false)}
+          >
+            {ctas}
+          </div>
         </section>
       </div>
 
