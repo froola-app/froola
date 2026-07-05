@@ -3479,14 +3479,14 @@ body {
   --pd-gray: #6e6e73;
   --pd-faint: rgba(28, 28, 30, 0.55);
   --pd-accent: #d4500a;
-  --pd-accent-tint: rgba(212, 80, 10, 0.13);
+  --pd-accent-tint: rgba(212, 80, 10, 0.1);
   --pd-hairline: rgba(20, 20, 20, 0.1);
   --pd-hairline-soft: rgba(20, 20, 20, 0.07);
   --pd-surface: linear-gradient(165deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.52) 45%, rgba(255, 255, 255, 0.66) 100%);
   --pd-surface-solid: #f5efe4;
   --pd-edge: rgba(255, 255, 255, 0.55);
   --pd-top-glint: rgba(255, 255, 255, 0.7);
-  --pd-sheen: rgba(255, 255, 255, 0.5);
+  --pd-sheen: rgba(255, 255, 255, 0.38);
   --pd-glass-btn: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1));
   --pd-glass-btn-hover: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
   --pd-glass-btn-border: rgba(20, 20, 20, 0.16);
@@ -3585,7 +3585,7 @@ body {
 .profile-drawer__name {
   margin: 0;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3625,37 +3625,26 @@ body {
   background: var(--pd-hairline-soft);
 }
 
-.profile-drawer__tabs {
-  display: flex;
-  gap: 0.3rem;
-  padding: 0.7rem 1.4rem 0;
-}
-.profile-drawer__tab {
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--pd-faint);
-  background: none;
-  border: none;
-  border-radius: 999px;
-  padding: 0.35rem 0.9rem;
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s;
-}
-.profile-drawer__tab:hover {
-  color: var(--pd-ink);
-  background: var(--pd-hairline-soft);
-}
-.profile-drawer__tab.is-active {
-  color: var(--pd-accent);
-  background: var(--pd-accent-tint);
-}
-
 .profile-drawer__panel {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0.9rem 1.4rem 1.4rem;
+  padding: 0 1.4rem 1.4rem;
+}
+
+.profile-drawer__section {
+  padding: 1.15rem 0 0.5rem;
+}
+.profile-drawer__section + .profile-drawer__section {
+  border-top: 1px solid var(--pd-hairline-soft);
+}
+.profile-drawer__section-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pd-gray);
 }
 
 .profile-drawer__note {
@@ -3682,7 +3671,7 @@ body {
 .profile-drawer__row-label {
   margin: 0;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 .profile-drawer__row-hint {
   margin: 0.1rem 0 0;

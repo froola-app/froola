@@ -99,7 +99,7 @@ describe('ProfileButton', () => {
     expect(screen.getAllByText('LS').length).toBeGreaterThan(0);
   });
 
-  it('shows name and email in the sidebar header and signs out from the Profile tab', () => {
+  it('shows name and email in the sidebar header and signs out from the Account section', () => {
     const signOutUser = vi.fn();
     mockUseAuth.mockReturnValue(authState({ user: user(), signOutUser }));
     render(<ProfileButton />);
@@ -124,7 +124,7 @@ describe('ProfileButton', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('Settings tab shows the theme row, plus play rows when play actions are passed', () => {
+  it('Settings section shows the theme row, plus play rows when play actions are passed', () => {
     mockUseAuth.mockReturnValue(authState());
     const onSwitchInput = vi.fn();
     const onReplayTutorial = vi.fn();
@@ -134,7 +134,6 @@ describe('ProfileButton', () => {
       />,
     );
     openSidebar();
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
     expect(screen.getByText('Theme')).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: /use mouse/i }));
     expect(onSwitchInput).toHaveBeenCalledOnce();
@@ -142,11 +141,10 @@ describe('ProfileButton', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('Settings tab hides play rows when no play actions are passed', () => {
+  it('Settings section hides play rows when no play actions are passed', () => {
     mockUseAuth.mockReturnValue(authState());
     render(<ProfileButton />);
     openSidebar();
-    fireEvent.click(screen.getByRole('tab', { name: 'Settings' }));
     expect(screen.getByText('Theme')).toBeDefined();
     expect(screen.queryByText('Input')).toBeNull();
     expect(screen.queryByRole('button', { name: /replay/i })).toBeNull();
