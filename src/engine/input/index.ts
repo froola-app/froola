@@ -2,12 +2,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
-import { createNodDetector, createShakeDetector, pitchFromMatrix, yawFromMatrix } from './headGestures';
+import {
+  createNodDetector,
+  createShakeDetector,
+  pitchFromMatrix,
+  yawFromMatrix,
+  type HeadGestureEvent,
+} from './headGestures';
 
-// Discrete head-gesture events for volume control: any nod (up or down) means
-// volume up, a head-shake means volume down. Direction-agnostic nods sidestep
-// the MediaPipe pitch-sign question entirely.
-export type HeadGestureEvent = 'nod' | 'shake';
+// Discrete head-gesture events for volume control: nod up = louder, nod down =
+// quieter, head-shake = quieter (a redundant secondary path). The nod
+// detector already returns the tilt direction; we forward it instead of
+// collapsing every nod to one direction.
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -475,7 +481,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             const nod = nodDetector.sample(pitch, now);
             const shake = shakeDetector.sample(yaw, now);
             if (nod && !shake) {
-              headGestureRef.current = 'nod';
+              headGestureRef.current = nod === 'up' ? 'nod-up' : 'nod-down';
               shakeDetector.suppress(now);
             } else if (shake) {
               headGestureRef.current = 'shake';
