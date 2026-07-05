@@ -1,4 +1,7 @@
 import Stripe from 'stripe';
+import type { PlanId } from '../../src/pricingTiers.ts';
+
+export type { PlanId };
 
 // Server-only — STRIPE_SECRET_KEY has no VITE_ prefix so it's never bundled
 // to the browser. Pin apiVersion explicitly rather than relying on the
@@ -7,8 +10,6 @@ import Stripe from 'stripe';
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2026-06-24.dahlia',
 });
-
-export type PlanId = 'plus' | 'studio';
 
 export function priceIdForPlan(plan: PlanId): string {
   const priceId = plan === 'plus' ? process.env.STRIPE_PRICE_PLUS : process.env.STRIPE_PRICE_STUDIO;

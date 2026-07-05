@@ -4,7 +4,6 @@ import { storeInputMode } from '../engine/input';
 import { SONG_PATH } from '../engine/lessons/curriculum';
 import { useScrollReveal } from '../useScrollReveal';
 import { useTheme } from '../useTheme';
-import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
 import LivingLogo from './LivingLogo';
 import PricingSection from './PricingSection';
@@ -120,26 +119,14 @@ export default function LandingPage() {
     </div>
   );
 
-  const inkColor = theme === 'dark' ? '#FAFAF8' : '#111111';
-
   return (
     <div className="lp4" data-theme={theme} ref={rootRef}>
-      {/* Nav */}
-      <nav className="lp4__nav">
-        <div className="lp4__nav-inner">
-          <FroolaLogo size={16} color={inkColor} />
-          <div className="lp4__nav-links">
-            <a href="#pricing" className="lp4__nav-link">
-              Pricing
-            </a>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
-              Contact
-            </a>
-            <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <ProfileButton variant="nav" />
-          </div>
-        </div>
-      </nav>
+      {/* Floating corner controls — the page has no nav bar; the hero owns
+          the branding and Pricing/Contact live in their section/footer. */}
+      <div className="lp4__corner">
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        <ProfileButton variant="nav" />
+      </div>
 
       {/* Wow hero: the living logo owns the first screen. */}
       <header className="lp4__wow">
