@@ -10,11 +10,15 @@
    every app surface is position:fixed (the body box has zero height), so the
    dark backdrop must live on :root as well. */
 :root {
+  background: #efece6;
+}
+
+:root[data-theme='dark'] {
   background: #0d0d0f;
 }
 
 body {
-  background: #0d0d0f;
+  background: inherit;
   overflow: hidden;
   touch-action: none;
   user-select: none;
@@ -146,6 +150,32 @@ body {
   box-shadow: 0 0 0 1px #D4500A;
 }
 
+/* dark theme flips the permission screen with the rest of the interface */
+:root[data-theme='dark'] .permission-screen {
+  background: #131317;
+  color: #f5f5f7;
+}
+:root[data-theme='dark'] .permission-title,
+:root[data-theme='dark'] .permission-body {
+  color: #f5f5f7;
+}
+:root[data-theme='dark'] .permission-hint {
+  color: #d6d6da;
+}
+:root[data-theme='dark'] .permission-btn-primary {
+  background: #f5f5f7;
+  color: #111111;
+}
+:root[data-theme='dark'] .permission-btn-primary:hover {
+  background: #D4500A;
+  color: #FAFAF8;
+}
+:root[data-theme='dark'] .permission-btn-secondary {
+  background: #1c1c21;
+  color: #f5f5f7;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .mode-badge {
   position: fixed;
   bottom: 1.5rem;
@@ -221,61 +251,80 @@ body {
    shadow — so the pill reads as a lens over the scene, not a matte
    sticker on it.
 
-   Readability is adaptive: useAmbientLuminance samples the camera
-   feed and stamps data-hud-top / data-hud-bottom = "light" | "dark"
-   on <html>. Every variable below has a dark-backdrop default
-   (white ink) and a light-backdrop override (near-black ink), per
-   zone, so the top corner buttons and the bottom control row flip
-   independently. See design/liquid-glass-hud.md. */
-:root {
-  /* top zone — corner buttons + center badges (dark-backdrop defaults) */
-  --lg-top-ink: rgba(255, 255, 255, 0.92);
-  --lg-top-ink-dim: rgba(255, 255, 255, 0.75);
-  --lg-top-fill: rgba(255, 255, 255, 0.08);
-  --lg-top-fill-hover: rgba(255, 255, 255, 0.18);
-  --lg-top-stroke: rgba(255, 255, 255, 0.30);
-  --lg-top-rim: rgba(255, 255, 255, 0.40);
-  --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --lg-top-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.45);
-  --lg-top-inner: rgba(255, 255, 255, 0.14);
-  --lg-top-inner-hover: rgba(255, 255, 255, 0.28);
-  /* bottom zone — hud-bottom row + loop panel */
-  --lg-bottom-ink: rgba(255, 255, 255, 0.92);
-  --lg-bottom-ink-dim: rgba(255, 255, 255, 0.75);
-  --lg-bottom-fill: rgba(255, 255, 255, 0.08);
-  --lg-bottom-fill-hover: rgba(255, 255, 255, 0.18);
-  --lg-bottom-stroke: rgba(255, 255, 255, 0.30);
-  --lg-bottom-rim: rgba(255, 255, 255, 0.40);
-  --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --lg-bottom-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.45);
-  --lg-bottom-inner: rgba(255, 255, 255, 0.14);
-  --lg-bottom-inner-hover: rgba(255, 255, 255, 0.28);
-}
+   The material is theme-driven: <html data-theme> (the user's
+   light/dark choice, see useTheme.ts) selects one coherent glass —
+   milky light glass with near-black ink, or smoked dark glass with
+   white ink — for every control at once. The fills are opaque
+   enough that ink contrast never depends on the camera scene.
 
-:root[data-hud-top='light'] {
-  --lg-top-ink: rgba(19, 21, 27, 0.92);
-  --lg-top-ink-dim: rgba(19, 21, 27, 0.70);
-  --lg-top-fill: rgba(255, 255, 255, 0.34);
-  --lg-top-fill-hover: rgba(255, 255, 255, 0.52);
-  --lg-top-stroke: rgba(15, 18, 25, 0.16);
-  --lg-top-rim: rgba(255, 255, 255, 0.85);
+   useAmbientLuminance still stamps data-hud-top / data-hud-bottom
+   = "light" | "dark" per zone, but it is only a contrast assist
+   now: when the scene behind a zone fights the fill (bright scene
+   under dark glass, dark scene under light glass) the fill
+   thickens slightly. Ink never flips with the scene. */
+:root, :root[data-theme='light'] {
+  /* shared ink accents */
+  --lg-on-ink: #fafaf8;           /* text on an ink-colored chip */
+  /* top zone — corner buttons + center badges */
+  --lg-top-ink: rgba(24, 22, 19, 0.92);
+  --lg-top-ink-dim: rgba(24, 22, 19, 0.66);
+  --lg-top-fill: rgba(252, 250, 246, 0.60);
+  --lg-top-fill-hover: rgba(255, 253, 250, 0.78);
+  --lg-top-stroke: rgba(24, 22, 19, 0.12);
+  --lg-top-rim: rgba(255, 255, 255, 0.90);
   --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
   --lg-top-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.20);
-  --lg-top-inner: rgba(15, 18, 25, 0.08);
-  --lg-top-inner-hover: rgba(15, 18, 25, 0.16);
-}
-
-:root[data-hud-bottom='light'] {
-  --lg-bottom-ink: rgba(19, 21, 27, 0.92);
-  --lg-bottom-ink-dim: rgba(19, 21, 27, 0.70);
-  --lg-bottom-fill: rgba(255, 255, 255, 0.34);
-  --lg-bottom-fill-hover: rgba(255, 255, 255, 0.52);
-  --lg-bottom-stroke: rgba(15, 18, 25, 0.16);
-  --lg-bottom-rim: rgba(255, 255, 255, 0.85);
+  --lg-top-inner: rgba(24, 22, 19, 0.08);
+  --lg-top-inner-hover: rgba(24, 22, 19, 0.16);
+  /* bottom zone — hud-bottom row + loop panel */
+  --lg-bottom-ink: rgba(24, 22, 19, 0.92);
+  --lg-bottom-ink-dim: rgba(24, 22, 19, 0.66);
+  --lg-bottom-fill: rgba(252, 250, 246, 0.60);
+  --lg-bottom-fill-hover: rgba(255, 253, 250, 0.78);
+  --lg-bottom-stroke: rgba(24, 22, 19, 0.12);
+  --lg-bottom-rim: rgba(255, 255, 255, 0.90);
   --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
   --lg-bottom-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.20);
-  --lg-bottom-inner: rgba(15, 18, 25, 0.08);
-  --lg-bottom-inner-hover: rgba(15, 18, 25, 0.16);
+  --lg-bottom-inner: rgba(24, 22, 19, 0.08);
+  --lg-bottom-inner-hover: rgba(24, 22, 19, 0.16);
+}
+
+:root[data-theme='dark'] {
+  --lg-on-ink: #131317;
+  --lg-top-ink: rgba(255, 255, 255, 0.92);
+  --lg-top-ink-dim: rgba(255, 255, 255, 0.70);
+  --lg-top-fill: rgba(19, 21, 27, 0.55);
+  --lg-top-fill-hover: rgba(31, 34, 43, 0.68);
+  --lg-top-stroke: rgba(255, 255, 255, 0.16);
+  --lg-top-rim: rgba(255, 255, 255, 0.25);
+  --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
+  --lg-top-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.50);
+  --lg-top-inner: rgba(255, 255, 255, 0.12);
+  --lg-top-inner-hover: rgba(255, 255, 255, 0.24);
+  --lg-bottom-ink: rgba(255, 255, 255, 0.92);
+  --lg-bottom-ink-dim: rgba(255, 255, 255, 0.70);
+  --lg-bottom-fill: rgba(19, 21, 27, 0.55);
+  --lg-bottom-fill-hover: rgba(31, 34, 43, 0.68);
+  --lg-bottom-stroke: rgba(255, 255, 255, 0.16);
+  --lg-bottom-rim: rgba(255, 255, 255, 0.25);
+  --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
+  --lg-bottom-shadow-hover: 0 6px 22px rgba(0, 0, 0, 0.50);
+  --lg-bottom-inner: rgba(255, 255, 255, 0.12);
+  --lg-bottom-inner-hover: rgba(255, 255, 255, 0.24);
+}
+
+/* Ambient assist — thicken the fill when the scene fights the glass. */
+:root:not([data-theme='dark'])[data-hud-top='dark'] {
+  --lg-top-fill: rgba(252, 250, 246, 0.76);
+}
+:root:not([data-theme='dark'])[data-hud-bottom='dark'] {
+  --lg-bottom-fill: rgba(252, 250, 246, 0.76);
+}
+:root[data-theme='dark'][data-hud-top='light'] {
+  --lg-top-fill: rgba(19, 21, 27, 0.72);
+}
+:root[data-theme='dark'][data-hud-bottom='light'] {
+  --lg-bottom-fill: rgba(19, 21, 27, 0.72);
 }
 
 /* sits below the profile button, mirroring the left column's rhythm */
@@ -362,8 +411,13 @@ body {
     var(--lg-bottom-shadow-hover);
 }
 
-/* native dropdown list renders on the OS surface — keep its rows readable */
+/* native dropdown list renders on the OS surface — keep its rows readable
+   and matched to the theme */
 .instrument-select option {
+  background: #ffffff;
+  color: #131317;
+}
+:root[data-theme='dark'] .instrument-select option {
   background: #111111;
   color: #ffffff;
 }
@@ -521,12 +575,10 @@ body {
 
 .loop-slot--active {
   background: var(--lg-bottom-ink);
-  color: #111111;
+  color: var(--lg-on-ink);
   border-color: var(--lg-bottom-ink);
   transform: translateY(-2px);
 }
-
-:root[data-hud-bottom='light'] .loop-slot--active { color: #fafaf8; }
 
 .loop-controls {
   display: inline-flex;
@@ -569,10 +621,8 @@ body {
 /* playing = inverted: ink-colored chip so it pops on any backdrop */
 .loop-btn--play.is-playing {
   background: var(--lg-bottom-ink);
-  color: #111111;
+  color: var(--lg-on-ink);
 }
-
-:root[data-hud-bottom='light'] .loop-btn--play.is-playing { color: #fafaf8; }
 
 .loop-bpm {
   display: inline-flex;
@@ -3536,9 +3586,13 @@ body {
 }
 .tutorial-skip:hover { background: var(--lg-top-fill-hover); }
 
+/* The card is the same glass material as the HUD (theme-driven), hosted by
+   the froo mascot — the text no longer floats bare over the camera feed. */
 .tutorial-card {
-  background: transparent;
-  border: none;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
   border-radius: 1.25rem;
   padding: 1.5rem 2rem;
   max-width: 420px;
@@ -3548,38 +3602,42 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  box-shadow: none;
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
   pointer-events: all;
 }
+
+/* the smile hangs below the eyes' box — leave room so it clears the text */
+.tutorial-card .froo { margin-bottom: 0.5rem; }
 
 .tutorial-step-count {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  color: var(--lg-top-ink-dim);
   margin: 0;
 }
 
 .tutorial-headline {
   font-size: clamp(1.2rem, 4vw, 1.6rem);
   font-weight: 800;
-  color: #fff;
+  color: var(--lg-top-ink);
   letter-spacing: -0.02em;
   line-height: 1.1;
   margin: 0;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 24px rgba(0, 0, 0, 0.6);
 }
 
 .tutorial-body {
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--lg-top-ink);
+  opacity: 0.85;
   line-height: 1.5;
   margin: 0;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
 .tutorial-dots {
@@ -3592,11 +3650,11 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--lg-top-inner-hover);
 }
 
 .tutorial-dot--active {
-  background: #f59e0b;
+  background: #d4500a;
 }
 
 /* Step-complete checkmark flash */
@@ -3608,14 +3666,178 @@ body {
 .tutorial-checkmark {
   font-size: 4rem;
   line-height: 1;
-  color: #4ade80;
-  text-shadow: 0 0 32px rgba(74, 222, 128, 0.7), 0 2px 8px rgba(0, 0, 0, 0.8);
+  color: #34a853;
   animation: checkmark-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 @keyframes checkmark-pop {
   from { transform: scale(0.3); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Froo — the froola mascot ─────────────────────────────────────
+   The living-logo face without the letters: two o-eyes and the brand
+   smile, sized via font-size on .froo (all geometry in em). Ink
+   follows the HUD theme; the smile stays brand orange. */
+.froo {
+  position: relative;
+  display: inline-block;
+  color: var(--lg-top-ink);
+  line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+.froo__eye {
+  display: inline-block;
+  width: 0.56em;
+  height: 0.56em;
+  margin: 0 0.03em;
+  border: 0.115em solid currentColor;
+  border-radius: 50%;
+  position: relative;
+  transform-origin: 50% 68%;
+  transition: transform 0.09s ease-out;
+}
+
+.froo__pupil {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0.145em;
+  height: 0.145em;
+  margin: -0.0725em 0 0 -0.0725em;
+  border-radius: 50%;
+  background: currentColor;
+  will-change: transform;
+}
+
+.froo__smile {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 0.6em;
+  height: 0.2em;
+  transform: translateX(-50%) translateY(0.03em);
+  transform-origin: 50% 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow: visible;
+}
+
+.froo__smile path {
+  stroke: #d4500a;
+  stroke-width: 11;
+}
+
+.froo.is-happy .froo__smile {
+  transform: translateX(-50%) translateY(0.04em) scale(1.22, 1.4);
+}
+
+.froo.is-happy .froo__eye {
+  transform: scale(1.06);
+}
+
+.froo__eye.is-blinking {
+  transform: scaleY(0.1);
+}
+
+.froo.is-nodding {
+  animation: ll-nod 0.9s cubic-bezier(0.3, 1.2, 0.5, 1) both;
+}
+
+/* the guide: froo + a glass speech bubble in the bottom-left corner */
+.froo-guide {
+  position: fixed;
+  left: 1rem;
+  bottom: 1.5rem;
+  z-index: 25;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+  max-width: min(320px, calc(100vw - 2rem));
+  font-family: 'DM Sans', system-ui, sans-serif;
+  animation: froo-guide-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes froo-guide-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.froo-guide .froo {
+  flex-shrink: 0;
+  /* leave room under the eyes for the smile */
+  padding-bottom: 0.55rem;
+}
+
+.froo-guide__bubble {
+  position: relative;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
+  border-radius: 1rem;
+  border-bottom-left-radius: 0.3rem;
+  padding: 0.65rem 1.7rem 0.65rem 0.85rem;
+  color: var(--lg-bottom-ink);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-bottom-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-bottom-shadow);
+}
+
+.froo-guide__text {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.froo-guide__ok {
+  margin-top: 0.45rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--lg-bottom-ink);
+  background: var(--lg-bottom-inner);
+  border: none;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.froo-guide__ok:hover { background: var(--lg-bottom-inner-hover); }
+
+.froo-guide__close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.35rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--lg-bottom-ink-dim);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: color 0.3s, background 0.3s;
+}
+
+.froo-guide__close:hover {
+  color: var(--lg-bottom-ink);
+  background: var(--lg-bottom-inner);
+}
+
+/* the guide shares the corner with nothing today, but keep it clear of the
+   loop panel when the bottom rows wrap on small screens */
+@media (max-width: 480px) {
+  .froo-guide { bottom: 12.5rem; }
 }
 
 /* ── Hand tilt popup ───────────────────────────────────────── */
@@ -4217,12 +4439,15 @@ body {
    pseudo-elements, so the pickers keep their flat stroke;
    everything else gets the ring. */
 
+/* Saturation stays modest (130%) — the old 200% pulled the scene's color
+   (usually skin tone) into every pill, which is what made the HUD look
+   randomly tinted. The fill is opaque enough to carry the material now. */
 .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
 .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .volume-badge, .nod-hint,
 .instrument-select {
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
 .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,

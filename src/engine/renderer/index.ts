@@ -33,6 +33,35 @@ function stickySlice(pos: number, n: number, cur: number): number {
 // System (SF on Apple platforms) type for everything drawn on the canvas.
 const UI_FONT = "system-ui, -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif";
 
+// Wheel material follows the site theme (<html data-theme>, see useTheme.ts)
+// so the dials match the glass HUD instead of being permanently dark.
+type WheelPalette = {
+  disc: string;          // translucent material disc
+  hub: string;           // near-opaque center hub
+  ink: (a: number) => string;  // labels / ticks / rings
+  inkStrong: string;     // emphasized labels + active center chord name
+};
+
+const DARK_PALETTE: WheelPalette = {
+  disc: 'rgba(22,22,24,0.58)',
+  hub: 'rgba(22,22,24,0.92)',
+  ink: a => `rgba(255,255,255,${a})`,
+  inkStrong: '#fff',
+};
+
+const LIGHT_PALETTE: WheelPalette = {
+  disc: 'rgba(250,249,246,0.62)',
+  hub: 'rgba(252,251,248,0.94)',
+  ink: a => `rgba(24,22,19,${a})`,
+  inkStrong: 'rgba(24,22,19,0.95)',
+};
+
+function currentPalette(): WheelPalette {
+  return document.documentElement.dataset.theme === 'dark'
+    ? DARK_PALETTE
+    : LIGHT_PALETTE;
+}
+
 // Extension wheel uses a cool blue→violet ramp (Apple system blue → purple),
 // distinct from the orange note wheel.
 function extensionColor(i: number, n: number): string {
@@ -50,7 +79,7 @@ function drawWheel(
   active: boolean,
   getActiveColor: (i: number) => string,
   centerLabel: string,
-  bgColor: string,
+  pal: WheelPalette,
   // Lesson ghost target on this wheel, if any — highlighted like a selected
   // slice (in the ghost's own tint) so its label reads as "the orb is here,
   // and here's its name" instead of a dashed ring floating with no label.
@@ -61,11 +90,11 @@ function drawWheel(
   const innerR = outerR * 0.36;
   const s = outerR / 180;
 
-  // Translucent dark material disc with a faint top sheen — reads like an
+  // Translucent material disc with a faint top sheen — reads like an
   // iOS overlay resting on the camera feed rather than a hole punched in it.
   ctx.beginPath();
   ctx.arc(cx, cy, outerR + 6 * s, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(22,22,24,0.58)';
+  ctx.fillStyle = pal.disc;
   ctx.fill();
   const sheen = ctx.createLinearGradient(cx, cy - outerR, cx, cy + outerR);
   sheen.addColorStop(0, 'rgba(255,255,255,0.055)');
@@ -98,7 +127,7 @@ function drawWheel(
     const lr = outerR * 0.71;
     const emphasize = isSelected || isGhost;
     ctx.font = `${emphasize ? 600 : 400} ${Math.round((emphasize ? 15 : 12) * s)}px ${UI_FONT}`;
-    ctx.fillStyle = emphasize ? '#fff' : `rgba(255,255,255,${active ? 0.55 : 0.28})`;
+    ctx.fillStyle = emphasize ? pal.inkStrong : pal.ink(active ? 0.55 : 0.32);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(labels[i], cx + Math.cos(midA) * lr, cy + Math.sin(midA) * lr);
@@ -106,7 +135,7 @@ function drawWheel(
 
   // Hairline boundary ticks near the rim (camera-dial style) instead of
   // full spokes — the wheel reads as one surface, not a pie chart.
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.strokeStyle = pal.ink(0.28);
   ctx.lineWidth = 1;
   for (let i = 0; i < n; i++) {
     const a = ((i + 0.5) / n) * Math.PI * 2 - Math.PI / 2;
@@ -119,7 +148,7 @@ function drawWheel(
   // Outer hairline ring
   ctx.beginPath();
   ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(255,255,255,${active ? 0.32 : 0.22})`;
+  ctx.strokeStyle = pal.ink(active ? 0.32 : 0.22);
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -148,9 +177,9 @@ function drawWheel(
   // Hub
   ctx.beginPath();
   ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
-  ctx.fillStyle = bgColor;
+  ctx.fillStyle = pal.hub;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+  ctx.strokeStyle = pal.ink(0.16);
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -160,10 +189,10 @@ function drawWheel(
   ctx.textBaseline = 'middle';
   if (active) {
     ctx.font = `600 ${Math.round(16 * s)}px ${UI_FONT}`;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = pal.inkStrong;
   } else {
     ctx.font = `600 ${Math.round(10 * s)}px ${UI_FONT}`;
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillStyle = pal.ink(0.4);
   }
   ctx.fillText(centerLabel, cx, cy);
 }
@@ -288,7 +317,8 @@ export function useRenderer(
       }
 
       const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
-      const bgColor = 'rgba(22,22,24,0.92)';
+      // Read per frame — cheap, and it makes a theme toggle repaint instantly.
+      const pal = currentPalette();
 
       // Particles — between warm zone and dials
       const presentSignals = signals.filter(s => s.present);
@@ -356,7 +386,7 @@ export function useRenderer(
         noteLabels, noteIdx, leftInDial,
         () => '#FF9F0A',
         leftCenterLabel,
-        bgColor,
+        pal,
         leftGhost?.sliceIdx,
         'rgb(120,200,255)',
       );
@@ -368,7 +398,7 @@ export function useRenderer(
         qualIdx, rightInDial,
         (i) => extensionColor(i, EXTENSIONS.length),
         rightInDial ? EXTENSIONS[qualIdx].label : 'CHORD',
-        bgColor,
+        pal,
         rightGhost?.sliceIdx,
         'rgb(255,214,10)',
       );

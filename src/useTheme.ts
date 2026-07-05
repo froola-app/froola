@@ -12,6 +12,13 @@ export function storedTheme(): Theme {
   return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
 }
 
+// The play screen's HUD and dials read the theme from <html data-theme>,
+// which may render before any component calls useTheme() — stamp it eagerly
+// at module load so the first paint is already themed.
+if (typeof document !== 'undefined') {
+  document.documentElement.dataset.theme = storedTheme();
+}
+
 // Manual toggle only — deliberately ignores prefers-color-scheme so the
 // site's theme is a user choice, not inherited from the OS.
 export function useTheme() {
@@ -19,6 +26,9 @@ export function useTheme() {
 
   useLayoutEffect(() => {
     localStorage.setItem(KEY, theme);
+    // Root attribute drives the play HUD glass variables and the canvas
+    // dial palette (read per-frame in the renderer).
+    document.documentElement.dataset.theme = theme;
     // .lp4 is both position:fixed and its own scroll container, and
     // Chromium sometimes leaves that composited layer's background
     // stale after a CSS-variable-only repaint until something forces

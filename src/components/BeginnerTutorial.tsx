@@ -5,6 +5,7 @@ import type { GestureSignal } from '../engine/types';
 import type { DialSelection } from '../engine/renderer';
 import type { InputMode } from '../engine/input';
 import { wheelGeometry } from '../engine/renderer/geometry';
+import FroolaMascot from './FroolaMascot';
 
 const TUTORIAL_KEY = 'froola.tutorialSeen';
 
@@ -15,11 +16,11 @@ const STEPS = [
   },
   {
     headline: 'Touch the left circle',
-    body: 'Move your left hand onto the big circle on the left — you should hear a chord.',
+    body: 'Move your left hand onto the big circle on the left. You should hear a chord.',
   },
   {
     headline: 'Slide around to change the chord',
-    body: 'Keep your hand on the circle and move it around — the music changes as you go.',
+    body: 'Keep your hand on the circle and move it around. The music changes as you go.',
   },
   {
     headline: 'Try the right circle',
@@ -31,6 +32,8 @@ interface Props {
   signalRef: RefObject<GestureSignal[]>;
   selectedRef: RefObject<DialSelection>;
   mode: InputMode;
+  /** Fired once when the tutorial leaves the screen (finished or skipped). */
+  onDone?: () => void;
 }
 
 /** Play a short two-note ascending ding using the Web Audio API. */
@@ -61,7 +64,7 @@ function playSuccessSound() {
   } catch { /* ignore — audio unavailable */ }
 }
 
-export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props) {
+export default function BeginnerTutorial({ signalRef, selectedRef, mode, onDone }: Props) {
   const initialStep = mode === 'mouse' ? 1 : 0;
   const [step, setStep] = useState(initialStep);
   const [doneMessage, setDoneMessage] = useState(false);
@@ -117,7 +120,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
           if (next >= STEPS.length) {
             localStorage.setItem(TUTORIAL_KEY, 'true');
             setDoneMessage(true);
-            setTimeout(() => setGone(true), 1500);
+            setTimeout(() => { setGone(true); onDone?.(); }, 1500);
           } else {
             setStep(next);
           }
@@ -132,6 +135,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
   function skip() {
     localStorage.setItem(TUTORIAL_KEY, 'true');
     flushSync(() => setGone(true));
+    onDone?.();
   }
 
   if (gone) return null;
@@ -140,7 +144,8 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
     return (
       <div className="tutorial-overlay">
         <div className="tutorial-card">
-          <h2 className="tutorial-headline">You're ready — have fun!</h2>
+          <FroolaMascot size={44} mood="happy" />
+          <h2 className="tutorial-headline">You're ready. Have fun!</h2>
         </div>
       </div>
     );
@@ -150,6 +155,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
     return (
       <div className="tutorial-overlay">
         <div className="tutorial-card tutorial-card--complete">
+          <FroolaMascot size={44} mood="happy" />
           <span className="tutorial-checkmark">✓</span>
         </div>
       </div>
@@ -160,6 +166,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, mode }: Props
   return (
     <div className="tutorial-overlay">
       <div className="tutorial-card">
+        <FroolaMascot size={44} />
         <p className="tutorial-step-count">{step + 1} / {STEPS.length}</p>
         <h2 className="tutorial-headline">{current.headline}</h2>
         <p className="tutorial-body">{current.body}</p>

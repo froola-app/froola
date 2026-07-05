@@ -14,8 +14,10 @@ import SignInPrompt from './SignInPrompt';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
+import FroolaGuide from './FroolaGuide';
 import HandTiltPopup from './HandTiltPopup';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
+import { useTheme } from '../useTheme';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -29,10 +31,11 @@ const isTouchDevice = () => navigator.maxTouchPoints > 0;
 
 function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
   const touch = isTouchDevice();
+  const { theme } = useTheme();
   return (
     <div className="permission-screen">
       <div className="permission-card">
-        <FroolaLogo size={56} color="#111111" />
+        <FroolaLogo size={56} color={theme === 'dark' ? '#F5F5F7' : '#111111'} />
         <p className="permission-eyebrow">Camera access</p>
         <h1 className="permission-title">Conduct with your hands</h1>
         <p className="permission-body">
@@ -173,6 +176,11 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const [showTutorial, setShowTutorial] = useState(
     () => !localStorage.getItem('froola.tutorialSeen')
   );
+  // Flips when the tutorial leaves the screen — gates the froo guide so it
+  // never talks over the tutorial.
+  const [tutorialDone, setTutorialDone] = useState(
+    () => !!localStorage.getItem('froola.tutorialSeen')
+  );
   // The tutorial hides itself with internal state once it finishes, so a
   // replay must remount it — bump the key to get a fresh run.
   const [tutorialRun, setTutorialRun] = useState(0);
@@ -183,8 +191,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     try {
       localStorage.removeItem('froola.tutorialSeen');
       localStorage.removeItem('froola.nodHintSeen');
+      // Restart froo's tour too — replaying the tutorial signals the user
+      // wants the guidance back, and the guide remounts via tutorialRun.
+      localStorage.removeItem('froola.guideStep');
+      localStorage.removeItem('froola.guideDone');
     } catch { /* private mode */ }
     setShowTutorial(true);
+    setTutorialDone(false);
     setTutorialRun(r => r + 1);
     setShowNodHint(true);
   }, []);
@@ -256,8 +269,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           signalRef={signalRef}
           selectedRef={selectedRef}
           mode={mode}
+          onDone={() => setTutorialDone(true)}
         />
       )}
+      <FroolaGuide
+        key={tutorialRun}
+        loopState={loopState}
+        active={tutorialDone && (mode === 'camera' || mode === 'mouse')}
+      />
       {volumeDisplay !== null && (
         <div className="volume-badge">vol {volumeDisplay}%</div>
       )}

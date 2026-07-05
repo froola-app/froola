@@ -153,3 +153,23 @@ their rims.
   `LIGHT_ENTER`; if it flickers, widen the gap.
 - Glass intensity lives in the `--lg-*` blocks in `App.css`; the blur and
   saturation are inlined per rule (`blur(18px) saturate(180%)`).
+
+## Revision — theme-driven glass (July 2026)
+
+The adaptive-ink system above proved too unpredictable in practice: the
+near-clear fill + `saturate(200%)` pulled the scene's color (usually skin
+tone) into every pill, and the two zones flipping ink independently made the
+HUD read as unintentional — light buttons up top, salmon buttons below.
+
+The material is now **theme-driven** (`<html data-theme>`, the user's
+light/dark choice from useTheme.ts):
+
+- **Light theme**: milky glass `rgba(252,250,246,0.60)`, near-black ink.
+- **Dark theme**: smoked glass `rgba(19,21,27,0.55)`, white ink.
+- Saturation dropped to **130%**; the fill is opaque enough to carry ink
+  contrast on any camera scene.
+- The canvas dials follow the same theme via a `WheelPalette` in
+  `src/engine/renderer/index.ts` (read per frame from `data-theme`).
+- `useAmbientLuminance` still runs, but is only a **contrast assist**: when
+  the scene behind a zone fights the fill, the fill thickens a step
+  (0.60→0.76 light, 0.55→0.72 dark). Ink never flips with the scene.
