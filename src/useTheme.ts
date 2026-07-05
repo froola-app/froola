@@ -1,8 +1,11 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
 
 const KEY = 'froola-theme';
+// Broadcast channel so every mounted useTheme() instance repaints when any
+// one of them toggles (e.g. the sidebar's toggle updating the page behind it).
+const EVENT = 'froola-theme-change';
 
 export function storedTheme(): Theme {
   if (typeof localStorage === 'undefined') return 'light';
@@ -24,7 +27,16 @@ export function useTheme() {
     void document.body.offsetHeight;
   }, [theme]);
 
-  const toggleTheme = () => setTheme(t => (t === 'light' ? 'dark' : 'light'));
+  useEffect(() => {
+    const onChange = (e: Event) => setTheme((e as CustomEvent<Theme>).detail);
+    window.addEventListener(EVENT, onChange);
+    return () => window.removeEventListener(EVENT, onChange);
+  }, []);
+
+  const toggleTheme = () => {
+    const next: Theme = storedTheme() === 'light' ? 'dark' : 'light';
+    window.dispatchEvent(new CustomEvent<Theme>(EVENT, { detail: next }));
+  };
 
   return { theme, toggleTheme };
 }

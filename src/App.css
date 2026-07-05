@@ -3450,17 +3450,20 @@ body {
   width: 62%;
   height: 62%;
 }
-/* on the warm drawer surface, initials/silhouette pick up brand orange */
+/* on the glass drawer surface, initials/silhouette pick up brand orange */
 .profile-drawer .avatar {
-  background: rgba(212, 80, 10, 0.14);
-  color: #D4500A;
+  background: var(--pd-accent-tint);
+  color: var(--pd-accent);
 }
 
 .profile-drawer-scrim {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(0, 0, 0, 0.42);
+  /* warm-tinted frost, same family as the lesson overlays */
+  background: rgba(20, 16, 10, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s;
@@ -3471,9 +3474,26 @@ body {
 }
 
 .profile-drawer {
+  /* Drawer design tokens; dark values below mirror the lp4 dark theme. */
+  --pd-ink: #1c1c1e;
+  --pd-gray: #6e6e73;
+  --pd-faint: rgba(28, 28, 30, 0.55);
+  --pd-accent: #d4500a;
+  --pd-accent-tint: rgba(212, 80, 10, 0.13);
+  --pd-hairline: rgba(20, 20, 20, 0.1);
+  --pd-hairline-soft: rgba(20, 20, 20, 0.07);
+  --pd-surface: linear-gradient(165deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.52) 45%, rgba(255, 255, 255, 0.66) 100%);
+  --pd-surface-solid: #f5efe4;
+  --pd-edge: rgba(255, 255, 255, 0.55);
+  --pd-top-glint: rgba(255, 255, 255, 0.7);
+  --pd-sheen: rgba(255, 255, 255, 0.5);
+  --pd-glass-btn: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1));
+  --pd-glass-btn-hover: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.2));
+  --pd-glass-btn-border: rgba(20, 20, 20, 0.16);
+  --pd-error: #b3261e;
   /* ThemeToggle reads these; they're otherwise scoped to .lp4 */
-  --lp-accent: #d4500a;
-  --lp-hairline: rgba(0, 0, 0, 0.1);
+  --lp-accent: var(--pd-accent);
+  --lp-hairline: var(--pd-hairline);
   position: fixed;
   top: 0;
   right: 0;
@@ -3482,17 +3502,59 @@ body {
   width: min(21rem, 88vw);
   display: flex;
   flex-direction: column;
-  background: #faf6ee;
-  color: #111;
+  overflow: hidden;
+  background: var(--pd-surface);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border-left: 1px solid var(--pd-edge);
+  color: var(--pd-ink);
   font-family: 'DM Sans', system-ui, sans-serif;
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 1px 0 var(--pd-top-glint),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    -24px 0 70px rgba(0, 0, 0, 0.4);
   /* park it past its own shadow so nothing bleeds in while closed */
-  transform: translateX(calc(100% + 3rem));
+  transform: translateX(calc(100% + 5rem));
   visibility: hidden;
   transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1),
               visibility 0s 0.28s;
   outline: none;
 }
+.profile-drawer[data-theme='dark'] {
+  --pd-ink: #f5f5f7;
+  --pd-gray: #a9a9b0;
+  --pd-faint: rgba(245, 245, 247, 0.55);
+  --pd-accent: #f2650f;
+  --pd-accent-tint: rgba(242, 101, 15, 0.16);
+  --pd-hairline: rgba(255, 255, 255, 0.12);
+  --pd-hairline-soft: rgba(255, 255, 255, 0.08);
+  --pd-surface: linear-gradient(165deg, rgba(36, 37, 42, 0.8), rgba(19, 19, 23, 0.68) 45%, rgba(27, 28, 33, 0.74) 100%);
+  --pd-surface-solid: #17181c;
+  --pd-edge: rgba(255, 255, 255, 0.14);
+  --pd-top-glint: rgba(255, 255, 255, 0.12);
+  --pd-sheen: rgba(255, 255, 255, 0.08);
+  --pd-glass-btn: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  --pd-glass-btn-hover: linear-gradient(160deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
+  --pd-glass-btn-border: rgba(255, 255, 255, 0.18);
+  --pd-error: #ff8a80;
+}
+/* the glass needs something to refract; go near-opaque without support */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .profile-drawer { background: var(--pd-surface-solid); }
+}
+/* diagonal sheen, same cut as the lesson glass cards */
+.profile-drawer::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 55%;
+  height: 220%;
+  background: linear-gradient(75deg, transparent 35%, var(--pd-sheen) 50%, transparent 65%);
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+.profile-drawer > * { position: relative; z-index: 1; }
 .profile-drawer.is-open {
   transform: translateX(0);
   visibility: visible;
@@ -3509,7 +3571,7 @@ body {
   flex-direction: column;
   gap: 0.9rem;
   padding: 1.4rem 1.4rem 1.1rem;
-  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+  border-bottom: 1px solid var(--pd-hairline);
 }
 .profile-drawer__identity {
   display: flex;
@@ -3532,7 +3594,7 @@ body {
 .profile-drawer__email {
   margin: 0.1rem 0 0;
   font-size: 0.8rem;
-  color: rgba(17, 17, 17, 0.55);
+  color: var(--pd-gray);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3551,15 +3613,16 @@ body {
   justify-content: center;
   font-size: 1.3rem;
   line-height: 1;
-  color: rgba(17, 17, 17, 0.55);
+  color: var(--pd-faint);
   background: none;
   border: none;
   border-radius: 50%;
   cursor: pointer;
+  transition: color 0.15s, background 0.15s;
 }
 .profile-drawer__close:hover {
-  color: #111;
-  background: rgba(17, 17, 17, 0.06);
+  color: var(--pd-ink);
+  background: var(--pd-hairline-soft);
 }
 
 .profile-drawer__tabs {
@@ -3571,7 +3634,7 @@ body {
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
-  color: rgba(17, 17, 17, 0.55);
+  color: var(--pd-faint);
   background: none;
   border: none;
   border-radius: 999px;
@@ -3580,12 +3643,12 @@ body {
   transition: color 0.15s, background 0.15s;
 }
 .profile-drawer__tab:hover {
-  color: #111;
-  background: rgba(17, 17, 17, 0.05);
+  color: var(--pd-ink);
+  background: var(--pd-hairline-soft);
 }
 .profile-drawer__tab.is-active {
-  color: #D4500A;
-  background: rgba(212, 80, 10, 0.12);
+  color: var(--pd-accent);
+  background: var(--pd-accent-tint);
 }
 
 .profile-drawer__panel {
@@ -3599,7 +3662,7 @@ body {
   margin: 0.2rem 0 0.9rem;
   font-size: 0.85rem;
   line-height: 1.45;
-  color: rgba(17, 17, 17, 0.6);
+  color: var(--pd-gray);
 }
 
 .profile-drawer__row {
@@ -3608,7 +3671,7 @@ body {
   justify-content: space-between;
   gap: 0.8rem;
   padding: 0.75rem 0;
-  border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+  border-bottom: 1px solid var(--pd-hairline-soft);
 }
 .profile-drawer__row:last-child {
   border-bottom: none;
@@ -3624,26 +3687,74 @@ body {
 .profile-drawer__row-hint {
   margin: 0.1rem 0 0;
   font-size: 0.78rem;
-  color: rgba(17, 17, 17, 0.5);
+  color: var(--pd-gray);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* glass ghost pill — matches .step-result__btn--ghost */
 .profile-drawer__row-btn {
   flex: none;
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #111;
-  background: #ffffff;
-  border: 1px solid rgba(17, 17, 17, 0.2);
+  color: var(--pd-ink);
+  background: var(--pd-glass-btn);
+  border: 1px solid var(--pd-glass-btn-border);
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
   cursor: pointer;
-  transition: border-color 0.15s;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  transition: border-color 0.15s, background 0.15s;
 }
 .profile-drawer__row-btn:hover {
-  border-color: rgba(17, 17, 17, 0.45);
+  border-color: var(--pd-ink);
+  background: var(--pd-glass-btn-hover);
+}
+
+/* Sign-in controls inside the drawer trade the flat white SignInPrompt
+   styling for the drawer's glass vocabulary. The standalone overlay
+   keeps its own look. */
+.profile-drawer .signin-prompt__google,
+.profile-drawer .signin-prompt__email-input {
+  color: var(--pd-ink);
+  background: var(--pd-glass-btn);
+  border: 1px solid var(--pd-glass-btn-border);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  transition: border-color 0.15s, background 0.15s;
+}
+.profile-drawer .signin-prompt__google:hover {
+  border-color: var(--pd-ink);
+  background: var(--pd-glass-btn-hover);
+}
+.profile-drawer .signin-prompt__email-input::placeholder {
+  color: var(--pd-faint);
+}
+.profile-drawer .signin-prompt__email-input:focus {
+  border-color: var(--pd-accent);
+}
+/* the one primary action gets the app's signature dark pill + orange glow */
+.profile-drawer .signin-prompt__email-submit {
+  color: #fafaf8;
+  background: linear-gradient(160deg, #2c2c2e, #050505 60%, #1c1c1e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 6px 16px rgba(0, 0, 0, 0.25);
+  transition: background 0.15s;
+}
+.profile-drawer .signin-prompt__email-submit:hover:not(:disabled) {
+  background: linear-gradient(160deg, #e8630f, #9c3c05 60%, #d4500a 100%);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.profile-drawer .signin-prompt__divider {
+  color: var(--pd-faint);
+}
+.profile-drawer .signin-prompt__email-error {
+  color: var(--pd-error);
+}
+.profile-drawer .signin-prompt__email-sent {
+  color: var(--pd-gray);
 }
 
 /* ── OAuth popup landing page ────────────────────────────── */
