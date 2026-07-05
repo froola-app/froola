@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../useTheme';
+import { useTheme, type Theme } from '../useTheme';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
@@ -91,12 +92,14 @@ function EmailSignIn() {
   );
 }
 
-function DrawerHeader({ onClose }: { onClose: () => void }) {
+function DrawerHeader({ onClose, theme }: { onClose: () => void; theme: Theme }) {
   const { user, authReady } = useAuth();
   return (
     <header className="profile-drawer__header">
       <div className="profile-drawer__identity">
-        {authReady || user ? <Avatar size={48} /> : <FroolaLogo size={44} color="#111111" />}
+        {authReady || user
+          ? <Avatar size={48} />
+          : <FroolaLogo size={44} color={theme === 'dark' ? '#FAFAF8' : '#111111'} />}
         <div className="profile-drawer__who">
           {user ? (
             <>
@@ -173,12 +176,16 @@ function ProfilePanel() {
   );
 }
 
-function SettingsPanel({ play, onClose }: { play?: PlayActions; onClose: () => void }) {
-  const { theme, toggleTheme } = useTheme();
+function SettingsPanel({ play, onClose, theme, onToggleTheme }: {
+  play?: PlayActions;
+  onClose: () => void;
+  theme: Theme;
+  onToggleTheme: () => void;
+}) {
   return (
     <>
       <SettingsRow label="Theme" hint="Landing and pricing pages">
-        <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </SettingsRow>
       {play && (
         <>
@@ -207,14 +214,17 @@ function SettingsPanel({ play, onClose }: { play?: PlayActions; onClose: () => v
   );
 }
 
-function TabPanel({ tab, play, onClose }: {
+function TabPanel({ tab, play, onClose, theme, onToggleTheme }: {
   tab: TabId;
   play?: PlayActions;
   onClose: () => void;
+  theme: Theme;
+  onToggleTheme: () => void;
 }) {
   switch (tab) {
     case 'profile': return <ProfilePanel />;
-    case 'settings': return <SettingsPanel play={play} onClose={onClose} />;
+    case 'settings':
+      return <SettingsPanel play={play} onClose={onClose} theme={theme} onToggleTheme={onToggleTheme} />;
   }
 }
 
@@ -224,6 +234,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
   play?: PlayActions;
 }) {
   const [tab, setTab] = useState<TabId>('profile');
+  const { theme, toggleTheme } = useTheme();
   const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -236,7 +247,10 @@ export default function ProfileSidebar({ open, onClose, play }: {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  return (
+  // Portal to <body>: hosts like the landing nav carry backdrop-filter,
+  // which turns them into the containing block for fixed descendants and
+  // would pin (and clip) the drawer to the nav bar.
+  return createPortal(
     <>
       <div
         className={'profile-drawer-scrim' + (open ? ' is-open' : '')}
@@ -246,6 +260,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
       <aside
         ref={panelRef}
         className={'profile-drawer' + (open ? ' is-open' : '')}
+        data-theme={theme}
         role="dialog"
         aria-modal="true"
         aria-label="Account and settings"
@@ -253,7 +268,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
         inert={!open}
         tabIndex={-1}
       >
-        <DrawerHeader onClose={onClose} />
+        <DrawerHeader onClose={onClose} theme={theme} />
         <nav className="profile-drawer__tabs" role="tablist" aria-label="Sidebar sections">
           {TABS.map(t => (
             <button
@@ -268,9 +283,10 @@ export default function ProfileSidebar({ open, onClose, play }: {
           ))}
         </nav>
         <div className="profile-drawer__panel" role="tabpanel">
-          <TabPanel tab={tab} play={play} onClose={onClose} />
+          <TabPanel tab={tab} play={play} onClose={onClose} theme={theme} onToggleTheme={toggleTheme} />
         </div>
       </aside>
-    </>
+    </>,
+    document.body,
   );
 }
