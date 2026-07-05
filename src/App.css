@@ -3920,9 +3920,16 @@ body {
 .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
 .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .volume-badge, .nod-hint {
-  position: relative;
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
     transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Anchor the ::before rim ring — only on the statically-positioned
+   controls. The HUD pills above are position: fixed with top/right
+   offsets; forcing them relative drops them into flow and their old
+   offsets scatter them diagonally. Fixed boxes anchor pseudos already. */
+.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip {
+  position: relative;
 }
 
 /* the rim: a 1px gradient ring just inside the hairline border,
