@@ -3653,42 +3653,41 @@ body {
   to   { transform: scale(1);   opacity: 1; }
 }
 
-/* ── Froo — the froola mascot ─────────────────────────────────────
-   A little orange gumdrop character (SVG, see FroolaMascot.tsx):
-   leaf sprout, big blinking eyes with tracked pupils, blush, stubby
-   arms. Everything below is motion — the drawing lives in the SVG. */
+/* ── Froo — the froola guide ──────────────────────────────────────
+   The wordmark's face (the two o's + brand smile) set in a glass
+   pebble cut from the same material as the HUD pills. Motion is
+   deliberately quiet — blink, lazy gaze, one nod on success — so it
+   reads as the product mark come alive, not a game character. */
 .froo {
   position: relative;
   display: inline-block;
-  line-height: 0;
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 38%;
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
   user-select: none;
   -webkit-user-select: none;
   pointer-events: none;
-  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.22));
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
 .froo__svg {
   display: block;
   width: 100%;
-  height: auto;
-  overflow: visible;
+  height: 100%;
 }
 
-/* SVG groups animate around their own box, not the viewBox origin */
-.froo__body, .froo__arm, .froo__eye, .froo__smile, .froo__sprout {
+.froo__eye, .froo__smile {
   transform-box: fill-box;
   transform-origin: center;
-}
-
-/* idle: a slow gentle breathing bob */
-.froo__body {
-  transform-origin: 50% 100%;
-  animation: froo-breathe 3.4s ease-in-out infinite;
-}
-
-@keyframes froo-breathe {
-  0%, 100% { transform: scale(1, 1); }
-  50%      { transform: scale(1.015, 0.975); }
 }
 
 /* eyes blink by squashing; pupils are translated from JS */
@@ -3697,61 +3696,37 @@ body {
 }
 
 .froo__eye.is-blinking {
-  transform: scaleY(0.08);
+  transform: scaleY(0.1);
 }
 
 .froo__smile {
+  transform-origin: 50% 0;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .froo.is-happy .froo__smile {
-  transform: scale(1.25, 1.45);
+  transform: scale(1.18, 1.35);
 }
 
-/* arms: pinned at the shoulder; the right one waves once in a while */
-.froo__arm {
-  transform-origin: 50% 15%;
+.froo.is-happy .froo__eye {
+  transform: scale(1.05);
 }
 
-.froo__arm--r {
-  animation: froo-wave 9s ease-in-out infinite;
+/* success: one small nod, same curve the HUD buttons spring with */
+.froo.is-nodding {
+  animation: froo-nod 0.8s cubic-bezier(0.3, 1.2, 0.5, 1) both;
 }
 
-@keyframes froo-wave {
-  0%, 86%, 100% { transform: rotate(0deg); }
-  89%  { transform: rotate(-38deg); }
-  92%  { transform: rotate(-16deg); }
-  95%  { transform: rotate(-38deg); }
-  98%  { transform: rotate(0deg); }
-}
-
-/* happy: one springy squash-and-bounce of the whole character */
-.froo.is-bouncing .froo__svg {
-  animation: froo-bounce 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-@keyframes froo-bounce {
-  0%   { transform: translateY(0) scale(1, 1); }
-  25%  { transform: translateY(2px) scale(1.08, 0.88); }
-  55%  { transform: translateY(-7px) scale(0.96, 1.06); }
-  80%  { transform: translateY(1px) scale(1.03, 0.97); }
-  100% { transform: translateY(0) scale(1, 1); }
-}
-
-/* the sprout perks up when happy */
-.froo__sprout {
-  transform-origin: 50% 100%;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.froo.is-happy .froo__sprout {
-  transform: rotate(-8deg) scale(1.1);
+@keyframes froo-nod {
+  0%   { transform: translateY(0) rotate(0deg); }
+  28%  { transform: translateY(3px) rotate(-2deg); }
+  55%  { transform: translateY(-1px) rotate(1deg); }
+  78%  { transform: translateY(1.5px) rotate(-0.7deg); }
+  100% { transform: translateY(0) rotate(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .froo__body, .froo__arm--r, .froo.is-bouncing .froo__svg {
-    animation: none;
-  }
+  .froo.is-nodding { animation: none; }
 }
 
 /* the guide: froo + a glass speech bubble in the bottom-left corner */

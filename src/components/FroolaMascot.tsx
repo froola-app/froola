@@ -1,38 +1,36 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface Props {
   /** Rendered width in px. */
   size?: number;
-  /** 'happy' bounces the body and widens the smile each time it's set. */
+  /** 'happy' widens the smile and nods once each time it's set. */
   mood?: 'idle' | 'happy';
 }
 
 /**
- * Froo, the froola mascot: a little orange gumdrop with a leaf sprout, big
- * eyes and stubby arms. The pupils lazily follow the pointer (and wander
- * when it's idle), the eyes blink every few seconds, the right arm waves
- * once in a while, and the whole body bounces when something goes well.
- * Hosts the tutorial and the post-tutorial guide (see FroolaGuide).
+ * Froo, the froola guide: the wordmark's face — the two o-eyes and the brand
+ * smile — set in a glass pebble made of the same liquid-glass material as
+ * the HUD (see the --lg-* variables in App.css). Deliberately restrained:
+ * it blinks, the pupils lazily follow the pointer (wandering when it's
+ * idle), and it nods once when something goes well. No limbs, no costume —
+ * it's the product mark come alive, not a cartoon character.
  */
-export default function FroolaMascot({ size = 56, mood = 'idle' }: Props) {
+export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const eyeLRef = useRef<SVGGElement>(null);
   const eyeRRef = useRef<SVGGElement>(null);
-  const pupilLRef = useRef<SVGGElement>(null);
-  const pupilRRef = useRef<SVGGElement>(null);
+  const pupilLRef = useRef<SVGCircleElement>(null);
+  const pupilRRef = useRef<SVGCircleElement>(null);
   const wasHappy = useRef(false);
-  // Gradient ids must be unique per instance — two Froos on one page (e.g.
-  // tutorial + guide during a replay) would otherwise share defs.
-  const uid = useId();
 
-  // Bounce once each time the mood flips to happy.
+  // Nod once each time the mood flips to happy.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     if (mood === 'happy' && !wasHappy.current) {
-      root.classList.remove('is-bouncing');
+      root.classList.remove('is-nodding');
       void root.offsetWidth;
-      root.classList.add('is-bouncing');
+      root.classList.add('is-nodding');
     }
     wasHappy.current = mood === 'happy';
   }, [mood]);
@@ -65,7 +63,7 @@ export default function FroolaMascot({ size = 56, mood = 'idle' }: Props) {
         const pupil = pupils[i]!;
         const rect = eye.getBoundingClientRect();
         if (rect.width === 0) continue;
-        const maxOffset = rect.width * 0.18;
+        const maxOffset = rect.width * 0.16;
 
         let tx: number;
         let ty: number;
@@ -130,79 +128,32 @@ export default function FroolaMascot({ size = 56, mood = 'idle' }: Props) {
     };
   }, []);
 
-  const bodyGrad = `${uid}-body`;
-  const armFill = '#D4500A';
-
   return (
     <div
       className={`froo${mood === 'happy' ? ' is-happy' : ''}`}
       ref={rootRef}
-      style={{ width: size }}
+      style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      <svg className="froo__svg" viewBox="0 0 120 116" role="img">
-        <defs>
-          <radialGradient id={bodyGrad} cx="50%" cy="30%" r="80%">
-            <stop offset="0%" stopColor="#FF9F4A" />
-            <stop offset="60%" stopColor="#F0701E" />
-            <stop offset="100%" stopColor="#D4500A" />
-          </radialGradient>
-        </defs>
-
-        {/* arms sit behind the body; the right one waves now and then */}
-        <g className="froo__arm froo__arm--l">
-          <ellipse cx="14" cy="82" rx="8" ry="12" fill={armFill} transform="rotate(24 14 82)" />
+      <svg className="froo__svg" viewBox="0 0 100 100">
+        {/* the wordmark's two o's, in the theme ink */}
+        <g className="froo__eye" ref={eyeLRef}>
+          <circle cx="33" cy="42" r="13" fill="none" stroke="currentColor" strokeWidth="6.5" />
+          <circle ref={pupilLRef} cx="33" cy="42" r="4.2" fill="currentColor" />
         </g>
-        <g className="froo__arm froo__arm--r">
-          <ellipse cx="106" cy="82" rx="8" ry="12" fill={armFill} transform="rotate(-24 106 82)" />
+        <g className="froo__eye" ref={eyeRRef}>
+          <circle cx="67" cy="42" r="13" fill="none" stroke="currentColor" strokeWidth="6.5" />
+          <circle ref={pupilRRef} cx="67" cy="42" r="4.2" fill="currentColor" />
         </g>
-
-        <g className="froo__body">
-          {/* leaf sprout — froola is a little fruit at heart */}
-          <g className="froo__sprout">
-            <path d="M60 18 C 59 12 59 8 61 3" fill="none" stroke="#4E7A3A" strokeWidth="3" strokeLinecap="round" />
-            <path d="M61 7 C 68 1 78 1 84 6 C 78 12 68 13 61 7 Z" fill="#5FA14A" />
-            <path d="M60 8 C 55 3 48 2 43 5 C 47 11 55 12 60 8 Z" fill="#7CBF5E" />
-          </g>
-
-          {/* gumdrop body */}
-          <path
-            d="M60 14 C 90 14 106 40 106 68 C 106 96 86 110 60 110 C 34 110 14 96 14 68 C 14 40 30 14 60 14 Z"
-            fill={`url(#${bodyGrad})`}
-          />
-          {/* soft belly sheen, tucked low so it doesn't read as a mouth */}
-          <ellipse cx="60" cy="102" rx="26" ry="9" fill="#FFB067" opacity="0.22" />
-
-          {/* face */}
-          <g className="froo__eye" ref={eyeLRef}>
-            <ellipse cx="43" cy="60" rx="11.5" ry="13" fill="#FFF8F0" />
-            <g ref={pupilLRef}>
-              <circle cx="43" cy="61" r="5.4" fill="#2B1A12" />
-              <circle cx="45" cy="58.6" r="1.9" fill="#FFF8F0" />
-            </g>
-          </g>
-          <g className="froo__eye" ref={eyeRRef}>
-            <ellipse cx="77" cy="60" rx="11.5" ry="13" fill="#FFF8F0" />
-            <g ref={pupilRRef}>
-              <circle cx="77" cy="61" r="5.4" fill="#2B1A12" />
-              <circle cx="79" cy="58.6" r="1.9" fill="#FFF8F0" />
-            </g>
-          </g>
-
-          {/* blush */}
-          <ellipse cx="29" cy="75" rx="6.5" ry="3.6" fill="#FF7A59" opacity="0.55" />
-          <ellipse cx="91" cy="75" rx="6.5" ry="3.6" fill="#FF7A59" opacity="0.55" />
-
-          {/* the brand smile */}
-          <path
-            className="froo__smile"
-            d="M46 79 Q 60 92 74 79"
-            fill="none"
-            stroke="#FFF4E8"
-            strokeWidth="5"
-            strokeLinecap="round"
-          />
-        </g>
+        {/* the brand smile — the one bold move, same as everywhere else */}
+        <path
+          className="froo__smile"
+          d="M33 68 Q 50 82 67 68"
+          fill="none"
+          stroke="#D4500A"
+          strokeWidth="6.5"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );
