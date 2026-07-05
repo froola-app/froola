@@ -157,9 +157,6 @@ function ProfilePanel() {
   }
   return (
     <>
-      <p className="profile-drawer__note">
-        Your photo and name come from your Google account. Custom photos are on the way.
-      </p>
       <SettingsRow label="Signed in" hint={user.email ?? undefined}>
         <button className="profile-drawer__row-btn" onClick={() => void signOutUser()}>
           Sign out
