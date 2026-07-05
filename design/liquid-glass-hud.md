@@ -114,6 +114,36 @@ dark-chip-on-bright-scene.
 - `src/App.css` — `--lg-*` variable sets + per-control glass recipe
   (see the "Liquid glass HUD" comment block)
 
+## v2 — curvature (July 2026, same day)
+
+Feedback on v1: readable now, but still not Apple. Diagnosis: v1 got the
+*material* right (blur, saturation, translucency) but not the *curvature*.
+Apple's glass reads convex because its edge lighting is directional and its
+controls respond physically. True refraction (the background bending through
+the edge) needs an SVG displacement map in `backdrop-filter`, which only
+Chromium honors and Safari does not — not acceptable for Froola — so v2
+fakes the curvature with three cues that work everywhere:
+
+1. **Directional gradient rim.** The uniform 1px stroke is joined by a
+   `::before` ring (the two-layer mask trick: fill minus content-box):
+   brightest warm-white at top-left where light enters, nearly nothing
+   mid-edge, a cool blue-tinted catch-light at bottom-right. The warm/cool
+   split is the chromatic hint a thick lens gives. `<select>` can't host
+   pseudo-elements, so the pickers keep the flat stroke — visually close
+   enough sitting next to ringed neighbors.
+2. **Thicker material.** Blur 18→24px, saturation 180→200%. The scene
+   should look like it's passing through something with mass.
+3. **Physical response.** Hover floats the pill 1px; press squishes to
+   0.95 (0.88 for inner chips) on a spring curve
+   (`cubic-bezier(0.34, 1.56, 0.64, 1)`) so the release overshoots
+   slightly — glass that behaves like an object, not a painted chip.
+   Disabled under `prefers-reduced-motion`.
+
+The v2 rules live at the very end of `App.css` (they must follow the
+per-control rules to win the cascade). The v1 top-rim inset shadow stays —
+a straight specular plus a directional ring is exactly how Apple layers
+their rims.
+
 ## Verifying / tuning
 
 - Point the camera at a bright wall: ink should go near-black within ~1s.

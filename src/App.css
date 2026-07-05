@@ -3778,3 +3778,99 @@ body {
   color: rgba(17, 17, 17, 0.7);
   text-align: center;
 }
+
+/* ── Liquid glass v2 — curvature ─────────────────────────────────
+   The v1 recipe was legible but read flat next to Apple's glass:
+   a uniform 1px stroke and a straight top rim don't say "curved
+   surface". v2 adds what curvature actually looks like:
+
+   - a directional gradient rim (a ::before ring): brightest at the
+     top-left where light enters, falling to nearly nothing mid-edge,
+     with a cool catch-light at the bottom-right — plus a faint
+     warm/cool split, the chromatic hint a thick lens gives;
+   - heavier blur and saturation so the scene visibly thickens
+     through the material;
+   - springy press/hover motion, so the pill behaves like a physical
+     object instead of a painted chip.
+
+   These rules sit at the end of the file so they override the
+   per-control declarations above. <select> can't host
+   pseudo-elements, so the pickers keep their flat stroke;
+   everything else gets the ring. */
+
+.share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
+.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.volume-badge, .nod-hint,
+.instrument-select {
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+}
+
+.share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
+.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.volume-badge, .nod-hint {
+  position: relative;
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* the rim: a 1px gradient ring just inside the hairline border,
+   painted via the two-layer mask trick (fill minus content box) */
+.share-btn::before, .record-btn::before, .vid-record-btn::before,
+.learn-nav-btn::before, .profile-btn::before, .octave-control::before,
+.arp-btn::before, .loop-controls::before, .loop-slot::before,
+.tutorial-skip::before, .volume-badge::before, .nod-hint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 252, 245, 0.65),
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.03) 55%,
+    rgba(222, 236, 255, 0.40) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* motion: hover floats, press squishes — the spring curve in the
+   grouped transition above gives the release its bounce */
+.share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled),
+.learn-nav-btn:hover, .profile-btn:hover, .arp-btn:hover,
+.tutorial-skip:hover {
+  transform: translateY(-1px);
+}
+
+.share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled),
+.learn-nav-btn:active, .profile-btn:active, .arp-btn:active,
+.tutorial-skip:active {
+  transform: scale(0.95);
+}
+
+.octave-btn, .loop-btn {
+  transition: color 0.3s, background 0.3s,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.octave-btn:active:not(:disabled), .loop-btn:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
+  .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+  .octave-btn, .loop-btn {
+    transition-property: color, background, border-color, box-shadow;
+  }
+  .share-btn:hover, .record-btn:hover, .vid-record-btn:hover,
+  .learn-nav-btn:hover, .profile-btn:hover, .arp-btn:hover,
+  .tutorial-skip:hover {
+    transform: none;
+  }
+}
