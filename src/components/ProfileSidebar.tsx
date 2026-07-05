@@ -15,13 +15,6 @@ export interface PlayActions {
   onReplayTutorial: () => void;
 }
 
-// Adding a tab = one entry here + a case in TabPanel below.
-const TABS = [
-  { id: 'profile', label: 'Profile' },
-  { id: 'settings', label: 'Settings' },
-] as const;
-type TabId = (typeof TABS)[number]['id'];
-
 function GoogleButton({ onDone }: { onDone?: () => void }) {
   const { signInWithGoogle } = useAuth();
   return (
@@ -214,26 +207,11 @@ function SettingsPanel({ play, onClose, theme, onToggleTheme }: {
   );
 }
 
-function TabPanel({ tab, play, onClose, theme, onToggleTheme }: {
-  tab: TabId;
-  play?: PlayActions;
-  onClose: () => void;
-  theme: Theme;
-  onToggleTheme: () => void;
-}) {
-  switch (tab) {
-    case 'profile': return <ProfilePanel />;
-    case 'settings':
-      return <SettingsPanel play={play} onClose={onClose} theme={theme} onToggleTheme={onToggleTheme} />;
-  }
-}
-
 export default function ProfileSidebar({ open, onClose, play }: {
   open: boolean;
   onClose: () => void;
   play?: PlayActions;
 }) {
-  const [tab, setTab] = useState<TabId>('profile');
   const { theme, toggleTheme } = useTheme();
   const panelRef = useRef<HTMLElement>(null);
 
@@ -269,21 +247,15 @@ export default function ProfileSidebar({ open, onClose, play }: {
         tabIndex={-1}
       >
         <DrawerHeader onClose={onClose} theme={theme} />
-        <nav className="profile-drawer__tabs" role="tablist" aria-label="Sidebar sections">
-          {TABS.map(t => (
-            <button
-              key={t.id}
-              role="tab"
-              aria-selected={tab === t.id}
-              className={'profile-drawer__tab' + (tab === t.id ? ' is-active' : '')}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
-        <div className="profile-drawer__panel" role="tabpanel">
-          <TabPanel tab={tab} play={play} onClose={onClose} theme={theme} onToggleTheme={toggleTheme} />
+        <div className="profile-drawer__panel">
+          <section className="profile-drawer__section">
+            <h3 className="profile-drawer__section-title">Account</h3>
+            <ProfilePanel />
+          </section>
+          <section className="profile-drawer__section">
+            <h3 className="profile-drawer__section-title">Settings</h3>
+            <SettingsPanel play={play} onClose={onClose} theme={theme} onToggleTheme={toggleTheme} />
+          </section>
         </div>
       </aside>
     </>,
