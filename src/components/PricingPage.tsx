@@ -4,6 +4,7 @@ import { useScrollReveal } from '../useScrollReveal';
 import { useTheme } from '../useTheme';
 import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';
+import ProfileButton from './ProfileButton';
 import ThemeToggle from './ThemeToggle';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
@@ -18,22 +19,15 @@ export default function PricingPage() {
 
   return (
     <div className="lp4" data-theme={theme} ref={rootRef}>
-      <nav className="lp4__nav">
-        <div className="lp4__nav-inner">
-          <Link to="/" aria-label="Froola home">
-            <FroolaLogo size={16} color={inkColor} />
-          </Link>
-          <div className="lp4__nav-links">
-            <Link to="/" className="lp4__nav-link">
-              Play now
-            </Link>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="lp4__nav-link">
-              Contact
-            </a>
-            <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          </div>
-        </div>
-      </nav>
+      {/* Floating corner controls, matching the landing page — no nav bar.
+          The logo stays as the way back home. */}
+      <Link to="/" className="lp4__corner-home" aria-label="Froola home">
+        <FroolaLogo size={16} color={inkColor} />
+      </Link>
+      <div className="lp4__corner">
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        <ProfileButton variant="nav" />
+      </div>
 
       <PricingSection />
 

@@ -1,4 +1,6 @@
-import type { PlanId } from '../api/_lib/stripe.ts';
+// Shared with the api/ serverless functions — this file is the source of
+// truth for plan ids so browser code never imports server-only modules.
+export type PlanId = 'plus' | 'studio';
 
 export interface PricingTier {
   name: string;

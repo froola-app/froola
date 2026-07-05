@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { PlanId } from '../api/_lib/stripe.ts';
+import type { PlanId } from './pricingTiers.ts';
 
 export type { PlanId };
 
