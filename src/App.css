@@ -3654,63 +3654,63 @@ body {
 }
 
 /* ── Froo — the froola guide ──────────────────────────────────────
-   The wordmark's face (the two o's + brand smile) set in a glass
-   pebble cut from the same material as the HUD pills. Motion is
-   deliberately quiet — blink, lazy gaze, one nod on success — so it
-   reads as the product mark come alive, not a game character. */
+   A small metronome in hairline ink (theme color) with one brand-
+   orange accent, the pendulum weight. The pendulum idles at a slow
+   tick and locks to the loop BPM while it plays (--froo-tick is set
+   inline from the component). The only face is two dot eyes that
+   blink and glance toward the pointer — a tool with a face, not a
+   cartoon. Drawing lives in FroolaMascot.tsx. */
 .froo {
   position: relative;
   display: inline-block;
   color: var(--lg-top-ink);
-  background:
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
-    var(--lg-top-fill);
-  border: 1px solid var(--lg-top-stroke);
-  border-radius: 38%;
-  backdrop-filter: blur(24px) saturate(130%);
-  -webkit-backdrop-filter: blur(24px) saturate(130%);
-  box-shadow:
-    inset 0 1px 0 var(--lg-top-rim),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
-    var(--lg-top-shadow);
+  line-height: 0;
   user-select: none;
   -webkit-user-select: none;
   pointer-events: none;
-  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.18));
+  transition: color 0.3s;
 }
 
 .froo__svg {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 
-.froo__eye, .froo__smile {
+/* a whisper of the HUD glass fill inside the hairline shell */
+.froo__shell {
+  fill: var(--lg-top-fill);
+  transition: fill 0.3s;
+}
+
+/* pendulum swings around its base pivot; one full cycle = two beats */
+.froo__pendulum {
+  transform-box: view-box;
+  transform-origin: 50% 81%;
+  animation: froo-tick var(--froo-tick, 3.6s) ease-in-out infinite;
+}
+
+@keyframes froo-tick {
+  0%, 100% { transform: rotate(-11deg); }
+  50%      { transform: rotate(11deg); }
+}
+
+/* eyes: dot by default; a content arc while happy; squash to blink */
+.froo__eye {
   transform-box: fill-box;
   transform-origin: center;
-}
-
-/* eyes blink by squashing; pupils are translated from JS */
-.froo__eye {
   transition: transform 0.09s ease-out;
 }
 
 .froo__eye.is-blinking {
-  transform: scaleY(0.1);
+  transform: scaleY(0.15);
 }
 
-.froo__smile {
-  transform-origin: 50% 0;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+.froo__eye-arc { display: none; }
 
-.froo.is-happy .froo__smile {
-  transform: scale(1.18, 1.35);
-}
-
-.froo.is-happy .froo__eye {
-  transform: scale(1.05);
-}
+.froo.is-happy .froo__eye-dot { display: none; }
+.froo.is-happy .froo__eye-arc { display: block; }
 
 /* success: one small nod, same curve the HUD buttons spring with */
 .froo.is-nodding {
@@ -3726,7 +3726,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .froo.is-nodding { animation: none; }
+  .froo.is-nodding, .froo__pendulum { animation: none; }
 }
 
 /* the guide: froo + a glass speech bubble in the bottom-left corner */

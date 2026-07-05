@@ -3,24 +3,25 @@ import { useEffect, useRef } from 'react';
 interface Props {
   /** Rendered width in px. */
   size?: number;
-  /** 'happy' widens the smile and nods once each time it's set. */
+  /** 'happy' closes the eyes into content arcs and nods once each time it's set. */
   mood?: 'idle' | 'happy';
+  /** When set, the pendulum keeps this tempo (one full swing = two beats).
+   *  Otherwise it idles at a slow, quiet tick. */
+  bpm?: number;
 }
 
 /**
- * Froo, the froola guide: the wordmark's face — the two o-eyes and the brand
- * smile — set in a glass pebble made of the same liquid-glass material as
- * the HUD (see the --lg-* variables in App.css). Deliberately restrained:
- * it blinks, the pupils lazily follow the pointer (wandering when it's
- * idle), and it nods once when something goes well. No limbs, no costume —
- * it's the product mark come alive, not a cartoon character.
+ * Froo, the froola guide: a small metronome drawn in hairline ink with one
+ * brand-orange accent (the pendulum weight). A metronome keeps time — which
+ * is what the guide does for the player — and it gives Froo honest motion:
+ * the pendulum idles at a slow tick and locks to the loop's BPM while it
+ * plays. The only anthropomorphism is a pair of dot eyes that blink and
+ * glance toward the pointer. Deliberately a tool with a face, not a cartoon.
  */
-export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
+export default function FroolaMascot({ size = 48, mood = 'idle', bpm }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const eyeLRef = useRef<SVGGElement>(null);
   const eyeRRef = useRef<SVGGElement>(null);
-  const pupilLRef = useRef<SVGCircleElement>(null);
-  const pupilRRef = useRef<SVGCircleElement>(null);
   const wasHappy = useRef(false);
 
   // Nod once each time the mood flips to happy.
@@ -37,8 +38,7 @@ export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
 
   useEffect(() => {
     const eyes = [eyeLRef.current, eyeRRef.current];
-    const pupils = [pupilLRef.current, pupilRRef.current];
-    if (eyes.some(e => !e) || pupils.some(p => !p)) return;
+    if (eyes.some(e => !e)) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     if (reduceMotion.matches) return;
@@ -60,10 +60,10 @@ export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
 
       for (let i = 0; i < 2; i++) {
         const eye = eyes[i]!;
-        const pupil = pupils[i]!;
         const rect = eye.getBoundingClientRect();
         if (rect.width === 0) continue;
-        const maxOffset = rect.width * 0.16;
+        // The whole dot glances, so keep the travel small and quiet.
+        const maxOffset = rect.width * 0.35;
 
         let tx: number;
         let ty: number;
@@ -76,7 +76,7 @@ export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
           let dx = pointer!.x - cx;
           let dy = pointer!.y - cy;
           const dist = Math.hypot(dx, dy) || 1;
-          const mag = Math.min(dist / (rect.width * 1.5), 1) * maxOffset;
+          const mag = Math.min(dist / (rect.width * 4), 1) * maxOffset;
           dx = (dx / dist) * mag;
           dy = (dy / dist) * mag;
           tx = dx;
@@ -85,7 +85,10 @@ export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
 
         gaze[i].x += (tx - gaze[i].x) * 0.1;
         gaze[i].y += (ty - gaze[i].y) * 0.1;
-        pupil.style.transform = `translate(${gaze[i].x.toFixed(2)}px, ${gaze[i].y.toFixed(2)}px)`;
+        eye.style.setProperty(
+          'translate',
+          `${gaze[i].x.toFixed(2)}px ${gaze[i].y.toFixed(2)}px`,
+        );
       }
       raf = requestAnimationFrame(tick);
     };
@@ -112,7 +115,7 @@ export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
       wanderTimer = window.setTimeout(() => {
         wander = {
           x: (Math.random() * 2 - 1) * 0.9,
-          y: (Math.random() * 2 - 1) * 0.6,
+          y: (Math.random() * 2 - 1) * 0.5,
         };
         scheduleWander();
       }, 1800 + Math.random() * 2600);
@@ -128,32 +131,59 @@ export default function FroolaMascot({ size = 48, mood = 'idle' }: Props) {
     };
   }, []);
 
+  // One full pendulum swing (left-right-left) spans two beats.
+  const tickStyle = bpm
+    ? ({ '--froo-tick': `${(120 / bpm).toFixed(3)}s` } as React.CSSProperties)
+    : undefined;
+
   return (
     <div
       className={`froo${mood === 'happy' ? ' is-happy' : ''}`}
       ref={rootRef}
-      style={{ width: size, height: size }}
+      style={{ width: size, ...tickStyle }}
       aria-hidden="true"
     >
-      <svg className="froo__svg" viewBox="0 0 100 100">
-        {/* the wordmark's two o's, in the theme ink */}
+      <svg className="froo__svg" viewBox="0 0 100 116">
+        {/* metronome shell — hairline ink over a whisper of the glass fill */}
+        <path
+          className="froo__shell"
+          d="M 39.5 10 H 60.5 Q 65.5 10 66.3 15 L 78.2 92 Q 79.5 100.5 70.8 100.5 H 29.2 Q 20.5 100.5 21.8 92 L 33.7 15 Q 34.5 10 39.5 10 Z"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        />
+        {/* base hairline */}
+        <line x1="25.5" y1="88" x2="74.5" y2="88" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
+
+        {/* pendulum: ink arm, brand-orange weight, pinned at the base */}
+        <g className="froo__pendulum">
+          <line x1="50" y1="94" x2="50" y2="19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <rect x="45.8" y="34" width="8.4" height="12" rx="2.6" fill="#D4500A" />
+        </g>
+        <circle cx="50" cy="94" r="3.1" fill="#D4500A" />
+
+        {/* the face: two dot eyes beside the arm, nothing else */}
         <g className="froo__eye" ref={eyeLRef}>
-          <circle cx="33" cy="42" r="13" fill="none" stroke="currentColor" strokeWidth="6.5" />
-          <circle ref={pupilLRef} cx="33" cy="42" r="4.2" fill="currentColor" />
+          <circle className="froo__eye-dot" cx="39" cy="76" r="3" fill="currentColor" />
+          <path
+            className="froo__eye-arc"
+            d="M 35.6 77.2 Q 39 73.6 42.4 77.2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
         </g>
         <g className="froo__eye" ref={eyeRRef}>
-          <circle cx="67" cy="42" r="13" fill="none" stroke="currentColor" strokeWidth="6.5" />
-          <circle ref={pupilRRef} cx="67" cy="42" r="4.2" fill="currentColor" />
+          <circle className="froo__eye-dot" cx="61" cy="76" r="3" fill="currentColor" />
+          <path
+            className="froo__eye-arc"
+            d="M 57.6 77.2 Q 61 73.6 64.4 77.2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
         </g>
-        {/* the brand smile — the one bold move, same as everywhere else */}
-        <path
-          className="froo__smile"
-          d="M33 68 Q 50 82 67 68"
-          fill="none"
-          stroke="#D4500A"
-          strokeWidth="6.5"
-          strokeLinecap="round"
-        />
       </svg>
     </div>
   );

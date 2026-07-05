@@ -194,7 +194,11 @@ export default function FroolaGuide({ loopState, active }: Props) {
         aria-label="Froo, the froola guide"
         title={inTour ? undefined : 'Ask Froo for a tip'}
       >
-        <FroolaMascot size={inTour ? 56 : 48} mood={happy ? 'happy' : 'idle'} />
+        <FroolaMascot
+          size={inTour ? 52 : 44}
+          mood={happy ? 'happy' : 'idle'}
+          bpm={loopState.playing ? loopState.bpm : undefined}
+        />
       </button>
       {bubbleText && (
         <div className="froo-guide__bubble">
