@@ -3997,8 +3997,12 @@ body {
      `position: absolute; inset: 0`, so this button must stay a positioned
      ancestor itself — static lets the ring fall through to .lp4__corner
      (the fixed flex wrapper around both nav buttons) and stretch into an
-     oval spanning the toggle and the avatar. */
+     oval spanning the toggle and the avatar. Relative respects the base
+     .profile-btn's `top: 1rem; right: 1rem` (ignored under static), so
+     those must be neutralized or the button drifts from its flex slot. */
   position: relative;
+  top: auto;
+  right: auto;
   width: 28px;
   height: 28px;
   color: var(--lp-ink);
