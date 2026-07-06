@@ -10,13 +10,14 @@ import ShareButton from './ShareButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
 import ProfileButton from './ProfileButton';
-import SignInPrompt from './SignInPrompt';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
 import FroolaGuide from './FroolaGuide';
 import HandTiltPopup from './HandTiltPopup';
+import PlayWall from './PlayWall';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
+import { usePlayWall } from '../hooks/usePlayWall';
 import { useTheme } from '../useTheme';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
@@ -135,6 +136,12 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+
+  const gated = usePlayWall(mode !== 'asking');
+  useEffect(() => {
+    if (gated) engineRef.current?.suspend();
+    else engineRef.current?.resume();
+  }, [gated, engineRef]);
 
   // Watch the camera feed's brightness and flag the HUD zones on <html> so
   // the glass controls flip to dark ink over bright scenes (see App.css).
@@ -306,7 +313,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           onReplayTutorial: replayTutorial,
         } : undefined}
       />
-      <SignInPrompt />
       </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
@@ -373,6 +379,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           arp {arpEnabled ? 'on' : 'off'}
         </button>
       </div>}
+      {gated && <PlayWall />}
     </>
   );
 }
