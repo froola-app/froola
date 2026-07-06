@@ -27,7 +27,7 @@ export default function ProfileButton({ play, variant }: { play?: PlayActions; v
         aria-haspopup="dialog"
         aria-label={user ? 'Account and settings' : 'Sign in and settings'}
       >
-        <Avatar size={variant === 'nav' ? 22 : 30} />
+        <Avatar size={30} />
       </button>
       <ProfileSidebar
         open={open}

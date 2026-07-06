@@ -4003,8 +4003,8 @@ body {
   position: relative;
   top: auto;
   right: auto;
-  width: 28px;
-  height: 28px;
+  width: 2rem;
+  height: 2rem;
   color: var(--lp-ink);
   background: rgba(127, 127, 127, 0.12);
   border-color: var(--lp-hairline);
