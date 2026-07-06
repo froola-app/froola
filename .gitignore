@@ -35,3 +35,4 @@ docs/
 # Licensed melody data — generated locally by tools/melody-extract, never committed
 public/melodies/
 .vercel
+.superpowers/
