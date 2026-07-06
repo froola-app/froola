@@ -4476,6 +4476,48 @@ body {
   text-align: center;
 }
 
+/* ── Play wall (hard sign-up gate) ──────────────────────────── */
+.play-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 17, 17, 0.6);
+  backdrop-filter: blur(6px);
+}
+.play-wall__card {
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 2rem 1.8rem;
+  background: #faf6ee;
+  color: #111;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.play-wall__title {
+  margin: 0.75rem 0 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.play-wall__body {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: rgba(17, 17, 17, 0.7);
+}
+.play-wall__actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 /* ── Liquid glass v2 — curvature ─────────────────────────────────
    The v1 recipe was legible but read flat next to Apple's glass:
    a uniform 1px stroke and a straight top rim don't say "curved
