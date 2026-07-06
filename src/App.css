@@ -3993,7 +3993,12 @@ body {
    surrounding nav links/theme toggle and colored via --lp-ink so it's
    visible in both light and dark theme. */
 .profile-btn--nav {
-  position: static;
+  /* relative, not static: the shared .profile-btn::before rim ring is
+     `position: absolute; inset: 0`, so this button must stay a positioned
+     ancestor itself — static lets the ring fall through to .lp4__corner
+     (the fixed flex wrapper around both nav buttons) and stretch into an
+     oval spanning the toggle and the avatar. */
+  position: relative;
   width: 28px;
   height: 28px;
   color: var(--lp-ink);
