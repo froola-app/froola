@@ -3950,7 +3950,7 @@ body {
 /* ── Profile button + sidebar (play HUD) ─────────────────────
    The round avatar owns the top-right corner; clicking it slides a
    drawer in from the right. The drawer reuses the warm paper surface
-   of .signin-prompt / .permission-card so overlays feel like one
+   of the sign-in overlay / .permission-card so overlays feel like one
    family against the dark canvas. */
 .profile-btn {
   position: fixed;
@@ -4358,36 +4358,6 @@ body {
 }
 
 /* ── Sign-in prompt overlay ──────────────────────────────── */
-.signin-prompt {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 40;
-  width: min(20rem, calc(100vw - 2rem));
-  padding: 1.5rem 1.6rem;
-  background: #faf6ee;
-  color: #111;
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  font-family: 'DM Sans', system-ui, sans-serif;
-  text-align: center;
-}
-.signin-prompt__title {
-  margin: 0 0 0.35rem;
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-.signin-prompt__body {
-  margin: 0 0 1.1rem;
-  font-size: 0.9rem;
-  color: rgba(17, 17, 17, 0.7);
-}
-.signin-prompt__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
 .signin-prompt__google {
   display: inline-flex;
   align-items: center;
@@ -4404,17 +4374,6 @@ body {
 }
 .signin-prompt__google:hover {
   border-color: rgba(17, 17, 17, 0.4);
-}
-.signin-prompt__dismiss {
-  padding: 0.4rem;
-  font-size: 0.85rem;
-  color: rgba(17, 17, 17, 0.55);
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-.signin-prompt__dismiss:hover {
-  color: #111;
 }
 
 .signin-prompt__divider {
