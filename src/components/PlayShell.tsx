@@ -145,16 +145,22 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     else engineRef.current?.resume();
   }, [gated, engineRef]);
 
-  // React has no way to notice a node it rendered getting deleted by an
-  // external actor (browser devtools) — bump wallKey to force a remount if
-  // that happens while the wall is supposed to be up. Audio/input stay
-  // gated regardless (see coordinator.ts's gatedRef), so this only affects
-  // the visible overlay, but the wall should never be actually removable.
-  const [wallKey, setWallKey] = useState(0);
+  // React can't recover if an external actor (browser devtools) deletes a
+  // node it rendered — reconciliation throws when it tries to remove the
+  // already-gone node. So don't remount: put the exact node back where it
+  // was and React never notices. Audio/input stay gated regardless (see
+  // coordinator.ts's gatedRef), but the wall should never be removable.
   useEffect(() => {
     if (!gated) return;
-    const observer = new MutationObserver(() => {
-      if (!document.querySelector('.play-wall')) setWallKey(k => k + 1);
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of m.removedNodes) {
+          if (node instanceof HTMLElement &&
+              (node.classList.contains('play-wall') || node.querySelector('.play-wall'))) {
+            m.target.insertBefore(node, m.nextSibling);
+          }
+        }
+      }
     });
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
@@ -396,7 +402,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           arp {arpEnabled ? 'on' : 'off'}
         </button>
       </div>}
-      {gated && <PlayWall key={wallKey} />}
+      {gated && <PlayWall />}
     </>
   );
 }
