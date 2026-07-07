@@ -2851,59 +2851,52 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 30;
-  background: rgba(20, 16, 10, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(20, 16, 10, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
+/* Same glass material as the HUD pills / tutorial card (theme-driven
+   --lg-top-* vars): the fill is opaque enough that ink contrast never
+   depends on the camera scene behind it. */
 .lesson-start-card {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(165deg, rgba(255,255,255,0.55), rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.32) 100%);
-  border: 1px solid rgba(255,255,255,0.5);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
   border-radius: 22px;
   padding: 2.25rem 2rem 2rem;
   max-width: 430px;
   width: calc(100vw - 2rem);
-  color: #1C1C1E;
+  color: var(--lg-top-ink);
   font-family: 'DM Sans', system-ui, sans-serif;
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.7),
-    inset 0 -1px 0 rgba(0,0,0,0.04),
-    0 24px 70px rgba(0,0,0,0.4);
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    0 24px 70px rgba(0, 0, 0, 0.35);
+  transition: color 0.3s, background 0.3s, border-color 0.3s;
 }
-.lesson-start-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -20%;
-  width: 55%;
-  height: 220%;
-  background: linear-gradient(75deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
-  transform: rotate(8deg);
-  pointer-events: none;
-}
-.lesson-start-card > * { position: relative; z-index: 1; }
 
 .lesson-start__eyebrow {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: #8E8E93;
+  color: #D4500A;
   margin: 0 0 0.55rem;
 }
 .lesson-start__title {
   font-size: 1.75rem;
   font-weight: 900;
   letter-spacing: -0.025em;
+  color: var(--lg-top-ink);
   margin: 0 0 0.4rem;
 }
 .lesson-start__subtitle {
   font-size: 0.9rem;
-  color: #6E6E73;
+  color: var(--lg-top-ink-dim);
   margin: 0 0 1.1rem;
   line-height: 1.5;
 }
@@ -2918,49 +2911,61 @@ body {
 .lesson-start__bpm {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #6E6E73;
+  color: var(--lg-top-ink-dim);
   margin-left: 0.4rem;
   letter-spacing: 0.04em;
+}
+
+/* the learn-page chord chip is styled for the cream page; on glass it
+   borrows the card's ink instead */
+.lesson-start__progression .chord-chip {
+  color: var(--lg-top-ink);
+  background: var(--lg-top-inner);
+  border-color: var(--lg-top-stroke);
 }
 
 .lesson-start__steps {
   list-style: none;
   margin: 0 0 1.5rem;
   padding: 1rem 0 0;
-  border-top: 1px solid rgba(20,20,20,0.1);
+  border-top: 1px solid var(--lg-top-inner);
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
 }
 .lesson-start__steps li {
   font-size: 0.88rem;
-  color: rgba(20,20,20,0.75);
+  color: var(--lg-top-ink);
   display: flex;
   gap: 0.6rem;
   line-height: 1.4;
 }
 .lesson-start__steps li span {
-  color: #1C1C1E;
+  color: #D4500A;
   font-weight: 900;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ink-filled pill: dark pill on light glass, white pill on dark glass;
+   brand orange on hover either way */
 .lesson-start__btn {
   width: 100%;
   padding: 0.9rem;
   border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: linear-gradient(160deg, #2c2c2e, #050505 60%, #1c1c1e 100%);
-  color: #FAFAF8;
+  border: 1px solid var(--lg-top-stroke);
+  background: var(--lg-top-ink);
+  color: var(--lg-on-ink);
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 22px rgba(0,0,0,0.3);
-  transition: background 0.15s, transform 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 8px 22px rgba(0,0,0,0.25);
+  transition: background 0.15s, color 0.15s, transform 0.15s;
 }
 .lesson-start__btn:hover {
-  background: linear-gradient(160deg, #E8630F, #9c3c05 60%, #D4500A 100%);
+  background: #D4500A;
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
@@ -2973,20 +2978,31 @@ body {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: 500;
-  color: rgba(255,255,255,0.65);
-  background: rgba(20,16,10,0.55);
-  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
   cursor: pointer;
   z-index: 40;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: color 0.15s, border-color 0.15s;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 .lesson-exit-btn:hover {
-  color: #ffffff;
-  border-color: rgba(255,255,255,0.45);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
 }
 
 /* ── In-lesson HUD ─── */
