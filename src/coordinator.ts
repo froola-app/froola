@@ -184,6 +184,16 @@ export function useCoordinator(
       const music = musicRef?.current ?? DEFAULT_MUSIC;
       const nowMs = performance.now();
 
+      // Sign-up wall is up — no code path here may produce sound or act on
+      // gesture input, independent of whether the PlayWall overlay's DOM
+      // node still exists (it can be deleted via devtools).
+      if (gatedRef?.current) {
+        if (sounding && engine) { engine.silence(instrMode); sounding = false; }
+        if (arpRef?.current?.running) arpRef.current.stop();
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
       // Kick off sampler loading as soon as user selects piano
       if (instrMode === 'piano' && engine) {
         engine.startLoadingSampler(instrMode);

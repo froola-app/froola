@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { act } from '@testing-library/react';
 import { useRef as useRefForGate } from 'react';
 import { useRef } from 'react';
 import { mockAudioContext } from './test-utils/webAudioMock';
 import { useCoordinator } from './coordinator';
+import { AudioEngine } from './engine/audio';
 import type { InstrumentMode } from './engine/types';
 
 vi.mock('soundfont-player', () => ({
@@ -69,5 +71,35 @@ describe('useCoordinator — gated audio unlock', () => {
     document.dispatchEvent(new Event('visibilitychange'));
 
     expect(mockAudioContext.resume).not.toHaveBeenCalled();
+  });
+});
+
+describe('useCoordinator — gated hot loop', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame'] });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not call engine.play() from gesture signals while gated', () => {
+    const signalRef = { current: [
+      { handId: 'left' as const, x: 0.15, y: 0.5, present: true, fist: false },
+    ] };
+    const playSpy = vi.spyOn(AudioEngine.prototype, 'play');
+
+    renderHook(() => {
+      const canvasRef = useRef<HTMLCanvasElement | null>(null);
+      const modeRef = useRef<InstrumentMode>('synth');
+      const gatedRef = useRefForGate(true);
+      return useCoordinator(canvasRef, modeRef, 'mouse', undefined, signalRef, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
+    });
+
+    // Drive one rAF tick.
+    act(() => { vi.advanceTimersByTime(16); });
+
+    expect(playSpy).not.toHaveBeenCalled();
+    playSpy.mockRestore();
   });
 });
