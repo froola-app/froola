@@ -157,7 +157,11 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         for (const node of m.removedNodes) {
           if (node instanceof HTMLElement &&
               (node.classList.contains('play-wall') || node.querySelector('.play-wall'))) {
-            m.target.insertBefore(node, m.nextSibling);
+            if (m.nextSibling && m.nextSibling.parentNode === m.target) {
+              m.target.insertBefore(node, m.nextSibling);
+            } else {
+              m.target.appendChild(node);
+            }
           }
         }
       }

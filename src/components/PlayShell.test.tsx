@@ -102,4 +102,23 @@ describe('PlayShell — play wall wiring', () => {
       expect(container.querySelector('.play-wall')).not.toBeNull();
     });
   });
+
+  it('re-inserts the play wall even when its next sibling was removed in the same batch', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(true);
+    const { container } = render(<PlayShell />);
+
+    const wall = container.querySelector('.play-wall')!;
+    const sibling = document.createElement('div');
+    wall.parentNode!.insertBefore(sibling, wall.nextSibling);
+
+    sibling.remove();
+    wall.remove();
+    expect(container.querySelector('.play-wall')).toBeNull();
+
+    await vi.waitFor(() => {
+      expect(container.querySelector('.play-wall')).not.toBeNull();
+    });
+  });
 });
