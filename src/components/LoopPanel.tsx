@@ -15,7 +15,7 @@ export default function LoopPanel({
   /** Plan-gated slot cap (see src/entitlements.ts); engine caps at MAX_SLOTS. */
   maxSlots?: number;
 }) {
-  const { slots, playing, bpm, currentSlot } = state;
+  const { slots, playing, bpm, beatsPerSlot, currentSlot } = state;
   const full = slots.length >= Math.min(maxSlots, MAX_SLOTS);
   const empty = slots.length === 0;
 
@@ -75,6 +75,15 @@ export default function LoopPanel({
             +
           </button>
         </div>
+
+        <button
+          className="loop-btn"
+          onClick={() => looper.setBeatsPerSlot(beatsPerSlot === 4 ? 2 : beatsPerSlot === 2 ? 1 : 4)}
+          title="Beats each chord holds before the loop moves on"
+          aria-label={`Beats per chord: ${beatsPerSlot}`}
+        >
+          ♩×{beatsPerSlot}
+        </button>
 
         <button
           className={`loop-btn loop-btn--play${playing ? ' is-playing' : ''}`}

@@ -1,5 +1,5 @@
 // C1 sequential chord looper. Captured chords are held as ordered slots; when
-// playing, a TempoClock steps through them one bar at a time and schedules each
+// playing, a TempoClock steps through them every `beatsPerSlot` beats and schedules each
 // chord to sound at its precise audio time. It plays one chord at a time, which
 // fits the engine's single chord-pad — the free hand solos over it separately.
 
@@ -9,15 +9,20 @@ import { MIN_BPM, MAX_BPM } from '../audio'
 
 export const MAX_SLOTS = 8
 export const DEFAULT_BPM = 90
-// 1 slot = 1 bar = 4 beats; the clock emits one step per beat.
+// The clock emits one step per beat; a slot spans `beatsPerSlot` beats
+// (default a full 4-beat bar, down to one chord per beat).
 const STEPS_PER_BEAT = 1
-const BEATS_PER_BAR = 4
+export const DEFAULT_BEATS_PER_SLOT = 4
+const MIN_BEATS_PER_SLOT = 1
+const MAX_BEATS_PER_SLOT = 4
 
 export type LooperState = {
   /** Chord label per slot, in order (for display). */
   slots: string[]
   playing: boolean
   bpm: number
+  /** How many beats each chord holds before the loop advances (1–4). */
+  beatsPerSlot: number
   /** Index of the currently sounding slot, or -1 when stopped. */
   currentSlot: number
 }
@@ -36,7 +41,7 @@ export class ChordLooper {
   private slots: MusicalCommand[] = []
   private clock: TempoClock | null = null
   private bpm = DEFAULT_BPM
-  private barsPerSlot = 1
+  private beatsPerSlot = DEFAULT_BEATS_PER_SLOT
   private currentSlot = -1
 
   constructor(deps: LooperDeps) {
@@ -44,7 +49,7 @@ export class ChordLooper {
   }
 
   private get stepsPerSlot(): number {
-    return BEATS_PER_BAR * this.barsPerSlot
+    return this.beatsPerSlot
   }
 
   get length(): number {
@@ -78,6 +83,7 @@ export class ChordLooper {
   clear(): void {
     this.slots = []
     this.bpm = DEFAULT_BPM
+    this.beatsPerSlot = DEFAULT_BEATS_PER_SLOT
     this.clock?.setBpm(this.bpm)
     if (this.playing) this.stop()
     else this.emit()
@@ -86,6 +92,18 @@ export class ChordLooper {
   setBpm(bpm: number): void {
     this.bpm = clampBpm(bpm)
     this.clock?.setBpm(this.bpm)
+    this.emit()
+  }
+
+  getBeatsPerSlot(): number {
+    return this.beatsPerSlot
+  }
+
+  setBeatsPerSlot(beats: number): void {
+    this.beatsPerSlot = Math.max(
+      MIN_BEATS_PER_SLOT,
+      Math.min(MAX_BEATS_PER_SLOT, Math.round(beats)),
+    )
     this.emit()
   }
 
@@ -117,11 +135,12 @@ export class ChordLooper {
       slots: this.slots.map(c => c.chord),
       playing: this.playing,
       bpm: this.bpm,
+      beatsPerSlot: this.beatsPerSlot,
       currentSlot: this.currentSlot,
     }
   }
 
-  // Fired for every clock step; act only on slot (bar) boundaries.
+  // Fired for every clock step; act only on slot boundaries.
   private onStep(e: ClockStep): void {
     if (this.slots.length === 0) return
     if (e.step % this.stepsPerSlot !== 0) return

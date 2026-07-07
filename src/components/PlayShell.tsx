@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import { storeInputMode, type InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
-import { ChordLooper, DEFAULT_BPM, type LooperState } from '../engine/looper';
+import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
@@ -105,7 +105,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   // lets the coordinator's hot loop know when the loop owns the pad.
   const loopPlayingRef = useRef(false);
   const [loopState, setLoopState] = useState<LooperState>({
-    slots: [], playing: false, bpm: DEFAULT_BPM, currentSlot: -1,
+    slots: [], playing: false, bpm: DEFAULT_BPM, beatsPerSlot: DEFAULT_BEATS_PER_SLOT, currentSlot: -1,
   });
 
   // Arpeggiator: turns a sustained chord into a repeating pattern. Defaults

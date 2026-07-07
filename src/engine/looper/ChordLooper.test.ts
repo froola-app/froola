@@ -86,6 +86,49 @@ describe('ChordLooper — tempo', () => {
   })
 })
 
+describe('ChordLooper — beats per chord', () => {
+  it('defaults to 4 beats per chord and reports it in state', () => {
+    const h = harness()
+    expect(h.looper.getBeatsPerSlot()).toBe(4)
+    h.looper.add(cmd('C'))
+    expect(h.state?.beatsPerSlot).toBe(4)
+  })
+
+  it('clamps setBeatsPerSlot to whole beats within 1–4', () => {
+    const h = harness()
+    h.looper.setBeatsPerSlot(0)
+    expect(h.looper.getBeatsPerSlot()).toBe(1)
+    h.looper.setBeatsPerSlot(9)
+    expect(h.looper.getBeatsPerSlot()).toBe(4)
+    h.looper.setBeatsPerSlot(2)
+    expect(h.looper.getBeatsPerSlot()).toBe(2)
+  })
+
+  it('advances one chord per beat when beatsPerSlot is 1', () => {
+    const h = harness()
+    h.looper.add(cmd('C')); h.looper.add(cmd('F')); h.looper.add(cmd('G'))
+    h.looper.setBpm(60) // 1 beat = 1s
+    h.looper.setBeatsPerSlot(1)
+    h.looper.start()
+    h.audio.currentTime = 4
+    vi.advanceTimersByTime(25)
+    expect(h.played).toEqual([
+      { label: 'C', when: 0 },
+      { label: 'F', when: 1 },
+      { label: 'G', when: 2 },
+      { label: 'C', when: 3 },
+      { label: 'F', when: 4 },
+    ])
+  })
+
+  it('clear resets beatsPerSlot to the default', () => {
+    const h = harness()
+    h.looper.setBeatsPerSlot(1)
+    h.looper.clear()
+    expect(h.looper.getBeatsPerSlot()).toBe(4)
+  })
+})
+
 describe('ChordLooper — playback', () => {
   it('does nothing on start when empty', () => {
     const h = harness()
