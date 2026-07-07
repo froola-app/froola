@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   pitchFromMatrix,
   yawFromMatrix,
-  createNodDetector,
+  createTiltHoldDetector,
   createShakeDetector,
   volumeDeltaForGesture,
-  type NodEvent,
+  type TiltEvent,
 } from './headGestures';
 
 // Column-major 4x4 rotation about the x-axis by `deg` degrees.
@@ -36,141 +36,135 @@ describe('pitchFromMatrix', () => {
   });
 });
 
-// Feed a pitch trace at 33ms steps (~30Hz); collect fired events.
+// Feed a pitch trace at 33ms steps (~30Hz); collect fired events with times.
 function runTrace(
-  det: ReturnType<typeof createNodDetector>,
+  det: ReturnType<typeof createTiltHoldDetector>,
   pitches: number[],
   startMs = 0,
-): NodEvent[] {
-  const events: NodEvent[] = [];
+): TiltEvent[] {
+  return runTimedTrace(det, pitches, startMs).map(([ev]) => ev);
+}
+
+function runTimedTrace(
+  det: ReturnType<typeof createTiltHoldDetector>,
+  pitches: number[],
+  startMs = 0,
+): Array<[TiltEvent, number]> {
+  const events: Array<[TiltEvent, number]> = [];
   pitches.forEach((p, i) => {
-    const ev = det.sample(p, startMs + i * 33);
-    if (ev) events.push(ev);
+    const t = startMs + i * 33;
+    const ev = det.sample(p, t);
+    if (ev) events.push([ev, t]);
   });
   return events;
 }
 
 const IDLE10 = Array(10).fill(0); // seed + settle at baseline 0
 
-describe('createNodDetector — core detection', () => {
-  it('fires exactly one "down" for a fast (~300ms) downward nod', () => {
-    const det = createNodDetector();
-    // deflect past 12°, hold, return to baseline: ~9 samples ≈ 300ms
-    const nod = [6, 13, 15, 15, 15, 13, 6, 0, 0];
-    const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(0)]);
-    expect(events).toEqual(['down']);
+describe('createTiltHoldDetector — core detection', () => {
+  it('fires "down" ~150ms into a held downward tilt, then repeats every ~400ms', () => {
+    const det = createTiltHoldDetector();
+    // Hold 15° for 40 samples (~1.3s): engage at t=330, first fire once the
+    // hold has lasted ≥150ms (t=495), repeats ≥400ms apart (t=924, t=1353).
+    const events = runTrace(det, [...IDLE10, ...Array(40).fill(15), ...Array(10).fill(0)]);
+    expect(events).toEqual(['down', 'down', 'down']);
   });
 
-  it('fires exactly one "up" for the mirrored upward nod', () => {
-    const det = createNodDetector();
-    const nod = [-6, -13, -15, -15, -15, -13, -6, 0, 0];
-    const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(0)]);
-    expect(events).toEqual(['up']);
+  it('fires "up" repeatedly for the mirrored upward hold', () => {
+    const det = createTiltHoldDetector();
+    const events = runTrace(det, [...IDLE10, ...Array(40).fill(-15), ...Array(10).fill(0)]);
+    expect(events).toEqual(['up', 'up', 'up']);
   });
 
-  it('fires for a slow deliberate nod (~800ms)', () => {
-    const det = createNodDetector();
-    const nod = [13, ...Array(20).fill(15), 6, 0]; // ~23 samples ≈ 760ms deflected
-    const events = runTrace(det, [...IDLE10, ...nod, ...Array(5).fill(0)]);
+  it('a short tilt-and-return (~300ms past threshold) fires exactly one step', () => {
+    const det = createTiltHoldDetector();
+    const tilt = [6, 13, 15, 15, 15, 15, 15, 13, 6, 0];
+    const events = runTrace(det, [...IDLE10, ...tilt, ...Array(10).fill(0)]);
     expect(events).toEqual(['down']);
   });
 
   it('ignores a sub-150ms twitch', () => {
-    const det = createNodDetector();
-    // deflected for a single 33ms sample, back at baseline immediately
+    const det = createTiltHoldDetector();
     const events = runTrace(det, [...IDLE10, 15, 0, ...Array(10).fill(0)]);
     expect(events).toEqual([]);
   });
+
+  it('returning to neutral never fires the opposite direction, even with overshoot', () => {
+    const det = createTiltHoldDetector();
+    // Hold down, then release with a realistic overshoot past neutral.
+    const trace = [...IDLE10, ...Array(20).fill(15), 6, -4, -7, -6, -3, 0, ...Array(10).fill(0)];
+    const events = runTrace(det, trace);
+    expect(events.every((e) => e === 'down')).toBe(true);
+    expect(events.length).toBeGreaterThan(0);
+  });
 });
 
-describe('createNodDetector — robustness', () => {
-  it('sustained look-down re-baselines silently; nods from new posture work', () => {
-    const det = createNodDetector();
-    const lookDown = Array(35).fill(-20);            // > 900ms deflected → re-baseline
-    const settle = Array(10).fill(-20);              // idle at new posture
-    const nod = [-26, -35, -35, -35, -35, -26, -20]; // dev −15 from new baseline
-    const events = runTrace(det, [...IDLE10, ...lookDown, ...settle, ...nod, ...Array(10).fill(-20)]);
-    expect(events).toEqual(['up']); // only the deliberate nod, nothing from the posture change
+describe('createTiltHoldDetector — robustness', () => {
+  it('a sustained look-down stops stepping after MAX_HOLD_MS and re-baselines; the return fires nothing', () => {
+    const det = createTiltHoldDetector();
+    // Held 150 samples (~5s) then return to 0 and settle.
+    const timed = runTimedTrace(det, [...IDLE10, ...Array(150).fill(-20), ...Array(30).fill(0)]);
+    expect(timed.every(([ev]) => ev === 'up')).toBe(true);
+    // No fires after the 4s hold cap (engage at t=330 + 4000 = 4330).
+    expect(timed.every(([, t]) => t <= 4330)).toBe(true);
   });
 
   it('never fires on small jitter around baseline', () => {
-    const det = createNodDetector();
+    const det = createTiltHoldDetector();
     const jitter = Array.from({ length: 90 }, (_, i) => 3 * Math.sin(i * 1.3)); // ±3° for ~3s
     expect(runTrace(det, [0, ...jitter])).toEqual([]);
   });
 
-  it('suppresses a second nod inside the 500ms refractory, allows it after', () => {
-    const det = createNodDetector();
-    const nod = [13, 15, 15, 15, 13, 6, 0];
-    // Immediately repeated nod: second deflection starts ~66ms after the fire → suppressed.
-    const backToBack = [...IDLE10, ...nod, 0, ...nod];
-    expect(runTrace(det, backToBack)).toEqual(['down']);
-    // Same second nod but after a >500ms gap at baseline (16 samples ≈ 528ms) → fires.
-    const det2 = createNodDetector();
-    const spaced = [...IDLE10, ...nod, ...Array(16).fill(0), ...nod, ...Array(5).fill(0)];
+  it('release starts a refractory: an immediate re-tilt is suppressed, a spaced one fires', () => {
+    const tilt = [13, ...Array(8).fill(15), 6, 0];
+    // Re-tilt ~66ms after release → suppressed.
+    const det = createTiltHoldDetector();
+    expect(runTrace(det, [...IDLE10, ...tilt, 0, ...tilt])).toEqual(['down']);
+    // Re-tilt after >500ms at baseline (16 samples ≈ 528ms) → fires again.
+    const det2 = createTiltHoldDetector();
+    const spaced = [...IDLE10, ...tilt, ...Array(16).fill(0), ...tilt, ...Array(5).fill(0)];
     expect(runTrace(det2, spaced)).toEqual(['down', 'down']);
   });
 
   it('absorbs slow posture drift without firing', () => {
-    const det = createNodDetector();
+    const det = createTiltHoldDetector();
     const drift = Array.from({ length: 100 }, (_, i) => i * 0.1); // 0.1°/sample, 10° total
     expect(runTrace(det, drift)).toEqual([]);
   });
 
   it('reset() re-seeds: a new resting pitch after reset does not fire', () => {
-    const det = createNodDetector();
+    const det = createTiltHoldDetector();
     runTrace(det, IDLE10);          // seeded at 0
     det.reset();                    // face lost
-    // Face reacquired at a very different pitch — must seed, not deflect.
     const events = runTrace(det, Array(10).fill(-30), 10 * 33);
     expect(events).toEqual([]);
   });
 
-  it('adapts a settled off-baseline posture (slow EMA) so a nod toward baseline still fires', () => {
-    const det = createNodDetector();
-    // Seed at 0, then settle at +8° — the off-baseline posture the original
-    // design left frozen forever. ~400 samples at 33ms lets the slow EMA
-    // (0.002 outside the 5° band, 0.02 once inside it) converge the
-    // baseline to within a fraction of a degree of 8.
+  it('adapts a settled off-baseline posture (slow EMA) so a tilt toward baseline still fires', () => {
+    const det = createTiltHoldDetector();
     const settle = Array(400).fill(8);
-    // Nod from the new posture: down to -7° (dev from the ~7.8° baseline is
-    // ~-14.8°, past the deflection threshold) and back to 8°.
-    const nod = [-7, -7, -7, -7, -7, 8, 8, 8];
-    const events = runTrace(det, [0, ...settle, ...nod]);
+    // Tilt from the new posture: down to -7° (dev ~-14.8° from the ~7.8°
+    // baseline), held past 150ms, back to 8°.
+    const tilt = [...Array(8).fill(-7), 8, 8, 8];
+    const events = runTrace(det, [0, ...settle, ...tilt]);
     expect(events).toEqual(['up']);
   });
 
   it('ignores NaN samples — no poisoned baseline, seeds normally once real data arrives', () => {
-    const det = createNodDetector();
-    const nanEvents = runTrace(det, [NaN, NaN, NaN]);
-    expect(nanEvents).toEqual([]);
-    // The NaNs must not have seeded or otherwise perturbed state: the next
-    // real sample seeds fresh, and detection works exactly as in the
-    // baseline fast-nod case.
-    const nod = [6, 13, 15, 15, 15, 13, 6, 0, 0];
-    const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(0)], 3 * 33);
+    const det = createTiltHoldDetector();
+    expect(runTrace(det, [NaN, NaN, NaN])).toEqual([]);
+    const tilt = [6, 13, ...Array(6).fill(15), 6, 0];
+    const events = runTrace(det, [...IDLE10, ...tilt, ...Array(10).fill(0)], 3 * 33);
     expect(events).toEqual(['down']);
   });
 
-  it('fires early once the head is back within half of peak deflection, without a full return', () => {
-    const det = createNodDetector();
-    // Deflect to 16° (peak), then hover at 7° — never inside the 5° return
-    // threshold, but 7 ≤ 0.5 × 16, so the half-of-peak rule fires. Elapsed at
-    // the 7° sample is 4 × 33 = 132ms ≥ MIN_NOD_MS.
-    const nod = [10, 16, 16, 16, 7];
-    const events = runTrace(det, [...IDLE10, ...nod, ...Array(10).fill(7)]);
-    expect(events).toEqual(['down']);
-  });
-
-  it('suppress() blocks a nod inside the refractory window, allows one after', () => {
-    const nod = [13, 15, 15, 15, 13, 6, 0];
-    const det = createNodDetector();
+  it('suppress() blocks a tilt inside the refractory window, allows one after', () => {
+    const tilt = [13, ...Array(8).fill(15), 6, 0];
+    const det = createTiltHoldDetector();
     runTrace(det, IDLE10); // seeded, last sample at t = 9 × 33 = 297ms
     det.suppress(297);
-    // Nod starting on the very next sample (~33ms later) → inside refractory.
-    expect(runTrace(det, [...nod, ...Array(3).fill(0)], 10 * 33)).toEqual([]);
-    // Same nod starting >500ms after the suppress → fires.
-    expect(runTrace(det, [...nod, ...Array(3).fill(0)], 297 + 550)).toEqual(['down']);
+    expect(runTrace(det, [...tilt, ...Array(3).fill(0)], 10 * 33)).toEqual([]);
+    expect(runTrace(det, [...tilt, ...Array(3).fill(0)], 297 + 550)).toEqual(['down']);
   });
 });
 
@@ -323,12 +317,12 @@ describe('createShakeDetector — robustness', () => {
 });
 
 describe('volumeDeltaForGesture', () => {
-  it('nod-up raises volume', () => {
-    expect(volumeDeltaForGesture('nod-up')).toBeCloseTo(0.1);
+  it('tilt-up raises volume', () => {
+    expect(volumeDeltaForGesture('tilt-up')).toBeCloseTo(0.1);
   });
 
-  it('nod-down lowers volume', () => {
-    expect(volumeDeltaForGesture('nod-down')).toBeCloseTo(-0.1);
+  it('tilt-down lowers volume', () => {
+    expect(volumeDeltaForGesture('tilt-down')).toBeCloseTo(-0.1);
   });
 
   it('shake lowers volume (redundant secondary path)', () => {
