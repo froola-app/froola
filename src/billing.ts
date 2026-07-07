@@ -19,6 +19,16 @@ async function authedFetch(path: string, body?: unknown): Promise<{ url: string 
   return res.json();
 }
 
+// Pre-boots the checkout serverless function so the first real click doesn't
+// pay the cold-start cost (Node boot + Stripe SDK load). The GET is rejected
+// with a 405 before doing any work, but by then the instance is warm.
+let warmed = false;
+export function warmCheckoutApi(): void {
+  if (warmed) return;
+  warmed = true;
+  void fetch('/api/create-checkout-session').catch(() => {});
+}
+
 // Redirects the browser to Stripe Checkout for the given tier. Caller is
 // responsible for making sure the user is signed in first — this returns
 // silently (no redirect) if the caller isn't.

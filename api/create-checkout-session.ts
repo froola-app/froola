@@ -1,6 +1,6 @@
-import { stripe, priceIdForPlan, type PlanId } from './_lib/stripe.ts';
-import { getUserFromAuthHeader, supabaseAdmin } from './_lib/supabaseAdmin.ts';
-import { originFrom, type ApiRequest, type ApiResponse } from './_lib/http.ts';
+import { stripe, priceIdForPlan, type PlanId } from './_lib/stripe.js';
+import { getUserFromAuthHeader, supabaseAdmin } from './_lib/supabaseAdmin.js';
+import { originFrom, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 function isPlanId(value: unknown): value is PlanId {
   return value === 'plus' || value === 'studio';

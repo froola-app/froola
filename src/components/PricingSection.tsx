@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { startCheckout, type PlanId } from '../billing';
+import { startCheckout, warmCheckoutApi, type PlanId } from '../billing';
 import { PRICING_TIERS } from '../pricingTiers';
 import SmileAccent from './SmileAccent';
 
@@ -40,6 +40,10 @@ function UpgradeButton({ planId, currentPlan }: { planId: PlanId; currentPlan: P
 export default function PricingSection() {
   const { profile } = useAuth();
   const currentPlan = profile?.plan ?? 'free';
+
+  // Warm the checkout function as soon as pricing is on screen, so clicking
+  // Upgrade doesn't stack a serverless cold start on top of the redirect.
+  useEffect(() => { warmCheckoutApi(); }, []);
 
   return (
     <section className="lp4__section" id="pricing" data-reveal>

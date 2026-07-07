@@ -1,7 +1,7 @@
 import type Stripe from 'stripe';
-import { stripe, planForPriceId } from './_lib/stripe.ts';
-import { supabaseAdmin } from './_lib/supabaseAdmin.ts';
-import { readRawBody, type ApiRequest, type ApiResponse } from './_lib/http.ts';
+import { stripe, planForPriceId } from './_lib/stripe.js';
+import { supabaseAdmin } from './_lib/supabaseAdmin.js';
+import { readRawBody, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 // Stripe needs the raw, unparsed body to verify the signature.
 export const config = { api: { bodyParser: false } };

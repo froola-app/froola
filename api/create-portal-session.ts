@@ -1,6 +1,6 @@
-import { stripe } from './_lib/stripe.ts';
-import { getUserFromAuthHeader, supabaseAdmin } from './_lib/supabaseAdmin.ts';
-import { originFrom, type ApiRequest, type ApiResponse } from './_lib/http.ts';
+import { stripe } from './_lib/stripe.js';
+import { getUserFromAuthHeader, supabaseAdmin } from './_lib/supabaseAdmin.js';
+import { originFrom, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'POST') {
