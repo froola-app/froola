@@ -4,17 +4,16 @@ import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
 import {
-  createNodDetector,
+  createTiltHoldDetector,
   createShakeDetector,
   pitchFromMatrix,
   yawFromMatrix,
   type HeadGestureEvent,
 } from './headGestures';
 
-// Discrete head-gesture events for volume control: nod up = louder, nod down =
-// quieter, head-shake = quieter (a redundant secondary path). The nod
-// detector already returns the tilt direction; we forward it instead of
-// collapsing every nod to one direction.
+// Discrete head-gesture events for volume control: tilt up and hold = louder,
+// tilt down and hold = quieter (steps repeat while held), head-shake =
+// quieter (a redundant secondary path).
 
 export type InputMode = 'asking' | 'camera' | 'mouse';
 
@@ -311,7 +310,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         try { return localStorage.getItem('froola.debugNod') === '1'; } catch { return false; }
       })();
       let lastNodLogMs = 0;
-      const nodDetector = createNodDetector(
+      const nodDetector = createTiltHoldDetector(
         nodDebug ? (msg) => console.log(`[nod] ${msg}`) : undefined,
       );
       const shakeDetector = createShakeDetector(
@@ -490,7 +489,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             const nod = nodDetector.sample(pitch, now);
             const shake = shakeDetector.sample(yaw, now);
             if (nod && !shake) {
-              headGestureRef.current = nod === 'up' ? 'nod-up' : 'nod-down';
+              headGestureRef.current = nod === 'up' ? 'tilt-up' : 'tilt-down';
               shakeDetector.suppress(now);
             } else if (shake) {
               headGestureRef.current = 'shake';

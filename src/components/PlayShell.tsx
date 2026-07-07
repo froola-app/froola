@@ -328,7 +328,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         <div className="nod-hint">tap anywhere for sound</div>
       )}
       {!audioStuck && mode === 'camera' && showNodHint && volumeDisplay === null && (
-        <div className="nod-hint">nod up ↑ louder · nod down ↓ quieter</div>
+        <div className="nod-hint">tilt head up ↑ &amp; hold = louder · down ↓ = quieter</div>
       )}
       {mode === 'asking' && (
         <CameraPrompt onCamera={requestCamera} onMouse={useMouse} />

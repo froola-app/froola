@@ -232,8 +232,8 @@ export function useCoordinator(
       const sustained = spaceHeld || sustainToggle;
       sustainedRef.current = sustained;
 
-      // Head gesture → discrete volume step: nod up = louder, nod down /
-      // head-shake = quieter.
+      // Head gesture → discrete volume step: tilt up (held) = louder, tilt
+      // down (held) / head-shake = quieter; the detector repeats while held.
       const headGesture = headGestureRef.current;
       if (headGesture && engine) {
         const next = volumeRef.current + volumeDeltaForGesture(headGesture);

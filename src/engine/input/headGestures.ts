@@ -26,36 +26,50 @@ export function yawFromMatrix(data: ArrayLike<number>): number {
 export const BASELINE_ALPHA = 0.02;      // baseline EMA weight (~2s time constant at 30Hz)
 export const BASELINE_SLOW_ALPHA = 0.002; // baseline EMA weight outside the band (BASELINE_ALPHA / 10)
 export const BASELINE_BAND_DEG = 5;      // baseline only adapts inside this band
-export const DEFLECT_THRESHOLD_DEG = 8;  // deviation that starts a nod
-export const RETURN_THRESHOLD_DEG = 5;   // deviation below this always completes a nod
-export const RETURN_FRACTION = 0.5;      // ...or once the head is back within this fraction of peak deflection (fires earlier on big nods)
-export const MIN_NOD_MS = 100;           // faster return = jitter, not a nod
-export const MAX_NOD_MS = 900;           // no return by now = posture change
-export const REFRACTORY_MS = 500;        // no new deflection after a fire
+export const DEFLECT_THRESHOLD_DEG = 8;  // deviation that engages a tilt-hold
+export const RELEASE_THRESHOLD_DEG = 5;  // deviation below this releases the hold (hysteresis)
+export const HOLD_ENGAGE_MS = 150;       // deflection must persist this long before the first step (rejects twitches)
+export const REPEAT_MS = 400;            // step repeat interval while the tilt is held
+export const MAX_HOLD_MS = 4000;         // deflected this long = posture change, not volume intent
+export const REFRACTORY_MS = 500;        // after a release, ignore new deflections (return overshoot can't fire the opposite step)
 
-export type NodEvent = 'up' | 'down';
+export type TiltEvent = 'up' | 'down';
 
-export interface NodDetector {
-  sample(pitchDeg: number, nowMs: number): NodEvent | null;
-  /** Mutual suppression: abort any in-flight nod and hold off for the refractory period. */
+export interface TiltHoldDetector {
+  sample(pitchDeg: number, nowMs: number): TiltEvent | null;
+  /** Mutual suppression: abort any in-flight hold and hold off for the refractory period. */
   suppress(nowMs: number): void;
   reset(): void;
 }
 
-export function createNodDetector(debugLog?: (msg: string) => void): NodDetector {
+/**
+ * Tilt-and-hold: deflect past DEFLECT_THRESHOLD_DEG and keep it there — one
+ * step fires once the hold has lasted HOLD_ENGAGE_MS, then repeats every
+ * REPEAT_MS until the head comes back inside RELEASE_THRESHOLD_DEG. Releasing
+ * enters a refractory window so the return (including overshoot past neutral)
+ * can never fire the opposite direction. A hold past MAX_HOLD_MS is a posture
+ * change: it re-baselines silently and remembers the old neutral, so the
+ * eventual return to that neutral is swallowed instead of read as a new tilt.
+ */
+export function createTiltHoldDetector(debugLog?: (msg: string) => void): TiltHoldDetector {
   let seeded = false;
   let baseline = 0;
-  let state: 'IDLE' | 'DEFLECTED' = 'IDLE';
-  let direction: NodEvent = 'down';
+  let state: 'IDLE' | 'HOLDING' = 'IDLE';
+  let direction: TiltEvent = 'down';
   let startMs = 0;
-  let peakDev = 0;
+  let lastFireMs = -Infinity;
+  let fired = false;
   let refractoryUntil = -Infinity;
+  // Neutral pitch before a MAX_HOLD_MS posture re-baseline; a later "tilt"
+  // that lands back at this value is the head returning home, not a gesture.
+  let prevNeutral: number | null = null;
 
   return {
     reset() {
       seeded = false;
       state = 'IDLE';
       refractoryUntil = -Infinity;
+      prevNeutral = null;
     },
     suppress(nowMs) {
       state = 'IDLE';
@@ -74,42 +88,59 @@ export function createNodDetector(debugLog?: (msg: string) => void): NodDetector
         if (Math.abs(dev) <= BASELINE_BAND_DEG) {
           baseline += BASELINE_ALPHA * dev;
         } else if (Math.abs(dev) > DEFLECT_THRESHOLD_DEG && nowMs >= refractoryUntil) {
-          state = 'DEFLECTED';
+          state = 'HOLDING';
           direction = dev > 0 ? 'down' : 'up';
           startMs = nowMs;
-          peakDev = Math.abs(dev);
-          debugLog?.(`deflect ${direction} dev=${dev.toFixed(1)} baseline=${baseline.toFixed(1)}`);
+          lastFireMs = -Infinity;
+          fired = false;
+          debugLog?.(`engage ${direction} dev=${dev.toFixed(1)} baseline=${baseline.toFixed(1)}`);
         } else {
-          // Outside the band but not deflecting (either mid-band-to-threshold,
+          // Outside the band but not engaging (either mid-band-to-threshold,
           // or blocked by the refractory period): adapt slowly so a settled
           // posture eventually re-centers instead of freezing the baseline
-          // forever, without polluting it during a real nod's rising edge.
+          // forever, without polluting it during a real tilt's rising edge.
           baseline += BASELINE_SLOW_ALPHA * dev;
         }
         return null;
       }
 
-      // DEFLECTED
+      // HOLDING
       const elapsed = nowMs - startMs;
-      if (elapsed > MAX_NOD_MS) {
-        // Posture change (e.g. looking down at hands), not a nod.
+      const released =
+        Math.abs(dev) < RELEASE_THRESHOLD_DEG ||
+        (direction === 'down' ? dev < 0 : dev > 0); // shot through neutral
+      if (released) {
+        state = 'IDLE';
+        // Only a hold that actually stepped needs the refractory (its return
+        // may overshoot); a silent twitch can re-engage immediately.
+        if (fired) refractoryUntil = nowMs + REFRACTORY_MS;
+        debugLog?.(`release after ${elapsed}ms`);
+        return null;
+      }
+      if (elapsed > MAX_HOLD_MS) {
+        // Posture change (e.g. looking down at hands), not volume intent.
+        prevNeutral = baseline;
         baseline = pitchDeg;
         state = 'IDLE';
+        refractoryUntil = nowMs + REFRACTORY_MS;
         debugLog?.(`re-baseline to ${baseline.toFixed(1)} after ${elapsed}ms`);
         return null;
       }
-      peakDev = Math.max(peakDev, Math.abs(dev));
-      // Fire as soon as the head is clearly on its way back: fully inside
-      // the return threshold, or (for bigger nods) back within half of the
-      // peak deflection — waiting for the full return reads as lag.
-      if (Math.abs(dev) < RETURN_THRESHOLD_DEG || Math.abs(dev) <= RETURN_FRACTION * peakDev) {
-        state = 'IDLE';
-        if (elapsed >= MIN_NOD_MS) {
+      if (elapsed >= HOLD_ENGAGE_MS && nowMs - lastFireMs >= REPEAT_MS) {
+        if (prevNeutral !== null && Math.abs(pitchDeg - prevNeutral) <= BASELINE_BAND_DEG) {
+          // Head returning to its pre-posture-change neutral: swallow it.
+          baseline = prevNeutral;
+          prevNeutral = null;
+          state = 'IDLE';
           refractoryUntil = nowMs + REFRACTORY_MS;
-          debugLog?.(`fire ${direction} after ${elapsed}ms`);
-          return direction;
+          debugLog?.(`return to neutral ${baseline.toFixed(1)} — swallowed`);
+          return null;
         }
-        return null; // twitch
+        prevNeutral = null;
+        lastFireMs = nowMs;
+        fired = true;
+        debugLog?.(`fire ${direction} at ${elapsed}ms`);
+        return direction;
       }
       return null;
     },
@@ -200,12 +231,12 @@ export function createShakeDetector(debugLog?: (msg: string) => void): ShakeDete
   };
 }
 
-// Discrete head-gesture events for volume control. A nod carries its direction
-// (the detector already computes it): tilt up = louder, tilt down = quieter.
+// Discrete head-gesture events for volume control. A held tilt repeats its
+// step: tilt up = louder, tilt down = quieter, until the head levels out.
 // A side-to-side shake is kept as a redundant "quieter" path.
-export type HeadGestureEvent = 'nod-up' | 'nod-down' | 'shake';
+export type HeadGestureEvent = 'tilt-up' | 'tilt-down' | 'shake';
 
-/** Volume step for a head gesture: up = +0.1, down (nod or shake) = -0.1. */
+/** Volume step for a head gesture: up = +0.1, down (tilt or shake) = -0.1. */
 export function volumeDeltaForGesture(gesture: HeadGestureEvent): number {
-  return gesture === 'nod-up' ? 0.1 : -0.1;
+  return gesture === 'tilt-up' ? 0.1 : -0.1;
 }
