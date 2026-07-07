@@ -55,6 +55,19 @@ describe('diatonicChord — quality follows the scale degree', () => {
     expect(diatonicChord(4, 2, 0, 'major').label).toBe('G7');
   });
 
+  it('sus chords use fixed intervals: root + M2/P4 + P5, regardless of degree', () => {
+    // extIdx 5 = sus2, extIdx 6 = sus4
+    // Bsus4 in C major: B E F# (perfect 4th + perfect 5th, not diatonic B E F)
+    expect(diatonicChord(6, 6, 0, 'major').midis).toEqual([71, 76, 78]);
+    expect(diatonicChord(6, 6, 0, 'major').label).toBe('Bsus4');
+    // Esus2 in C major: E F# B (major 2nd, not diatonic minor 2nd E F B)
+    expect(diatonicChord(2, 5, 0, 'major').midis).toEqual([64, 66, 71]);
+    expect(diatonicChord(2, 5, 0, 'major').label).toBe('Esus2');
+    // Csus4 / Dsus2 sanity (already correct diatonically, must stay correct)
+    expect(diatonicChord(0, 6, 0, 'major').midis).toEqual([60, 65, 67]); // C F G
+    expect(diatonicChord(1, 5, 0, 'major').midis).toEqual([62, 64, 69]); // D E A
+  });
+
   it('octave shifts the whole chord by 12 semitones', () => {
     const base = diatonicChord(0, 0, 0, 'major').midis;
     const up = diatonicChord(0, 0, 0, 'major', 1).midis;
