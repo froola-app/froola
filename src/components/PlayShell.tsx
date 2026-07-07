@@ -145,6 +145,21 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     else engineRef.current?.resume();
   }, [gated, engineRef]);
 
+  // React has no way to notice a node it rendered getting deleted by an
+  // external actor (browser devtools) — bump wallKey to force a remount if
+  // that happens while the wall is supposed to be up. Audio/input stay
+  // gated regardless (see coordinator.ts's gatedRef), so this only affects
+  // the visible overlay, but the wall should never be actually removable.
+  const [wallKey, setWallKey] = useState(0);
+  useEffect(() => {
+    if (!gated) return;
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector('.play-wall')) setWallKey(k => k + 1);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [gated]);
+
   // Watch the camera feed's brightness and flag the HUD zones on <html> so
   // the glass controls flip to dark ink over bright scenes (see App.css).
   useAmbientLuminance(cameraVideoRef, mode);
@@ -381,7 +396,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           arp {arpEnabled ? 'on' : 'off'}
         </button>
       </div>}
-      {gated && <PlayWall />}
+      {gated && <PlayWall key={wallKey} />}
     </>
   );
 }

@@ -86,4 +86,20 @@ describe('PlayShell — play wall wiring', () => {
     const gatedRefArg = mockUseCoordinator.mock.calls[0][12];
     expect(gatedRefArg).toEqual({ current: true });
   });
+
+  it('re-inserts the play wall if its DOM node is removed while gated', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(true);
+    const { container } = render(<PlayShell />);
+
+    const wall = container.querySelector('.play-wall');
+    expect(wall).not.toBeNull();
+    wall!.remove();
+    expect(container.querySelector('.play-wall')).toBeNull();
+
+    await vi.waitFor(() => {
+      expect(container.querySelector('.play-wall')).not.toBeNull();
+    });
+  });
 });
