@@ -5,7 +5,7 @@ import type { DialSelection } from '../renderer';
 import { encode } from './codec';
 
 const VIBES = ['warm', 'bright', 'dark', 'electric'];
-const MAX_DURATION_MS = 30_000;
+const DEFAULT_MAX_DURATION_MS = 30_000;
 const INTERVAL_MS = 100;
 
 export type RecorderState = 'idle' | 'recording' | 'done';
@@ -15,7 +15,9 @@ export type RecorderState = 'idle' | 'recording' | 'done';
 // replay reproduces exactly what was heard.
 export function useRecorder(
   selectedRef: RefObject<DialSelection>,
-  vibe: string
+  vibe: string,
+  // Plan-gated (see src/entitlements.ts maxReplayRecordMs).
+  maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
 ) {
   const [state, setState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -60,7 +62,7 @@ export function useRecorder(
     intervalRef.current = setInterval(() => {
       const tick = performance.now();
       const totalElapsed = tick - startTimeRef.current;
-      setElapsed(Math.min(totalElapsed / 1000, 30));
+      setElapsed(Math.min(totalElapsed / 1000, maxDurationMs / 1000));
 
       const dt = Math.round(tick - lastSampleTimeRef.current);
       lastSampleTimeRef.current = tick;
@@ -75,9 +77,9 @@ export function useRecorder(
         vibe: vibeIdx,
       });
 
-      if (totalElapsed >= MAX_DURATION_MS) stop();
+      if (totalElapsed >= maxDurationMs) stop();
     }, INTERVAL_MS);
-  }, [selectedRef, stop]);
+  }, [selectedRef, stop, maxDurationMs]);
 
   useEffect(() => () => {
     if (intervalRef.current) clearInterval(intervalRef.current);

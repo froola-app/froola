@@ -7,13 +7,16 @@ export default function LoopPanel({
   looper,
   state,
   onAddChord,
+  maxSlots = MAX_SLOTS,
 }: {
   looper: ChordLooper;
   state: LooperState;
   onAddChord: () => void;
+  /** Plan-gated slot cap (see src/entitlements.ts); engine caps at MAX_SLOTS. */
+  maxSlots?: number;
 }) {
   const { slots, playing, bpm, currentSlot } = state;
-  const full = slots.length >= MAX_SLOTS;
+  const full = slots.length >= Math.min(maxSlots, MAX_SLOTS);
   const empty = slots.length === 0;
 
   return (
@@ -38,7 +41,11 @@ export default function LoopPanel({
           className="loop-btn"
           onClick={onAddChord}
           disabled={full}
-          title={full ? `Loop is full (${MAX_SLOTS} chords)` : 'Add the current chord'}
+          title={
+            full && maxSlots < MAX_SLOTS
+              ? `Free plan is limited to ${maxSlots} chords — upgrade for more`
+              : full ? `Loop is full (${MAX_SLOTS} chords)` : 'Add the current chord'
+          }
         >
           + chord
         </button>

@@ -25,6 +25,9 @@ interface UserProfile {
       and an upload flow exists; the UI fallback chain already handles it. */
   avatarUrl: string | null;
   plan: Plan;
+  /** Service-role-only flag (see supabase/migrations/0003_entitlements.sql)
+      granting Studio-level entitlements without a subscription. */
+  betaTester: boolean;
   /** Raw Stripe subscription status (e.g. 'trialing', 'past_due',
       'canceled') — null if never subscribed. `plan` already reflects
       whether access should be paid or free; this is for UI copy only
@@ -86,11 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       onboarding_complete: boolean;
       plan?: string | null;
       subscription_status?: string | null;
+      beta_tester?: boolean | null;
     } | null> {
       if (!supabase) return null;
       const full = await supabase
         .from('profiles')
-        .select('user_type, onboarding_complete, plan, subscription_status')
+        .select('user_type, onboarding_complete, plan, subscription_status, beta_tester')
         .eq('id', userId)
         .maybeSingle();
       if (!full.error) return full.data;
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // Add avatar_url to the select once the column ships.
               avatarUrl: null,
               plan: (data.plan ?? 'free') as Plan,
+              betaTester: !!data.beta_tester,
               subscriptionStatus: data.subscription_status ?? null,
             };
           }
@@ -200,6 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onboardingComplete: true,
         avatarUrl: null,
         plan: prev?.plan ?? 'free',
+        betaTester: prev?.betaTester ?? false,
         subscriptionStatus: prev?.subscriptionStatus ?? null,
       }));
     }

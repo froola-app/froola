@@ -4,12 +4,14 @@ import type { AudioEngine } from '../audio/AudioEngine';
 
 export type VideoRecorderState = 'idle' | 'requesting' | 'recording';
 
-const MAX_DURATION_MS = 180_000; // 3 minutes
+const DEFAULT_MAX_DURATION_MS = 180_000; // 3 minutes
 
 export function useVideoRecorder(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   cameraVideoRef: RefObject<HTMLVideoElement | null>,
   engineRef: RefObject<AudioEngine | null>,
+  // Plan-gated (see src/entitlements.ts maxVideoRecordMs); Infinity on Studio.
+  maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
 ) {
   const [state, setState] = useState<VideoRecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -132,9 +134,9 @@ export function useVideoRecorder(
     intervalRef.current = setInterval(() => {
       const secs = (performance.now() - startTimeRef.current) / 1000;
       setElapsed(secs);
-      if (secs * 1000 >= MAX_DURATION_MS) stop();
+      if (secs * 1000 >= maxDurationMs) stop();
     }, 100);
-  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop]);
+  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs]);
 
   return { state, elapsed, start, stop };
 }

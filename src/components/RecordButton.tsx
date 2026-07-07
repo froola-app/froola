@@ -7,10 +7,11 @@ import { copyToClipboard } from '../utils/clipboard';
 type Props = {
   selectedRef: RefObject<DialSelection>;
   vibe: string;
+  maxDurationMs: number;
 };
 
-export default function RecordButton({ selectedRef, vibe }: Props) {
-  const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe);
+export default function RecordButton({ selectedRef, vibe, maxDurationMs }: Props) {
+  const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe, maxDurationMs);
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {
@@ -29,7 +30,7 @@ export default function RecordButton({ selectedRef, vibe }: Props) {
   }
 
   if (state === 'recording') {
-    const pct = Math.min((elapsed / 30) * 100, 100);
+    const pct = Math.min((elapsed / (maxDurationMs / 1000)) * 100, 100);
     return (
       <>
         <div className="record-progress" style={{ width: `${pct}%` }} />

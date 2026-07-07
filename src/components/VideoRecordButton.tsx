@@ -6,6 +6,7 @@ type Props = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   cameraVideoRef: RefObject<HTMLVideoElement | null>;
   engineRef: RefObject<AudioEngine | null>;
+  maxDurationMs: number;
 };
 
 function formatTime(s: number): string {
@@ -14,8 +15,8 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef }: Props) {
-  const { state, elapsed, start, stop } = useVideoRecorder(canvasRef, cameraVideoRef, engineRef);
+export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef, maxDurationMs }: Props) {
+  const { state, elapsed, start, stop } = useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs);
 
   if (state === 'idle') {
     return (
@@ -33,11 +34,13 @@ export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef
     );
   }
 
-  // recording
-  const pct = Math.min((elapsed / 180) * 100, 100);
+  // recording — no progress bar when the plan has no length cap (Infinity)
+  const pct = Number.isFinite(maxDurationMs)
+    ? Math.min((elapsed / (maxDurationMs / 1000)) * 100, 100)
+    : 0;
   return (
     <>
-      <div className="record-progress record-progress--video" style={{ width: `${pct}%` }} />
+      {pct > 0 && <div className="record-progress record-progress--video" style={{ width: `${pct}%` }} />}
       <button className="vid-record-btn vid-record-btn--recording" onClick={stop}>
         <span className="rec-dot rec-dot--live" /> {formatTime(elapsed)} · Stop video
       </button>

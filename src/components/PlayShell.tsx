@@ -19,6 +19,8 @@ import PlayWall from './PlayWall';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { usePlayWall } from '../hooks/usePlayWall';
 import { useTheme } from '../useTheme';
+import { useAuth } from '../contexts/AuthContext';
+import { entitlementsFor } from '../entitlements';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -71,8 +73,16 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
 export default function PlayShell({ initialInput = 'asking' }: { initialInput?: InputMode } = {}) {
   const navigate = useNavigate();
 
+  const { profile } = useAuth();
+  const ent = entitlementsFor(profile);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
+  // A downgrade mid-session (subscription lapses, sign-out) must not leave a
+  // locked instrument playing.
+  useEffect(() => {
+    if (!ent.pianoUnlocked && instrumentMode === 'piano') setInstrumentMode('synth');
+  }, [ent.pianoUnlocked, instrumentMode]);
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
@@ -260,10 +270,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
 
   // Capture the currently-selected chord as a new loop slot.
   const addCurrentChord = useCallback(() => {
-    if (!looper) return;
+    if (!looper || loopState.slots.length >= ent.loopSlots) return;
     const { noteIdx, qualIdx } = selectedRef.current;
     looper.add(buildCommand(noteIdx, qualIdx, 0.5, octaveRef.current, musicRef.current));
-  }, [looper, selectedRef]);
+  }, [looper, selectedRef, loopState.slots.length, ent.loopSlots]);
 
   // Enter is a quick shortcut for "+ chord" (ignored while a control is focused).
   useEffect(() => {
@@ -316,8 +326,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           the HUD's z-index, so hide the HUD until an input mode is chosen. */}
       {mode !== 'asking' && <>
       <ShareButton />
-      <RecordButton selectedRef={selectedRef} vibe={vibe} />
-      <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} />
+      <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} />
+      <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} maxDurationMs={ent.maxVideoRecordMs} />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <ProfileButton
         play={mode === 'camera' || mode === 'mouse' ? {
@@ -328,16 +338,22 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       />
       </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (
-        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} />
+        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
       )}
       {mode !== 'asking' && <div className="hud-bottom">
         <select
           className="instrument-select"
           value={instrumentMode}
-          onChange={e => setInstrumentMode(e.target.value as InstrumentMode)}
+          onChange={e => {
+            const next = e.target.value as InstrumentMode;
+            if (next === 'piano' && !ent.pianoUnlocked) { navigate('/pricing'); return; }
+            setInstrumentMode(next);
+          }}
         >
           {MODES.map(m => (
-            <option key={m.value} value={m.value}>{m.label}</option>
+            <option key={m.value} value={m.value}>
+              {m.value === 'piano' && !ent.pianoUnlocked ? 'piano · plus' : m.label}
+            </option>
           ))}
         </select>
         {pianoLoading && <span className="instrument-loading">loading piano…</span>}
