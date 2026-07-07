@@ -36,3 +36,8 @@ docs/
 public/melodies/
 .vercel
 .superpowers/
+
+# Local Claude Code config, skills, and worktrees — never committed
+.claude/
+# Supabase CLI scratch state — regenerated locally
+supabase/.temp/
