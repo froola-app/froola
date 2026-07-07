@@ -77,20 +77,48 @@ describe('PlayShell — play wall wiring', () => {
     expect(engine.suspend).not.toHaveBeenCalled();
   });
 
-  it('re-suspends when the tab regains visibility while still gated, undoing coordinator\'s resume', () => {
-    // Simulates coordinator.ts's own visibilitychange handler, which
-    // unconditionally calls engine.resume() when the tab becomes visible
-    // again. PlayShell must re-assert the gate's suspend right behind it.
+  it('passes a gatedRef reflecting usePlayWall to useCoordinator', () => {
     const engine = fakeEngine();
     mockUseCoordinator.mockReturnValue(coordinatorState(engine));
     mockUsePlayWall.mockReturnValue(true);
     render(<PlayShell />);
 
-    expect(engine.suspend).toHaveBeenCalledTimes(1);
+    const gatedRefArg = mockUseCoordinator.mock.calls[0][12];
+    expect(gatedRefArg).toEqual({ current: true });
+  });
 
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-    document.dispatchEvent(new Event('visibilitychange'));
+  it('re-inserts the play wall if its DOM node is removed while gated', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(true);
+    const { container } = render(<PlayShell />);
 
-    expect(engine.suspend).toHaveBeenCalledTimes(2);
+    const wall = container.querySelector('.play-wall');
+    expect(wall).not.toBeNull();
+    wall!.remove();
+    expect(container.querySelector('.play-wall')).toBeNull();
+
+    await vi.waitFor(() => {
+      expect(container.querySelector('.play-wall')).not.toBeNull();
+    });
+  });
+
+  it('re-inserts the play wall even when its next sibling was removed in the same batch', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(true);
+    const { container } = render(<PlayShell />);
+
+    const wall = container.querySelector('.play-wall')!;
+    const sibling = document.createElement('div');
+    wall.parentNode!.insertBefore(sibling, wall.nextSibling);
+
+    sibling.remove();
+    wall.remove();
+    expect(container.querySelector('.play-wall')).toBeNull();
+
+    await vi.waitFor(() => {
+      expect(container.querySelector('.play-wall')).not.toBeNull();
+    });
   });
 });

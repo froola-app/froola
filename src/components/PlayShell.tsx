@@ -145,26 +145,40 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+  const gatedRef = useRef(false);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
 
   const gated = usePlayWall(mode !== 'asking');
+  useEffect(() => { gatedRef.current = gated; }, [gated]);
   useEffect(() => {
     if (gated) engineRef.current?.suspend();
     else engineRef.current?.resume();
   }, [gated, engineRef]);
 
-  // The coordinator's own visibilitychange handler unconditionally resumes
-  // audio when the tab regains visibility (see coordinator.ts) — re-suspend
-  // behind it whenever the wall is up, so tab-switching can't sneak audio
-  // past a gate that's supposed to be silent.
+  // React can't recover if an external actor (browser devtools) deletes a
+  // node it rendered — reconciliation throws when it tries to remove the
+  // already-gone node. So don't remount: put the exact node back where it
+  // was and React never notices. Audio/input stay gated regardless (see
+  // coordinator.ts's gatedRef), but the wall should never be removable.
   useEffect(() => {
     if (!gated) return;
-    const onVisibility = () => {
-      if (!document.hidden) engineRef.current?.suspend();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [gated, engineRef]);
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of m.removedNodes) {
+          if (node instanceof HTMLElement &&
+              (node.classList.contains('play-wall') || node.querySelector('.play-wall'))) {
+            if (m.nextSibling && m.nextSibling.parentNode === m.target) {
+              m.target.insertBefore(node, m.nextSibling);
+            } else {
+              m.target.appendChild(node);
+            }
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [gated]);
 
   // Watch the camera feed's brightness and flag the HUD zones on <html> so
   // the glass controls flip to dark ink over bright scenes (see App.css).
