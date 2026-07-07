@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
+import { palmCenter } from './palmCenter';
 import {
   createNodDetector,
   createShakeDetector,
@@ -373,11 +374,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             // rightmost → right/extension wheel; a single hand gets the wheel
             // for the side it's on (the same rule as pointer input).
             const detections = result.landmarks.slice(0, 2).map((lm, i) => {
-              const tip = lm[8]; // index fingertip
+              const fist = isFist(lm);
+              // Open hand tracks the index fingertip; a fist tracks the palm
+              // center, so where the curled index finger ends up can't drag
+              // the lock into a neighboring zone.
+              const p = fist ? palmCenter(lm) : lm[8];
               return {
-                rx: ((1 - tip.x) * vw * scale + offsetX) / dw,
-                ry: (tip.y * vh * scale + offsetY) / dh,
-                fist: isFist(lm),
+                rx: ((1 - p.x) * vw * scale + offsetX) / dw,
+                ry: (p.y * vh * scale + offsetY) / dh,
+                fist,
                 // World landmarks (metric 3D) — required for facing angles;
                 // normalized landmarks give distorted out-of-plane angles.
                 worldLm: result.worldLandmarks[i],
@@ -411,10 +416,14 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
                 s.x = rx; s.y = ry;
               }
 
-              // Freeze reported position on fist-close; unfreeze on fist-open
+              // Freeze reported position on fist-close; unfreeze on fist-open.
+              // Snap to this frame's palm center rather than the EMA — the EMA
+              // still holds the fingertip position from the open-hand frames.
               if (fist && !s.wasFist) {
-                s.frozenX = s.x;
-                s.frozenY = s.y;
+                s.x = rx;
+                s.y = ry;
+                s.frozenX = rx;
+                s.frozenY = ry;
               } else if (!fist && s.wasFist) {
                 s.frozenX = null;
                 s.frozenY = null;
