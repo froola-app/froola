@@ -37,16 +37,7 @@ export function scaleNotes(keyOffset: number, scale: ScaleName): ScaleNote[] {
 // The right wheel picks an *extension*; the chord's major/minor/dim quality
 // comes from the scale degree (diatonic harmony). `steps` are scale-degree
 // offsets from the root degree (so they bend with the scale automatically).
-// Sus chords are the exception: sus2/sus4 always mean root + M2/P4 + P5 in
-// semitones, whatever the scale would give — so they carry fixed `semitones`
-// from the root instead of diatonic steps.
-export type Extension = {
-  id: string;
-  label: string;
-  suffix: string;
-  steps?: number[];
-  semitones?: number[];
-};
+export type Extension = { id: string; label: string; suffix: string; steps: number[] };
 
 export const EXTENSIONS: Extension[] = [
   { id: 'triad', label: 'triad', suffix: '',     steps: [0, 2, 4] },
@@ -54,8 +45,8 @@ export const EXTENSIONS: Extension[] = [
   { id: '7th',   label: '7th',   suffix: '7',    steps: [0, 2, 4, 6] },
   { id: '9th',   label: '9th',   suffix: '9',    steps: [0, 2, 4, 6, 8] },
   { id: 'add9',  label: 'add9',  suffix: 'add9', steps: [0, 2, 4, 8] },
-  { id: 'sus2',  label: 'sus2',  suffix: 'sus2', semitones: [0, 2, 7] },
-  { id: 'sus4',  label: 'sus4',  suffix: 'sus4', semitones: [0, 5, 7] },
+  { id: 'sus2',  label: 'sus2',  suffix: 'sus2', steps: [0, 1, 4] },
+  { id: 'sus4',  label: 'sus4',  suffix: 'sus4', steps: [0, 3, 4] },
 ];
 
 // Root MIDI of a scale degree (used by the melody lead).
@@ -84,9 +75,7 @@ export function diatonicChord(
   // Semitones of scale position p above the tonic, wrapping octaves past degree n-1.
   const tone = (p: number) => iv[((p % n) + n) % n] + 12 * Math.floor(p / n);
 
-  const midis = ext.semitones
-    ? ext.semitones.map(s => base + tone(degree) + s)
-    : ext.steps!.map(step => base + tone(degree + step));
+  const midis = ext.steps.map(step => base + tone(degree + step));
 
   const rootLabel = KEYS[(keyOffset + iv[((degree % n) + n) % n] + 1200) % 12];
   const third = tone(degree + 2) - tone(degree);
