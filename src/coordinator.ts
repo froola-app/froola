@@ -45,6 +45,11 @@ export function useCoordinator(
   arpRef?: RefObject<Arpeggiator | null>,
   arpEnabledRef?: RefObject<boolean>,
   guardrailRef?: RefObject<boolean>,
+  // When true, no code path here may produce sound or act on gesture input —
+  // the PlayWall sign-up gate is up. Checked instead of relying solely on the
+  // overlay's DOM node blocking pointer events, since that node can be
+  // deleted via devtools.
+  gatedRef?: RefObject<boolean>,
 ) {
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -78,6 +83,7 @@ export function useCoordinator(
 
     const events = ['pointerdown', 'pointermove', 'keydown', 'touchstart'] as const;
     const resume = () => {
+      if (gatedRef?.current) return;
       engine.resume();
       if (engine.audioState() === 'running') {
         for (const ev of events) window.removeEventListener(ev, resume);
@@ -101,7 +107,7 @@ export function useCoordinator(
       const engine = engineRef.current;
       if (!engine) return;
       if (document.hidden) engine.suspend();
-      else engine.resume();
+      else if (!gatedRef?.current) engine.resume();
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);

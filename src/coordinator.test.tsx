@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { useRef as useRefForGate } from 'react';
 import { useRef } from 'react';
 import { mockAudioContext } from './test-utils/webAudioMock';
 import { useCoordinator } from './coordinator';
@@ -36,5 +37,37 @@ describe('useCoordinator — pause on tab hidden', () => {
 
     setHidden(false);
     expect(mockAudioContext.resume).toHaveBeenCalled();
+  });
+});
+
+describe('useCoordinator — gated audio unlock', () => {
+  it('never calls engine.resume() from the pointerdown unlock listener while gated', () => {
+    renderHook(() => {
+      const canvasRef = useRef<HTMLCanvasElement | null>(null);
+      const modeRef = useRef<InstrumentMode>('synth');
+      const gatedRef = useRefForGate(true);
+      return useCoordinator(canvasRef, modeRef, 'mouse', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
+    });
+
+    mockAudioContext.resume.mockClear();
+    window.dispatchEvent(new Event('pointerdown'));
+    expect(mockAudioContext.resume).not.toHaveBeenCalled();
+  });
+
+  it('never calls engine.resume() from visibilitychange while gated', () => {
+    renderHook(() => {
+      const canvasRef = useRef<HTMLCanvasElement | null>(null);
+      const modeRef = useRef<InstrumentMode>('synth');
+      const gatedRef = useRefForGate(true);
+      return useCoordinator(canvasRef, modeRef, 'mouse', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
+    });
+
+    mockAudioContext.resume.mockClear();
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(mockAudioContext.resume).not.toHaveBeenCalled();
   });
 });
