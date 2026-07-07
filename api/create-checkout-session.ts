@@ -60,7 +60,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       // checkout step.
       subscription_data: { trial_period_days: 14 },
       payment_method_collection: 'always',
-      success_url: `${origin}/pricing?checkout=success`,
+      success_url: `${origin}/pricing?checkout=success&plan=${body.plan}`,
       cancel_url: `${origin}/pricing?checkout=cancel`,
     });
 

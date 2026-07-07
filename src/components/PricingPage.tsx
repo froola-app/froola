@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useScrollReveal } from '../useScrollReveal';
 import { useTheme } from '../useTheme';
+import CheckoutResult from './CheckoutResult';
 import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
@@ -30,6 +31,7 @@ export default function PricingPage() {
       </div>
 
       <PricingSection />
+      <CheckoutResult />
 
       <footer className="lp4__footer">
         <div className="lp4__footer-inner">

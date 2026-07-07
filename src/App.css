@@ -1657,6 +1657,145 @@ body {
 
 .lp4__footer-inner a { color: inherit; }
 
+/* Post-checkout success overlay + cancel toast */
+.lp4__checkout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--lp-bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: lp4-checkout-fade 0.35s ease both;
+}
+
+.lp4__confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lp4__checkout-card {
+  position: relative;
+  max-width: 430px;
+  width: 100%;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 28px;
+  box-shadow: var(--lp-card-shadow-hover);
+  padding: 44px 40px 36px;
+  text-align: center;
+  animation: lp4-checkout-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) 0.05s both;
+}
+
+.lp4__checkout-title {
+  font-size: clamp(30px, 5vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.24em;
+}
+
+.lp4__checkout-word { display: inline-flex; }
+.lp4__checkout-word--accent { color: var(--lp-accent); }
+
+/* Each letter bounces in like a note landing on a staff — springy overshoot,
+   staggered per character via inline animation-delay. */
+.lp4__checkout-char {
+  display: inline-block;
+  animation: lp4-char-pop 0.6s cubic-bezier(0.2, 1.6, 0.35, 1) both;
+}
+
+@keyframes lp4-char-pop {
+  from { opacity: 0; transform: translateY(0.65em) scale(0.6) rotate(-8deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+/* The brand smile draws itself in on its own here — the section-reveal
+   trigger that normally animates it never fires inside a modal. */
+.lp4__checkout-card .lp4__smile-accent path {
+  animation: lp4-smile-draw 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.45s both;
+}
+
+.lp4__checkout-lede {
+  margin: 20px 0 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--lp-ink);
+}
+
+.lp4__checkout-fine {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--lp-gray);
+}
+
+.lp4__checkout-cta { max-width: 260px; }
+
+.lp4__checkout-later {
+  display: block;
+  margin: 14px auto 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: var(--lp-faint);
+  transition: color 0.2s;
+}
+
+.lp4__checkout-later:hover { color: var(--lp-ink); }
+
+.lp4__checkout-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 999px;
+  box-shadow: var(--lp-card-shadow);
+  padding: 10px 18px;
+  font-size: 13px;
+  color: var(--lp-gray);
+  animation: lp4-checkout-fade 0.3s ease both;
+}
+
+.lp4__checkout-toast-close {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--lp-faint);
+  padding: 0 2px;
+}
+
+@keyframes lp4-checkout-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lp4-checkout-pop {
+  from { opacity: 0; transform: scale(0.92) translateY(14px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes lp4-smile-draw {
+  from { stroke-dashoffset: 60; }
+  to { stroke-dashoffset: 0; }
+}
+
 /* Motion */
 .lp4 [data-reveal] {
   opacity: 0;
@@ -1792,7 +1931,11 @@ body {
   .lp4__song-chip:hover,
   .lp4__song-chip:nth-child(even):hover { transform: none; }
   .lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover { transform: none; }
-  .lp4__smile-accent path { stroke-dashoffset: 0; transition: none; }
+  .lp4__smile-accent path { stroke-dashoffset: 0; transition: none; animation: none; }
+  .lp4__checkout-overlay,
+  .lp4__checkout-card,
+  .lp4__checkout-char,
+  .lp4__checkout-toast { animation: none; }
   .lp4__headline,
   .lp4__subhead,
   .lp4__ctas,
