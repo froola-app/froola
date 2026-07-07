@@ -35,6 +35,42 @@ describe('codec', () => {
     expect(encoded).not.toMatch(/[+/=]/);
   });
 
+  it('merges consecutive identical samples into one record', () => {
+    const held: Recording = {
+      samples: [
+        { dt: 100, noteIdx: 2, qualityIdx: 1, vibe: 0 },
+        { dt: 100, noteIdx: 2, qualityIdx: 1, vibe: 0 },
+        { dt: 100, noteIdx: 2, qualityIdx: 1, vibe: 0 },
+        { dt: 100, noteIdx: 4, qualityIdx: 1, vibe: 0 },
+      ],
+      totalMs: 400,
+    };
+    const decoded = decode(encode(held));
+    expect(decoded.samples).toEqual([
+      { dt: 300, noteIdx: 2, qualityIdx: 1, vibe: 0 },
+      { dt: 100, noteIdx: 4, qualityIdx: 1, vibe: 0 },
+    ]);
+    expect(decoded.totalMs).toBe(400);
+  });
+
+  it('splits a run when the merged dt would overflow uint16', () => {
+    const samples = Array.from({ length: 800 }, () => (
+      { dt: 100, noteIdx: 1, qualityIdx: 1, vibe: 0 }
+    ));
+    const decoded = decode(encode({ samples, totalMs: 80_000 }));
+    expect(decoded.samples.length).toBe(2);
+    expect(decoded.totalMs).toBe(80_000);
+    for (const s of decoded.samples) expect(s.dt).toBeLessThanOrEqual(0xffff);
+  });
+
+  it('keeps a held-chord recording URL-short', () => {
+    // 30s of play across 6 chord changes — the pre-RLE encoding was ~2000 chars
+    const samples = Array.from({ length: 300 }, (_, i) => (
+      { dt: 100, noteIdx: Math.floor(i / 50), qualityIdx: 2, vibe: 1 }
+    ));
+    expect(encode({ samples, totalMs: 30_000 }).length).toBeLessThan(60);
+  });
+
   it('decode throws on wrong length', () => {
     expect(() => decode('YWJj')).toThrow('Invalid recording data');
   });

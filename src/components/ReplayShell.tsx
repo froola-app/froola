@@ -2,24 +2,43 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { GestureSignal, InstrumentMode, Recording } from '../engine/types';
 import { decode } from '../engine/recording/codec';
+import { fetchRecording } from '../engine/recording/recordingStore';
 import { sampleEndTimes, signalsAt } from '../engine/recording/replayPlayer';
 import { useCoordinator } from '../coordinator';
 
 export default function ReplayShell() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  // Two link shapes: ?r=<short-id> fetches the payload from the recordings
+  // table; legacy ?d=<payload> is self-contained. ?d wins if both are present.
   const replayData = searchParams.get('d');
+  const replayId = searchParams.get('r');
+
+  // null = still fetching, '' = fetch failed (falls through to invalid-link
+  // UI because decode('') throws).
+  const [fetchedData, setFetchedData] = useState<string | null>(null);
+  useEffect(() => {
+    if (replayData || !replayId) return;
+    let cancelled = false;
+    void fetchRecording(replayId).then(d => {
+      if (!cancelled) setFetchedData(d ?? '');
+    });
+    return () => { cancelled = true; };
+  }, [replayData, replayId]);
+
+  const payload = replayData ?? fetchedData;
+  const loading = !replayData && !!replayId && fetchedData === null;
 
   // Decode once. A missing or corrupt payload leaves `recording` null and we
   // fall back to the invalid-link UI below.
   const recording = useMemo<Recording | null>(() => {
-    if (!replayData) return null;
+    if (!payload) return null;
     try {
-      return decode(replayData);
+      return decode(payload);
     } catch {
       return null;
     }
-  }, [replayData]);
+  }, [payload]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Replay always plays the recorded synth pad. The recording doesn't capture
@@ -72,6 +91,15 @@ export default function ReplayShell() {
       signalRef.current = [];
     };
   }, [playing, recording, ends, totalMs]);
+
+  if (loading) {
+    return (
+      <div className="landing-screen">
+        <h1>Replay</h1>
+        <p>Loading…</p>
+      </div>
+    );
+  }
 
   if (!recording) {
     return (

@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import type { RecordingSample, Recording } from '../types';
 import type { DialSelection } from '../renderer';
 import { encode } from './codec';
+import { saveRecording } from './recordingStore';
 
 const VIBES = ['warm', 'bright', 'dark', 'electric'];
 const DEFAULT_MAX_DURATION_MS = 30_000;
@@ -28,6 +29,9 @@ export function useRecorder(
   const lastSampleTimeRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const vibeRef = useRef(vibe);
+  // Bumped on every start() so a slow save from a previous take can't
+  // overwrite the shareUrl of the recording that replaced it.
+  const takeRef = useRef(0);
 
   useEffect(() => { vibeRef.current = vibe; }, [vibe]);
 
@@ -45,12 +49,22 @@ export function useRecorder(
       totalMs: samples.reduce((s, r) => s + r.dt, 0),
     };
     const encoded = encode(recording);
+    // Self-contained link immediately (still works, just longer), then swap
+    // in the short stored link once the upload lands. Signed-out users and
+    // network failures simply keep the long link.
     setShareUrl(window.location.origin + '/replay?d=' + encoded);
     setState('done');
+    const take = takeRef.current;
+    void saveRecording(encoded).then(id => {
+      if (id && takeRef.current === take) {
+        setShareUrl(window.location.origin + '/replay?r=' + id);
+      }
+    });
   }, []);
 
   const start = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    takeRef.current++;
     samplesRef.current = [];
     const now = performance.now();
     startTimeRef.current = now;
