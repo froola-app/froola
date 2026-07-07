@@ -135,25 +135,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef);
+  const gatedRef = useRef(false);
+  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
 
   const gated = usePlayWall(mode !== 'asking');
+  useEffect(() => { gatedRef.current = gated; }, [gated]);
   useEffect(() => {
     if (gated) engineRef.current?.suspend();
     else engineRef.current?.resume();
-  }, [gated, engineRef]);
-
-  // The coordinator's own visibilitychange handler unconditionally resumes
-  // audio when the tab regains visibility (see coordinator.ts) — re-suspend
-  // behind it whenever the wall is up, so tab-switching can't sneak audio
-  // past a gate that's supposed to be silent.
-  useEffect(() => {
-    if (!gated) return;
-    const onVisibility = () => {
-      if (!document.hidden) engineRef.current?.suspend();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [gated, engineRef]);
 
   // Watch the camera feed's brightness and flag the HUD zones on <html> so

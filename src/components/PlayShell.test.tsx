@@ -77,20 +77,13 @@ describe('PlayShell — play wall wiring', () => {
     expect(engine.suspend).not.toHaveBeenCalled();
   });
 
-  it('re-suspends when the tab regains visibility while still gated, undoing coordinator\'s resume', () => {
-    // Simulates coordinator.ts's own visibilitychange handler, which
-    // unconditionally calls engine.resume() when the tab becomes visible
-    // again. PlayShell must re-assert the gate's suspend right behind it.
+  it('passes a gatedRef reflecting usePlayWall to useCoordinator', () => {
     const engine = fakeEngine();
     mockUseCoordinator.mockReturnValue(coordinatorState(engine));
     mockUsePlayWall.mockReturnValue(true);
     render(<PlayShell />);
 
-    expect(engine.suspend).toHaveBeenCalledTimes(1);
-
-    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-    document.dispatchEvent(new Event('visibilitychange'));
-
-    expect(engine.suspend).toHaveBeenCalledTimes(2);
+    const gatedRefArg = mockUseCoordinator.mock.calls[0][12];
+    expect(gatedRefArg).toEqual({ current: true });
   });
 });
