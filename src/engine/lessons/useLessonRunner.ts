@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal } from '../types';
 import type { DialSelection } from '../renderer';
 import { sampleEndTimes, sampleIndexAt, signalsAt } from '../recording/replayPlayer';
-import { scoreFrame, accuracy, combinedScore } from './scorer';
+import { chordSpans, scoreChords, type ChordSpan, type LiveFrame } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
 import type { AudioEngine, SongBackingTrack, MelodyNote } from '../audio';
 import { backingSequence } from '../audio';
@@ -16,16 +16,19 @@ export type LessonRunnerAPI = {
   stepScore: number;
   stepResults: StepResult[];
   totalScore: number;
+  practiceChordIndex: number;
+  practiceChordCount: number;
+  practiceTarget: { noteIdx: number; qualIdx: number } | null;
   start: () => void;
   retry: () => void;
-  /** Leaves the 'warmup' phase and starts the countdown. */
-  beginCountdown: () => void;
   next: () => void;
   exit: () => void;
 };
 
 const COUNTDOWN_SECS = 3;
 const SCORE_INTERVAL_MS = 100;
+const PRACTICE_DWELL_MS = 700;
+const PRACTICE_TICK_MS = 100;
 
 export function useLessonRunner(
   lesson: Lesson,
@@ -39,10 +42,11 @@ export function useLessonRunner(
   const [countdown, setCountdown] = useState(COUNTDOWN_SECS);
   const [stepScore, setStepScore] = useState(0);
   const [stepResults, setStepResults] = useState<StepResult[]>([]);
+  const [practiceChordIndex, setPracticeChordIndex] = useState(0);
+  const practiceSpansRef = useRef<ChordSpan[]>([]);
+  const framesRef = useRef<LiveFrame[]>([]);
   const phaseRef = useRef<LessonPhase>('idle');
   const stepIndexRef = useRef(0);
-  const noteHitsRef = useRef<boolean[]>([]);
-  const qualHitsRef = useRef<boolean[]>([]);
   const attemptStartRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -180,9 +184,9 @@ export function useLessonRunner(
   const finishAttempt = useCallback((stepIdx: number, attemptMs: number) => {
     clearTimers();
     const step = lesson.steps[stepIdx];
-    const noteAccuracy = accuracy(noteHitsRef.current);
-    const qualAccuracy = accuracy(qualHitsRef.current);
-    const score = combinedScore(noteAccuracy, qualAccuracy);
+    const isFistLesson = lesson.id === 'fist-solo';
+    const spans = chordSpans(step.targetRecording);
+    const { score, noteAccuracy, qualAccuracy } = scoreChords(spans, framesRef.current, isFistLesson);
     const passed = score >= step.minScore;
     const scoresQuality = lesson.id !== 'fist-solo';
 
@@ -202,8 +206,7 @@ export function useLessonRunner(
   const startAttempt = useCallback((stepIdx: number) => {
     clearTimers();
     setPhase('attempt');
-    noteHitsRef.current = [];
-    qualHitsRef.current = [];
+    framesRef.current = [];
     ghostSignalsRef.current = [];
 
     const step = lesson.steps[stepIdx];
@@ -214,23 +217,15 @@ export function useLessonRunner(
     // For fist-solo lessons only the note (left hand) is under the user's
     // control — the chord quality is locked by the fist, so it isn't scored.
     const isFistLesson = lesson.id === 'fist-solo';
+    const spans = chordSpans(step.targetRecording);
 
-    // Score each frame
+    // Log each frame; score is recomputed per chord span, not per frame.
     timerRef.current = setInterval(() => {
       const elapsed = performance.now() - attemptStart;
 
-      const sampleIdx = Math.min(
-        Math.floor(elapsed / SCORE_INTERVAL_MS),
-        step.targetRecording.samples.length - 1,
-      );
-      const targetSample = step.targetRecording.samples[Math.max(0, sampleIdx)];
       const live = liveSelectedRef.current ?? { noteIdx: 0, qualIdx: 0 };
-
-      const { noteHit, qualHit } = scoreFrame(targetSample.noteIdx, targetSample.qualityIdx, live.noteIdx, live.qualIdx);
-      noteHitsRef.current.push(noteHit);
-      qualHitsRef.current.push(isFistLesson ? noteHit : qualHit);
-
-      setStepScore(combinedScore(accuracy(noteHitsRef.current), accuracy(qualHitsRef.current)));
+      framesRef.current.push({ tMs: elapsed, noteIdx: live.noteIdx, qualIdx: live.qualIdx });
+      setStepScore(scoreChords(spans, framesRef.current, isFistLesson).score);
 
       if (elapsed >= step.durationMs) {
         finishAttempt(stepIdx, step.durationMs);
@@ -263,32 +258,14 @@ export function useLessonRunner(
     }, 1000);
   }, [lesson, canvasRef, ghostSignalsRef, clearTimers, startAttempt]);
 
-  // ── Warm-up phase ──────────────────────────────────────────────────────────
-  // Self-paced, no timer, no scoring — freezes the ghost at the target slice
-  // and waits for the user to say they're ready (beginCountdown, in the
-  // public API below). Only used before the very first step a brand-new
-  // user ever attempts (see startPreview) — total beginners land here
-  // straight from "hold C major for 3 seconds" with no chance to find the
-  // chord first.
-  const startWarmup = useCallback((stepIdx: number) => {
-    clearTimers();
-    setPhase('warmup');
-    const step = lesson.steps[stepIdx];
-    const ends = sampleEndTimes(step.targetRecording);
-    const canvas = canvasRef.current;
-    const w = canvas?.width ?? window.innerWidth;
-    const h = canvas?.height ?? window.innerHeight;
-    ghostSignalsRef.current = signalsAt(step.targetRecording, ends, 0, w, h);
-  }, [lesson, canvasRef, ghostSignalsRef, clearTimers]);
-
   // ── Preview phase ──────────────────────────────────────────────────────────
   const startPreview = useCallback((stepIdx: number) => {
     clearTimers();
     setPhase('preview');
     setCountdown(COUNTDOWN_SECS);
     setStepScore(0);
-    noteHitsRef.current = [];
-    qualHitsRef.current = [];
+    setPracticeChordIndex(0);
+    framesRef.current = [];
 
     const step = lesson.steps[stepIdx];
     const previewStart = performance.now();
@@ -296,14 +273,74 @@ export function useLessonRunner(
     startPreviewAudio(stepIdx, previewStart);
     startBacking(stepIdx);
 
-    // After the target recording finishes, move to warm-up (first-timers'
-    // very first step) or straight to countdown (everyone else).
-    const isFirstEverStep = lesson.id === 'first-chord' && stepIdx === 0;
+    // Non-final steps (and the sole step of a single-step lesson) practice
+    // self-paced first; only the final play-through gets a countdown.
+    const isFinalStep = stepIdx === lesson.steps.length - 1;
+    const practicesFirst = !isFinalStep || lesson.steps.length === 1;
     timerRef.current = setTimeout(() => {
-      if (isFirstEverStep) startWarmup(stepIdx);
+      if (practicesFirst) startPracticeRef.current(stepIdx);
       else startCountdown(stepIdx);
     }, step.targetRecording.totalMs + 500) as unknown as ReturnType<typeof setInterval>;
-  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking, startCountdown, startWarmup]);
+  }, [lesson, clearTimers, startGhostLoop, startPreviewAudio, startBacking, startCountdown]);
+
+  // ── Practice phase ─────────────────────────────────────────────────────────
+  // Self-paced: walk the step's chord spans one at a time; hold the matching
+  // chord for PRACTICE_DWELL_MS to advance. No timer bar, no score.
+  const startPractice = useCallback((stepIdx: number) => {
+    clearTimers();
+    setPhase('practice');
+    const step = lesson.steps[stepIdx];
+    const spans = chordSpans(step.targetRecording);
+    practiceSpansRef.current = spans;
+    setPracticeChordIndex(0);
+    const ends = sampleEndTimes(step.targetRecording);
+    const isFistLesson = lesson.id === 'fist-solo';
+    let chordIdx = 0;
+    let dwellMs = 0;
+
+    const freezeGhost = () => {
+      const canvas = canvasRef.current;
+      const w = canvas?.width ?? window.innerWidth;
+      const h = canvas?.height ?? window.innerHeight;
+      ghostSignalsRef.current = signalsAt(step.targetRecording, ends, spans[chordIdx].startMs, w, h);
+    };
+    freezeGhost();
+
+    timerRef.current = setInterval(() => {
+      const target = spans[chordIdx];
+      const live = liveSelectedRef.current ?? { noteIdx: -1, qualIdx: -1 };
+      const match = live.noteIdx === target.noteIdx && (isFistLesson || live.qualIdx === target.qualIdx);
+      dwellMs = match ? dwellMs + PRACTICE_TICK_MS : 0;
+      if (dwellMs < PRACTICE_DWELL_MS) return;
+
+      dwellMs = 0;
+      // Confirmation chime: sound the chord the user just nailed.
+      engineRef.current?.play(buildCommand(target.noteIdx, target.qualIdx, 0.5, 0, lesson.musicConfig));
+      chordIdx += 1;
+      if (chordIdx < spans.length) {
+        setPracticeChordIndex(chordIdx);
+        freezeGhost();
+        return;
+      }
+      // Practice pass complete.
+      clearTimers();
+      const result: StepResult = {
+        stepId: step.id, score: 100, passed: true, attemptMs: 0,
+        noteAccuracy: 100, qualAccuracy: 100, scoresQuality: !isFistLesson,
+      };
+      setStepResults(prev => { const next = [...prev]; next[stepIdx] = result; return next; });
+      if (stepIdx === lesson.steps.length - 1) {
+        // Single-step lesson: same step now runs the timed play-through.
+        startCountdown(stepIdx);
+      } else {
+        setStepIndex(stepIdx + 1);
+        startPreview(stepIdx + 1);
+      }
+    }, PRACTICE_TICK_MS);
+  }, [lesson, liveSelectedRef, engineRef, canvasRef, ghostSignalsRef, clearTimers, startCountdown, startPreview]);
+
+  const startPracticeRef = useRef<(stepIdx: number) => void>(() => {});
+  useEffect(() => { startPracticeRef.current = startPractice; });
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -316,11 +353,6 @@ export function useLessonRunner(
   const retry = useCallback(() => {
     startPreview(stepIndexRef.current);
   }, [startPreview]);
-
-  // Leaves the warmup phase once the user says they're ready.
-  const beginCountdown = useCallback(() => {
-    startCountdown(stepIndexRef.current);
-  }, [startCountdown]);
 
   const next = useCallback(() => {
     const nextIdx = stepIndexRef.current + 1;
@@ -342,11 +374,16 @@ export function useLessonRunner(
     setStepResults([]);
     setStepScore(0);
     setCountdown(COUNTDOWN_SECS);
+    setPracticeChordIndex(0);
+    framesRef.current = [];
   }, [clearTimers, ghostSignalsRef]);
 
   const totalScore = stepResults.length > 0
     ? Math.round(stepResults.reduce((s, r) => s + r.score, 0) / stepResults.length)
     : 0;
+
+  const practiceTarget =
+    phase === 'practice' ? (practiceSpansRef.current[practiceChordIndex] ?? null) : null;
 
   return {
     phase,
@@ -355,9 +392,11 @@ export function useLessonRunner(
     stepScore,
     stepResults,
     totalScore,
+    practiceChordIndex,
+    practiceChordCount: practiceSpansRef.current.length,
+    practiceTarget: practiceTarget && { noteIdx: practiceTarget.noteIdx, qualIdx: practiceTarget.qualIdx },
     start,
     retry,
-    beginCountdown,
     next,
     exit,
   };
