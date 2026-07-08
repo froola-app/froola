@@ -67,8 +67,26 @@ function startPracticeImpl(ctx: PhaseCtx, stepIdx: number): void {
   const spans = chordSpans(step.targetRecording);
   ctx.setPracticeSpans(spans);
   ctx.setPracticeChordIndex(0);
-  const ends = sampleEndTimes(step.targetRecording);
   const isFistLesson = lesson.id === 'fist-solo';
+
+  if (spans.length === 0) {
+    // Empty target recording: nothing to practice — treat as instantly complete.
+    ctx.clearTimers();
+    const result: StepResult = {
+      stepId: step.id, score: 100, passed: true, attemptMs: 0,
+      noteAccuracy: 100, qualAccuracy: 100, scoresQuality: !isFistLesson,
+    };
+    ctx.setStepResults(prev => { const next = [...prev]; next[stepIdx] = result; return next; });
+    if (stepIdx === lesson.steps.length - 1) {
+      ctx.startCountdown(stepIdx);
+    } else {
+      ctx.setStepIndex(stepIdx + 1);
+      startPreviewImpl(ctx, stepIdx + 1);
+    }
+    return;
+  }
+
+  const ends = sampleEndTimes(step.targetRecording);
   let chordIdx = 0;
   let dwellMs = 0;
 
@@ -332,6 +350,9 @@ export function useLessonRunner(
     const spans = chordSpans(step.targetRecording);
 
     // Log each frame; score is recomputed per chord span, not per frame.
+    // Frames are only logged up to step.durationMs, so an authored duration
+    // shorter than targetRecording.totalMs will auto-miss trailing spans —
+    // an authoring constraint, not a runtime bug.
     timerRef.current = setInterval(() => {
       const elapsed = performance.now() - attemptStart;
 
@@ -417,8 +438,12 @@ export function useLessonRunner(
     framesRef.current = [];
   }, [clearTimers, ghostSignalsRef]);
 
-  const totalScore = stepResults.length > 0
-    ? Math.round(stepResults.reduce((s, r) => s + r.score, 0) / stepResults.length)
+  // Practice steps always record score 100 for StepResult-shape compatibility
+  // (attemptMs: 0) but are unscored; only the timed play-through(s) — where
+  // attemptMs > 0 — should count toward the lesson's total score.
+  const scoredResults = stepResults.filter(r => r.attemptMs > 0);
+  const totalScore = scoredResults.length > 0
+    ? Math.round(scoredResults.reduce((s, r) => s + r.score, 0) / scoredResults.length)
     : 0;
 
   const practiceTarget =

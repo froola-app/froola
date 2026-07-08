@@ -121,6 +121,28 @@ describe('useLessonRunner — practice phase', () => {
   });
 });
 
+describe('useLessonRunner — totalScore', () => {
+  it('totalScore reflects only the final play-through, ignoring the practice step\'s score of 100', () => {
+    const lesson = makeLesson('l1', 2);
+    liveSelectedRef.current = { noteIdx: 0, qualIdx: 0 };
+    const { result } = renderHook(() =>
+      useLessonRunner(lesson, liveSelectedRef, engineRef, canvasRef, ghostSignalsRef));
+    act(() => result.current.start());
+    act(() => { vi.advanceTimersByTime(2500); }); // preview
+    act(() => { vi.advanceTimersByTime(800); });  // practice chord 0 done
+    liveSelectedRef.current = { noteIdx: 3, qualIdx: 0 };
+    act(() => { vi.advanceTimersByTime(800); });  // practice done → step 1 preview
+    act(() => { vi.advanceTimersByTime(2500); }); // preview over → countdown
+    liveSelectedRef.current = { noteIdx: 6, qualIdx: 0 }; // wrong chord throughout attempt
+    act(() => { vi.advanceTimersByTime(3000); }); // → attempt
+    act(() => { vi.advanceTimersByTime(2000); }); // attempt window ends
+    expect(result.current.phase).toBe('step-result');
+    expect(result.current.stepResults[0].score).toBe(100);
+    expect(result.current.stepResults[1].score).toBeLessThan(100);
+    expect(result.current.totalScore).toBe(result.current.stepResults[1].score);
+  });
+});
+
 describe('useLessonRunner — per-chord attempt scoring', () => {
   it('scores 100 when every chord is matched during the attempt, despite late transitions', () => {
     const lesson = makeLesson('l1', 1);
