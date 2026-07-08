@@ -37,23 +37,27 @@ export function scaleNotes(keyOffset: number, scale: ScaleName): ScaleNote[] {
 // The right wheel picks an *extension*; the chord's major/minor/dim quality
 // comes from the scale degree (diatonic harmony). `steps` are scale-degree
 // offsets from the root degree (so they bend with the scale automatically).
-// Sus chords are the exception: sus2/sus4 always mean root + M2/P4 + P5 in
-// semitones, whatever the scale would give — so they carry fixed `semitones`
-// from the root instead of diatonic steps.
+// Tones above the 7th are the exception: chord structure fixes them in
+// semitones from the root (6 = M6, 9 = M9), whatever the scale would give —
+// otherwise e.g. Am6 in C major would sound the diatonic F natural (an Fmaj7
+// inversion) and Em9 a b9 clash. Those carry `addSemitones` on top of the
+// diatonic `steps`. Sus chords go further: sus2/sus4 replace the whole stack
+// with fixed `semitones` (root + M2/P4 + P5).
 export type Extension = {
   id: string;
   label: string;
   suffix: string;
   steps?: number[];
+  addSemitones?: number[];
   semitones?: number[];
 };
 
 export const EXTENSIONS: Extension[] = [
   { id: 'triad', label: 'triad', suffix: '',     steps: [0, 2, 4] },
-  { id: '6th',   label: '6th',   suffix: '6',    steps: [0, 2, 4, 5] },
+  { id: '6th',   label: '6th',   suffix: '6',    steps: [0, 2, 4], addSemitones: [9] },
   { id: '7th',   label: '7th',   suffix: '7',    steps: [0, 2, 4, 6] },
-  { id: '9th',   label: '9th',   suffix: '9',    steps: [0, 2, 4, 6, 8] },
-  { id: 'add9',  label: 'add9',  suffix: 'add9', steps: [0, 2, 4, 8] },
+  { id: '9th',   label: '9th',   suffix: '9',    steps: [0, 2, 4, 6], addSemitones: [14] },
+  { id: 'add9',  label: 'add9',  suffix: 'add9', steps: [0, 2, 4], addSemitones: [14] },
   { id: 'sus2',  label: 'sus2',  suffix: 'sus2', semitones: [0, 2, 7] },
   { id: 'sus4',  label: 'sus4',  suffix: 'sus4', semitones: [0, 5, 7] },
 ];
@@ -84,9 +88,13 @@ export function diatonicChord(
   // Semitones of scale position p above the tonic, wrapping octaves past degree n-1.
   const tone = (p: number) => iv[((p % n) + n) % n] + 12 * Math.floor(p / n);
 
+  const root = base + tone(degree);
   const midis = ext.semitones
-    ? ext.semitones.map(s => base + tone(degree) + s)
-    : ext.steps!.map(step => base + tone(degree + step));
+    ? ext.semitones.map(s => root + s)
+    : [
+        ...ext.steps!.map(step => base + tone(degree + step)),
+        ...(ext.addSemitones ?? []).map(s => root + s),
+      ];
 
   const rootLabel = KEYS[(keyOffset + iv[((degree % n) + n) % n] + 1200) % 12];
   const third = tone(degree + 2) - tone(degree);
