@@ -9,7 +9,7 @@ import FroolaMascot from './FroolaMascot';
 
 const TUTORIAL_KEY = 'froola.tutorialSeen';
 
-const STEPS = [
+const CAMERA_STEPS = [
   {
     headline: 'Hold your hands up',
     body: 'Lift both hands in front of your camera so Froola can see them.',
@@ -25,6 +25,24 @@ const STEPS = [
   {
     headline: 'Try the right circle',
     body: 'Put your right hand on the right circle to change the flavor of the chord.',
+  },
+] as const;
+
+// Pointer mode skips the hands-up step (its runner starts at step 1), so the
+// first entry here is never shown — it's a placeholder to keep indices aligned.
+const MOUSE_STEPS = [
+  CAMERA_STEPS[0],
+  {
+    headline: 'Play the left circle',
+    body: 'Move your mouse onto the ring of the left circle — or hold a number key 1–7. You should hear a chord.',
+  },
+  {
+    headline: 'Slide around to change the chord',
+    body: 'Stay on the ring and move around it (or press different number keys). The music changes as you go.',
+  },
+  {
+    headline: 'Shape the chord on the right circle',
+    body: 'Hover the right circle — or hold Q–U — to change the flavor of the chord. Your pick sticks while you play on the left.',
   },
 ] as const;
 
@@ -66,6 +84,7 @@ function playSuccessSound() {
 
 export default function BeginnerTutorial({ signalRef, selectedRef, mode, onDone }: Props) {
   const initialStep = mode === 'mouse' ? 1 : 0;
+  const STEPS = mode === 'mouse' ? MOUSE_STEPS : CAMERA_STEPS;
   const [step, setStep] = useState(initialStep);
   const [doneMessage, setDoneMessage] = useState(false);
   const [gone, setGone] = useState(false);

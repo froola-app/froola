@@ -46,7 +46,7 @@ describe('BeginnerTutorial', () => {
         mode="mouse"
       />
     );
-    expect(screen.getByText('Touch the left circle')).toBeDefined();
+    expect(screen.getByText('Play the left circle')).toBeDefined();
   });
 
   it('advances from step 1 when a hand signal is present', async () => {

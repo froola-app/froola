@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
+import { composePointerSignals, noteKeyIndex, extensionKeyIndex } from './pointerKeyboard';
 import {
   createTiltHoldDetector,
   createShakeDetector,
@@ -82,19 +83,61 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     setMode('camera');
   }
 
-  // Mouse / touch mode
+  // Mouse / touch / keyboard mode
   useEffect(() => {
     if (mode !== 'mouse') return;
     signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
 
+    // Keyboard path: hold 1–7 to play a note slice, Q–U to hold an extension
+    // slice (see pointerKeyboard.ts). Most-recent press wins per hand, and
+    // releasing a key falls back to the next one still held — matches how a
+    // player rolls between keys on a piano.
+    let mouse: { x: number; y: number } | null = { x: 0.5, y: 0.5 };
+    const heldNotes: number[] = [];
+    const heldExts: number[] = [];
+
+    function publish() {
+      signalRef.current = composePointerSignals(
+        mouse,
+        heldNotes.length ? heldNotes[heldNotes.length - 1] : null,
+        heldExts.length ? heldExts[heldExts.length - 1] : null,
+        window.innerWidth,
+        window.innerHeight,
+      );
+    }
+
+    const editableTarget = (t: EventTarget | null) =>
+      t instanceof HTMLElement &&
+      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.repeat || editableTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+      const note = noteKeyIndex(e.key);
+      const ext = extensionKeyIndex(e.key);
+      if (note !== null && !heldNotes.includes(note)) heldNotes.push(note);
+      else if (ext !== null && !heldExts.includes(ext)) heldExts.push(ext);
+      else return;
+      publish();
+    }
+
+    function onKeyUp(e: KeyboardEvent) {
+      const note = noteKeyIndex(e.key);
+      const ext = extensionKeyIndex(e.key);
+      let changed = false;
+      if (note !== null) {
+        const i = heldNotes.indexOf(note);
+        if (i !== -1) { heldNotes.splice(i, 1); changed = true; }
+      }
+      if (ext !== null) {
+        const i = heldExts.indexOf(ext);
+        if (i !== -1) { heldExts.splice(i, 1); changed = true; }
+      }
+      if (changed) publish();
+    }
+
     function onMove(e: MouseEvent) {
-      const x = e.clientX / window.innerWidth;
-      signalRef.current = [{
-        x,
-        y: e.clientY / window.innerHeight,
-        present: true,
-        handId: pointerHandId(x),
-      }];
+      mouse = { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
+      publish();
     }
 
     function onTouch(e: TouchEvent) {
@@ -125,11 +168,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     }
 
     window.addEventListener('mousemove', onMove);
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
     window.addEventListener('touchstart', onTouch, { passive: false });
     window.addEventListener('touchmove', onTouch, { passive: false });
     window.addEventListener('touchend', onTouchEnd, { passive: false });
     return () => {
       window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('touchstart', onTouch);
       window.removeEventListener('touchmove', onTouch);
       window.removeEventListener('touchend', onTouchEnd);

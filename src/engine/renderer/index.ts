@@ -3,6 +3,9 @@ import type { RefObject } from 'react';
 import type { GestureSignal, MusicalCommand } from '../types';
 import { NOTES } from '../types';
 import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
+import { NOTE_KEYS, EXTENSION_KEYS } from '../input/pointerKeyboard';
+
+const EXTENSION_KEY_LABELS = EXTENSION_KEYS.map(k => k.toUpperCase());
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
 import { getVisualTheme, type VisualTheme } from './themes';
@@ -87,6 +90,9 @@ function drawWheel(
   // and here's its name" instead of a dashed ring floating with no label.
   ghostIdx?: number,
   ghostColor?: string,
+  // Per-slice keyboard shortcut hints ("1"…"7" / "Q"…"U"), drawn in pointer
+  // mode only — they're the discoverability layer for keyboard play.
+  keyHints?: readonly string[],
 ) {
   const n = labels.length;
   const innerR = outerR * 0.36;
@@ -133,6 +139,14 @@ function drawWheel(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(labels[i], cx + Math.cos(midA) * lr, cy + Math.sin(midA) * lr);
+
+    // Keyboard hint: small key cap under the rim of each slice.
+    if (keyHints?.[i]) {
+      const hr = outerR * 0.9;
+      ctx.font = `500 ${Math.round(9 * s)}px ${UI_FONT}`;
+      ctx.fillStyle = pal.ink(emphasize ? 0.7 : 0.38);
+      ctx.fillText(keyHints[i], cx + Math.cos(midA) * hr, cy + Math.sin(midA) * hr);
+    }
   }
 
   // Hairline boundary ticks near the rim (camera-dial style) instead of
@@ -380,6 +394,10 @@ export function useRenderer(
       const leftGhost = ghostSignals.find(gs => gs.present && gs.handId === 'left');
       const rightGhost = ghostSignals.find(gs => gs.present && gs.handId === 'right');
 
+      // In pointer (mouse/keyboard) mode, print each slice's shortcut key on
+      // the wheel — hovering is otherwise the only, invisible, way in.
+      const pointerMode = !!stickyExtensionRef?.current;
+
       // Left wheel — chord root (its major/minor quality comes from the scale)
       const leftCenterLabel = (bothActive || leftInDial) ? chordName : 'NOTE';
       drawWheel(
@@ -390,6 +408,7 @@ export function useRenderer(
         pal,
         leftGhost?.sliceIdx,
         theme.left.ghost,
+        pointerMode ? NOTE_KEYS : undefined,
       );
 
       // Right wheel — chord extension (triad / 7th / sus / …)
@@ -402,6 +421,7 @@ export function useRenderer(
         pal,
         rightGhost?.sliceIdx,
         theme.right.ghost,
+        pointerMode ? EXTENSION_KEY_LABELS : undefined,
       );
 
       // Publish slice selection so the coordinator can drive audio

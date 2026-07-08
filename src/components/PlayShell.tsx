@@ -66,8 +66,15 @@ function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
   const touch = isTouchDevice();
   return (
     <div className="mode-badge">
-      {touch ? 'Touch mode' : 'Mouse mode'} —{' '}
-      <button onClick={onSwitch} className="link-btn">try camera mode</button>
+      {touch ? (
+        <>Touch mode — touch the left wheel to play, the right wheel to shape the chord</>
+      ) : (
+        <>
+          Mouse &amp; keys — hover a wheel, or hold <kbd>1</kbd>–<kbd>7</kbd> to play
+          and <kbd>Q</kbd>–<kbd>U</kbd> to shape · <kbd>Space</kbd> sustains
+        </>
+      )}{' '}
+      — <button onClick={onSwitch} className="link-btn">try camera mode</button>
     </div>
   );
 }
@@ -325,7 +332,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
       {showTutorial && mode !== 'asking' && (
         <BeginnerTutorial
-          key={tutorialRun}
+          key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
           selectedRef={selectedRef}
           mode={mode}
@@ -333,7 +340,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         />
       )}
       <FroolaGuide
-        key={tutorialRun}
+        key={`guide-${tutorialRun}`}
         loopState={loopState}
         active={tutorialDone && (mode === 'camera' || mode === 'mouse')}
       />
