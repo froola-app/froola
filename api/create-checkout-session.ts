@@ -1,9 +1,13 @@
-import { stripe, priceIdForPlan, type PlanId } from './_lib/stripe.js';
+import { stripe, priceIdForPlan, type BillingInterval, type PlanId } from './_lib/stripe.js';
 import { getUserFromAuthHeader, supabaseAdmin } from './_lib/supabaseAdmin.js';
 import { originFrom, type ApiRequest, type ApiResponse } from './_lib/http.js';
 
 function isPlanId(value: unknown): value is PlanId {
   return value === 'plus' || value === 'studio';
+}
+
+function isInterval(value: unknown): value is BillingInterval {
+  return value === 'week' || value === 'month';
 }
 
 // Finds this user's existing Stripe customer (if any prior checkout/portal
@@ -40,9 +44,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
     return;
   }
 
-  const body = req.body as { plan?: unknown };
+  const body = req.body as { plan?: unknown; interval?: unknown };
   if (!isPlanId(body?.plan)) {
     res.status(400).json({ error: 'plan must be "plus" or "studio"' });
+    return;
+  }
+  if (!isInterval(body?.interval)) {
+    res.status(400).json({ error: 'interval must be "week" or "month"' });
     return;
   }
 
@@ -54,11 +62,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       mode: 'subscription',
       customer: customerId,
       client_reference_id: user.id,
-      line_items: [{ price: priceIdForPlan(body.plan), quantity: 1 }],
-      // Both paid tiers offer a trial (docs/PRICING.md); card is required
-      // up front so Stripe can auto-convert at trial end without a second
-      // checkout step.
-      subscription_data: { trial_period_days: 14 },
+      line_items: [{ price: priceIdForPlan(body.plan, body.interval), quantity: 1 }],
+      // Monthly plans carry a 5-day trial (docs/PRICING.md); weekly plans
+      // don't (a trial nearly as long as the billing period invites churn
+      // cycling). Card is required up front so Stripe can auto-convert at
+      // trial end without a second checkout step.
+      ...(body.interval === 'month' ? { subscription_data: { trial_period_days: 5 } } : {}),
       payment_method_collection: 'always',
       success_url: `${origin}/pricing?checkout=success&plan=${body.plan}`,
       cancel_url: `${origin}/pricing?checkout=cancel`,

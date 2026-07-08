@@ -8,10 +8,12 @@ type Props = {
   selectedRef: RefObject<DialSelection>;
   vibe: string;
   maxDurationMs: number;
+  /** Plan-gated: free replays play back with a "made with froola" overlay. */
+  watermark?: boolean;
 };
 
-export default function RecordButton({ selectedRef, vibe, maxDurationMs }: Props) {
-  const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe, maxDurationMs);
+export default function RecordButton({ selectedRef, vibe, maxDurationMs, watermark = true }: Props) {
+  const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe, maxDurationMs, watermark);
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {

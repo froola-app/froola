@@ -19,6 +19,8 @@ export function useRecorder(
   vibe: string,
   // Plan-gated (see src/entitlements.ts maxReplayRecordMs).
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
+  // Plan-gated (replayWatermark): free replays play back watermarked.
+  watermark: boolean = true,
 ) {
   const [state, setState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -35,6 +37,9 @@ export function useRecorder(
 
   useEffect(() => { vibeRef.current = vibe; }, [vibe]);
 
+  const watermarkRef = useRef(watermark);
+  useEffect(() => { watermarkRef.current = watermark; }, [watermark]);
+
   const stop = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -47,6 +52,7 @@ export function useRecorder(
     const recording: Recording = {
       samples,
       totalMs: samples.reduce((s, r) => s + r.dt, 0),
+      watermark: watermarkRef.current,
     };
     const encoded = encode(recording);
     // Self-contained link immediately (still works, just longer), then swap

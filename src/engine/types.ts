@@ -43,4 +43,7 @@ export type RecordingSample = {
 export type Recording = {
   samples: RecordingSample[];
   totalMs: number;    // sum of all dt values
+  /** Playback shows a "made with froola" overlay. Set on free-plan
+      recordings; legacy (pre-flag) links are treated as watermarked. */
+  watermark?: boolean;
 };

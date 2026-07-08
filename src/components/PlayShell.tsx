@@ -16,11 +16,13 @@ import BeginnerTutorial from './BeginnerTutorial';
 import FroolaGuide from './FroolaGuide';
 import HandTiltPopup from './HandTiltPopup';
 import PlayWall from './PlayWall';
+import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { usePlayWall } from '../hooks/usePlayWall';
 import { useTheme } from '../useTheme';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
+import { VISUAL_THEMES, getVisualTheme, setVisualTheme } from '../engine/renderer/themes';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -76,6 +78,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const { profile } = useAuth();
   const ent = entitlementsFor(profile);
 
+  // Which locked feature the user just reached for, if any — opens the
+  // in-context upgrade sheet instead of bouncing them to /pricing.
+  const [upsell, setUpsell] = useState<LockedFeature | null>(null);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
   // A downgrade mid-session (subscription lapses, sign-out) must not leave a
@@ -83,6 +89,16 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   useEffect(() => {
     if (!ent.pianoUnlocked && instrumentMode === 'piano') setInstrumentMode('synth');
   }, [ent.pianoUnlocked, instrumentMode]);
+  // Canvas accent theme (Plus+). The renderer reads the themes module
+  // directly each frame; this state only drives the select.
+  const [themeId, setThemeId] = useState(() => getVisualTheme().id);
+  // Same downgrade rule as the piano: a lapsed plan reverts to the free look.
+  useEffect(() => {
+    if (!ent.visualThemesUnlocked && themeId !== 'froola') {
+      setThemeId(setVisualTheme('froola').id);
+    }
+  }, [ent.visualThemesUnlocked, themeId]);
+
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
@@ -340,8 +356,15 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           the HUD's z-index, so hide the HUD until an input mode is chosen. */}
       {mode !== 'asking' && <>
       <ShareButton />
-      <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} />
-      <VideoRecordButton canvasRef={canvasRef} cameraVideoRef={cameraVideoRef} engineRef={engineRef} maxDurationMs={ent.maxVideoRecordMs} />
+      <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} watermark={ent.replayWatermark} />
+      <VideoRecordButton
+        canvasRef={canvasRef}
+        cameraVideoRef={cameraVideoRef}
+        engineRef={engineRef}
+        maxDurationMs={ent.maxVideoRecordMs}
+        locked={!ent.videoRecordUnlocked}
+        onLockedClick={() => setUpsell('video')}
+      />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <ProfileButton
         play={mode === 'camera' || mode === 'mouse' ? {
@@ -352,7 +375,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       />
       </>}
       {looper && (mode === 'camera' || mode === 'mouse') && (
-        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
+        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} onUpgrade={() => setUpsell('loops')} />
       )}
       {mode !== 'asking' && <div className="hud-bottom">
         <select
@@ -360,13 +383,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           value={instrumentMode}
           onChange={e => {
             const next = e.target.value as InstrumentMode;
-            if (next === 'piano' && !ent.pianoUnlocked) { navigate('/pricing'); return; }
+            if (next === 'piano' && !ent.pianoUnlocked) { setUpsell('piano'); return; }
             setInstrumentMode(next);
           }}
         >
           {MODES.map(m => (
             <option key={m.value} value={m.value}>
-              {m.value === 'piano' && !ent.pianoUnlocked ? 'piano · plus' : m.label}
+              {m.value === 'piano' && !ent.pianoUnlocked ? '🔒 piano · plus' : m.label}
             </option>
           ))}
         </select>
@@ -389,6 +412,22 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         >
           {SCALE_NAMES.map(s => (
             <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          className="instrument-select"
+          value={themeId}
+          onChange={e => {
+            const next = e.target.value;
+            if (next !== 'froola' && !ent.visualThemesUnlocked) { setUpsell('themes'); return; }
+            setThemeId(setVisualTheme(next).id);
+          }}
+          aria-label="Visual theme"
+        >
+          {VISUAL_THEMES.map(t => (
+            <option key={t.id} value={t.id}>
+              {t.id !== 'froola' && !ent.visualThemesUnlocked ? `🔒 ${t.label} · plus` : t.label}
+            </option>
           ))}
         </select>
         <div className="octave-control" role="group" aria-label="Octave">
@@ -422,6 +461,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           arp {arpEnabled ? 'on' : 'off'}
         </button>
       </div>}
+      {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
       {gated && <PlayWall />}
     </>
   );

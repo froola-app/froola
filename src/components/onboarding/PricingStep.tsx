@@ -20,8 +20,8 @@ export default function PricingStep({ onContinue }: Props) {
               {tier.badge && <span className="pro-badge">{tier.badge}</span>}
             </h3>
             <p className="pricing-card-price">
-              {tier.price}
-              {tier.period && <span className="pricing-card-period">{tier.period}</span>}
+              {tier.price.week ?? tier.price.month}
+              {tier.planId && <span className="pricing-card-period">/wk</span>}
             </p>
             <ul>
               {tier.features.map(f => (

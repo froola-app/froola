@@ -2,10 +2,18 @@
 // truth for plan ids so browser code never imports server-only modules.
 export type PlanId = 'plus' | 'studio';
 
+// Weekly is the default display interval (small number up front); monthly is
+// the "save" option and the only interval that carries a free trial.
+export type BillingInterval = 'week' | 'month';
+
+export const TRIAL_DAYS = 5;
+
 export interface PricingTier {
   name: string;
-  price: string;
-  period?: string;
+  /** Price per interval. Free tiers only have `month` ($0 either way). */
+  price: { week?: string; month: string };
+  /** e.g. "Save 42%" — shown when the monthly interval is selected. */
+  monthlySavings?: string;
   badge?: string;
   features: string[];
   highlight?: boolean;
@@ -17,32 +25,35 @@ export interface PricingTier {
 export const PRICING_TIERS: PricingTier[] = [
   {
     name: 'Free',
-    price: '$0',
+    price: { month: '$0' },
     features: [
       'Synth instrument',
       'Camera mode & mouse mode',
-      '3 recordings / month, up to 20s',
-      'Shareable replay links (watermarked)',
+      'Shareable replay links, up to 20s (watermarked)',
+      '4 chord-loop slots',
     ],
   },
   {
     name: 'Plus',
-    price: '$4.99',
-    period: '/mo',
+    price: { week: '$1.99', month: '$4.99' },
+    monthlySavings: 'Save 42%',
     planId: 'plus',
     features: [
       'Everything in Free',
       'Piano instrument unlocked',
-      'Recordings up to 3 minutes, no watermark',
-      'Custom visual themes',
+      'Video recording & download, up to 3 minutes',
+      'Longer replays, no watermark',
+      '8 chord-loop slots',
+      'Visual themes for the wheels & orbs',
     ],
   },
   {
     name: 'Studio',
-    price: '$19.99',
-    period: '/mo',
+    price: { week: '$3.99', month: '$8.99' },
+    monthlySavings: 'Save 48%',
     planId: 'studio',
     highlight: true,
+    badge: 'Best value',
     features: [
       'Everything in Plus',
       'Continuous instant-replay recording',

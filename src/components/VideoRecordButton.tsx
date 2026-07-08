@@ -7,6 +7,9 @@ type Props = {
   cameraVideoRef: RefObject<HTMLVideoElement | null>;
   engineRef: RefObject<AudioEngine | null>;
   maxDurationMs: number;
+  /** Plan-gated (Plus+). Locked keeps the button visible as a teaser. */
+  locked?: boolean;
+  onLockedClick?: () => void;
 };
 
 function formatTime(s: number): string {
@@ -15,8 +18,18 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef, maxDurationMs }: Props) {
+export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef, maxDurationMs, locked, onLockedClick }: Props) {
   const { state, elapsed, start, stop } = useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs);
+
+  // Locked plans still see the control — it advertises what Plus unlocks and
+  // opens the upgrade sheet instead of recording.
+  if (locked) {
+    return (
+      <button className="vid-record-btn vid-record-btn--idle" onClick={onLockedClick}>
+        <span className="rec-dot" /> Record video <span className="lock-chip">plus</span>
+      </button>
+    );
+  }
 
   if (state === 'idle') {
     return (

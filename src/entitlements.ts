@@ -9,32 +9,57 @@ export type EffectivePlan = 'free' | PlanId;
 export interface Entitlements {
   /** Piano sampler instrument (Plus+). Free is synth-only. */
   pianoUnlocked: boolean;
+  /** Video recording + download (Plus+). Free can only preview the button. */
+  videoRecordUnlocked: boolean;
+  /** Canvas accent themes (Plus+). Free plays in the default froola look. */
+  visualThemesUnlocked: boolean;
+  /** WAV/MP3 session audio download + loop MIDI export (Studio). */
+  audioDownloadUnlocked: boolean;
+  /** Always-on rolling replay buffer — "save the last 30s" (Studio). */
+  instantReplayUnlocked: boolean;
+  /** Free replays carry a "made with froola" watermark on playback. */
+  replayWatermark: boolean;
   /** Hard stop for the shareable-replay recorder. */
   maxReplayRecordMs: number;
   /** Hard stop for the video recorder. Infinity on Studio. */
   maxVideoRecordMs: number;
-  /** Chord-loop slots the UI lets the user fill (engine caps at 8). */
+  /** Chord-loop slots the UI lets the user fill (engine caps at MAX_SLOTS). */
   loopSlots: number;
 }
 
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   free: {
     pianoUnlocked: false,
+    videoRecordUnlocked: false,
+    visualThemesUnlocked: false,
+    audioDownloadUnlocked: false,
+    instantReplayUnlocked: false,
+    replayWatermark: true,
     maxReplayRecordMs: 20_000,
-    maxVideoRecordMs: 20_000,
+    maxVideoRecordMs: 0,
     loopSlots: 4,
   },
   plus: {
     pianoUnlocked: true,
+    videoRecordUnlocked: true,
+    visualThemesUnlocked: true,
+    audioDownloadUnlocked: false,
+    instantReplayUnlocked: false,
+    replayWatermark: false,
     maxReplayRecordMs: 30_000,
     maxVideoRecordMs: 180_000,
     loopSlots: 8,
   },
   studio: {
     pianoUnlocked: true,
+    videoRecordUnlocked: true,
+    visualThemesUnlocked: true,
+    audioDownloadUnlocked: true,
+    instantReplayUnlocked: true,
+    replayWatermark: false,
     maxReplayRecordMs: 30_000,
     maxVideoRecordMs: Infinity,
-    loopSlots: 8,
+    loopSlots: Infinity,
   },
 };
 

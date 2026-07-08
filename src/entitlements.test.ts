@@ -7,16 +7,17 @@ describe('entitlements', () => {
     expect(entitlementsFor(null).pianoUnlocked).toBe(false);
   });
 
-  it('locks piano and caps recordings at 20s on free', () => {
+  it('locks piano and video recording, caps replays at 20s on free', () => {
     const e = entitlementsFor({ plan: 'free', betaTester: false });
     expect(e.pianoUnlocked).toBe(false);
-    expect(e.maxVideoRecordMs).toBe(20_000);
+    expect(e.videoRecordUnlocked).toBe(false);
     expect(e.maxReplayRecordMs).toBe(20_000);
   });
 
   it('unlocks piano and 3-minute video on plus', () => {
     const e = entitlementsFor({ plan: 'plus', betaTester: false });
     expect(e.pianoUnlocked).toBe(true);
+    expect(e.videoRecordUnlocked).toBe(true);
     expect(e.maxVideoRecordMs).toBe(180_000);
   });
 

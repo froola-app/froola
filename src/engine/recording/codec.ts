@@ -24,15 +24,23 @@ function runLengthMerge(samples: RecordingSample[]): RecordingSample[] {
   return runs;
 }
 
+// v1 payloads prepend a single flags byte, distinguishable from the legacy
+// all-samples format because their length is ≡1 (mod 5) instead of ≡0. The
+// high bits form a version marker so a corrupt legacy payload that happens
+// to be ≡1 (mod 5) still fails validation instead of decoding as v1.
+const FLAGS_VERSION = 0x80;
+const FLAG_NO_WATERMARK = 0x01;
+
 export function encode(recording: Recording): string {
   const samples = runLengthMerge(recording.samples);
-  const buf = new Uint8Array(samples.length * 5);
+  const buf = new Uint8Array(1 + samples.length * 5);
+  buf[0] = FLAGS_VERSION | (recording.watermark === false ? FLAG_NO_WATERMARK : 0);
   const view = new DataView(buf.buffer);
   samples.forEach((s, i) => {
-    view.setUint16(i * 5, s.dt, false);
-    buf[i * 5 + 2] = s.noteIdx;
-    buf[i * 5 + 3] = s.qualityIdx;
-    buf[i * 5 + 4] = s.vibe;
+    view.setUint16(1 + i * 5, s.dt, false);
+    buf[1 + i * 5 + 2] = s.noteIdx;
+    buf[1 + i * 5 + 3] = s.qualityIdx;
+    buf[1 + i * 5 + 4] = s.vibe;
   });
   return btoa(String.fromCharCode(...buf))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
@@ -44,7 +52,17 @@ export function decode(data: string): Recording {
   const buf = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
 
-  if (buf.length === 0 || buf.length % 5 !== 0) {
+  // Legacy links carry no flags byte — every one predates paid plans, so
+  // they play back watermarked.
+  let watermark = true;
+  let offset = 0;
+  if (buf.length % 5 === 1 && (buf[0] & 0xf0) === FLAGS_VERSION) {
+    watermark = (buf[0] & FLAG_NO_WATERMARK) === 0;
+    offset = 1;
+  } else if (buf.length === 0 || buf.length % 5 !== 0) {
+    throw new Error('Invalid recording data');
+  }
+  if (buf.length - offset === 0) {
     throw new Error('Invalid recording data');
   }
 
@@ -52,7 +70,7 @@ export function decode(data: string): Recording {
   const samples: RecordingSample[] = [];
   let totalMs = 0;
 
-  for (let i = 0; i < buf.length; i += 5) {
+  for (let i = offset; i < buf.length; i += 5) {
     const dt = view.getUint16(i, false);
     const noteIdx = buf[i + 2];
     const qualityIdx = buf[i + 3];
@@ -66,5 +84,5 @@ export function decode(data: string): Recording {
     totalMs += dt;
   }
 
-  return { samples, totalMs };
+  return { samples, totalMs, watermark };
 }

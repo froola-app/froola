@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
-import type { PlanId } from './pricingTiers.ts';
+import type { BillingInterval, PlanId } from './pricingTiers.ts';
 
-export type { PlanId };
+export type { BillingInterval, PlanId };
 
 async function authedFetch(path: string, body?: unknown): Promise<{ url: string } | { error: string }> {
   const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
@@ -32,8 +32,8 @@ export function warmCheckoutApi(): void {
 // Redirects the browser to Stripe Checkout for the given tier. Caller is
 // responsible for making sure the user is signed in first — this returns
 // silently (no redirect) if the caller isn't.
-export async function startCheckout(plan: PlanId): Promise<void> {
-  const result = await authedFetch('/api/create-checkout-session', { plan });
+export async function startCheckout(plan: PlanId, interval: BillingInterval = 'month'): Promise<void> {
+  const result = await authedFetch('/api/create-checkout-session', { plan, interval });
   if ('url' in result) window.location.href = result.url;
   else console.error('startCheckout failed', result.error);
 }

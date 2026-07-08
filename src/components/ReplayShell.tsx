@@ -123,6 +123,11 @@ export default function ReplayShell() {
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {recording.watermark !== false && (
+        <a className="replay-watermark" href="/" aria-label="Made with froola">
+          made with <strong>froola</strong>
+        </a>
+      )}
       <div className="replay-controls">
         <button className="btn-primary" onClick={onPlay}>
           {playing ? 'Playing…' : progress >= 1 ? '↻ Replay' : '▶ Play'}

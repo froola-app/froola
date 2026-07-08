@@ -5,6 +5,7 @@ import { NOTES } from '../types';
 import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
+import { getVisualTheme, type VisualTheme } from './themes';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
 
@@ -62,11 +63,12 @@ function currentPalette(): WheelPalette {
     : LIGHT_PALETTE;
 }
 
-// Extension wheel uses a cool blue→violet ramp (Apple system blue → purple),
-// distinct from the orange note wheel.
-function extensionColor(i: number, n: number): string {
-  const hue = 211 + (i / Math.max(1, n - 1)) * 69;
-  return `hsl(${hue}, 90%, 61%)`;
+// Extension wheel ramps between the theme's two hues (froola default:
+// Apple system blue → purple), distinct from the note wheel accent.
+function extensionColor(i: number, n: number, theme: VisualTheme): string {
+  const [h0, h1] = theme.extHue;
+  const hue = h0 + (i / Math.max(1, n - 1)) * (h1 - h0);
+  return `hsl(${hue}, ${theme.extSat ?? 90}%, 61%)`;
 }
 
 function drawWheel(
@@ -203,6 +205,7 @@ function drawOrb(
   w: number,
   h: number,
   amplitude: number,
+  theme: VisualTheme,
   isGhost = false,
 ) {
   const cx = signal.x * w;
@@ -210,7 +213,7 @@ function drawOrb(
   const baseRadius = 16;
   const glowRadius = baseRadius + amplitude * 30;
 
-  const isLeft = signal.handId === 'left';
+  const accent = signal.handId === 'left' ? theme.left : theme.right;
 
   if (isGhost) {
     // Ghost orb: dashed ring only — shows where the target hand should be
@@ -218,14 +221,14 @@ function drawOrb(
     ctx.globalAlpha = 0.45;
     ctx.beginPath();
     ctx.arc(cx, cy, glowRadius * 1.4, 0, Math.PI * 2);
-    ctx.strokeStyle = isLeft ? 'rgba(120,200,255,1)' : 'rgba(255,214,10,1)';
+    ctx.strokeStyle = accent.ghost;
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 5]);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-    ctx.fillStyle = isLeft ? 'rgba(120,200,255,0.6)' : 'rgba(255,214,10,0.6)';
+    ctx.fillStyle = accent.ghostFill;
     ctx.fill();
     ctx.restore();
     return;
@@ -233,10 +236,7 @@ function drawOrb(
 
   // Tight halo + crisp near-white core; the amplitude still breathes the
   // radius but nothing blooms across half the screen.
-  const stop0 = isLeft ? 'rgba(190,225,255,0.7)' : 'rgba(255,235,190,0.7)';
-  const stop1 = isLeft ? 'rgba(10,132,255,0.28)' : 'rgba(255,159,10,0.28)';
-  const stop2 = isLeft ? 'rgba(10,132,255,0)'    : 'rgba(255,159,10,0)';
-  const core  = isLeft ? 'rgba(225,240,255,0.95)' : 'rgba(255,248,225,0.95)';
+  const { halo0: stop0, halo1: stop1, halo2: stop2, core } = accent;
 
   const orbGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 2);
   orbGrad.addColorStop(0, stop0);
@@ -253,7 +253,7 @@ function drawOrb(
   ctx.fill();
   ctx.beginPath();
   ctx.arc(cx, cy, glowRadius * 0.85, 0, Math.PI * 2);
-  ctx.strokeStyle = isLeft ? 'rgba(10,132,255,0.55)' : 'rgba(255,159,10,0.55)';
+  ctx.strokeStyle = accent.ring;
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
@@ -261,7 +261,7 @@ function drawOrb(
   if (signal.fist) {
     ctx.beginPath();
     ctx.arc(cx, cy, glowRadius * 1.45, 0, Math.PI * 2);
-    ctx.strokeStyle = isLeft ? 'rgba(120,200,255,0.85)' : 'rgba(255,214,10,0.85)';
+    ctx.strokeStyle = accent.fistRing;
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -319,6 +319,7 @@ export function useRenderer(
       const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
       // Read per frame — cheap, and it makes a theme toggle repaint instantly.
       const pal = currentPalette();
+      const theme = getVisualTheme();
 
       // Particles — between warm zone and dials
       const presentSignals = signals.filter(s => s.present);
@@ -384,11 +385,11 @@ export function useRenderer(
       drawWheel(
         ctx, leftCx, wheelCy, outerR,
         noteLabels, noteIdx, leftInDial,
-        () => '#FF9F0A',
+        () => theme.noteAccent,
         leftCenterLabel,
         pal,
         leftGhost?.sliceIdx,
-        'rgb(120,200,255)',
+        theme.left.ghost,
       );
 
       // Right wheel — chord extension (triad / 7th / sus / …)
@@ -396,11 +397,11 @@ export function useRenderer(
         ctx, rightCx, wheelCy, outerR,
         EXTENSIONS.map(e => e.label),
         qualIdx, rightInDial,
-        (i) => extensionColor(i, EXTENSIONS.length),
+        (i) => extensionColor(i, EXTENSIONS.length, theme),
         rightInDial ? EXTENSIONS[qualIdx].label : 'CHORD',
         pal,
         rightGhost?.sliceIdx,
-        'rgb(255,214,10)',
+        theme.right.ghost,
       );
 
       // Publish slice selection so the coordinator can drive audio
@@ -409,13 +410,13 @@ export function useRenderer(
       // Ghost orbs (lesson target) drawn first so live hands appear on top
       for (const gs of ghostSignals) {
         if (!gs.present) continue;
-        drawOrb(ctx, gs, w, h, 0, true);
+        drawOrb(ctx, gs, w, h, 0, theme, true);
       }
 
       // Live orbs
       for (const signal of signals) {
         if (!signal.present) continue;
-        drawOrb(ctx, signal, w, h, amplitude);
+        drawOrb(ctx, signal, w, h, amplitude, theme);
       }
 
       rafId = requestAnimationFrame(draw);

@@ -71,6 +71,36 @@ describe('codec', () => {
     expect(encode({ samples, totalMs: 30_000 }).length).toBeLessThan(60);
   });
 
+  it('round-trips the no-watermark flag', () => {
+    expect(decode(encode({ ...recording, watermark: false })).watermark).toBe(false);
+  });
+
+  it('defaults to watermarked when the flag is unset or omitted', () => {
+    expect(decode(encode(recording)).watermark).toBe(true);
+    expect(decode(encode({ ...recording, watermark: true })).watermark).toBe(true);
+  });
+
+  it('decodes legacy flag-less payloads as watermarked', () => {
+    const buf = new Uint8Array(5);
+    new DataView(buf.buffer).setUint16(0, 100, false);
+    buf[2] = 3; buf[3] = 1; buf[4] = 0;
+    const legacy = btoa(String.fromCharCode(...buf))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const decoded = decode(legacy);
+    expect(decoded.samples).toEqual([sample]);
+    expect(decoded.watermark).toBe(true);
+  });
+
+  it('rejects a ≡1 (mod 5) payload whose first byte lacks the version marker', () => {
+    const buf = new Uint8Array(6);
+    buf[0] = 0x01; // no 0x80 version bits — not a valid v1 flags byte
+    new DataView(buf.buffer).setUint16(1, 100, false);
+    buf[3] = 3; buf[4] = 1; buf[5] = 0;
+    const bad = btoa(String.fromCharCode(...buf))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    expect(() => decode(bad)).toThrow('Invalid recording data');
+  });
+
   it('decode throws on wrong length', () => {
     expect(() => decode('YWJj')).toThrow('Invalid recording data');
   });
