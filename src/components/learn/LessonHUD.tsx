@@ -18,8 +18,10 @@ type Props = {
   chordNext?: string;
   /** Whether a chord is currently fist-locked / space-held. */
   sustained?: boolean;
-  /** Warmup phase only: called when the user is ready to start the countdown. */
-  onReady?: () => void;
+  /** Practice phase only: label of the chord currently being learned. */
+  practiceChord?: string;
+  practiceChordIndex?: number;
+  practiceChordCount?: number;
 };
 
 export default function LessonHUD({
@@ -36,7 +38,9 @@ export default function LessonHUD({
   chordNow,
   chordNext,
   sustained,
-  onReady,
+  practiceChord,
+  practiceChordIndex,
+  practiceChordCount,
 }: Props) {
   const cheer = useEncouragement(stepScore, phase === 'attempt');
 
@@ -50,15 +54,25 @@ export default function LessonHUD({
     );
   }
 
-  if (phase === 'warmup') {
+  if (phase === 'practice') {
     return (
-      <div className="lesson-hud lesson-hud--warmup">
-        <p className="lesson-hud__preview-eyebrow">Find it first</p>
-        <p className="lesson-hud__listen">Try landing on the glowing target — no timer, no pressure</p>
+      <div className="lesson-hud lesson-hud--practice">
+        <p className="lesson-hud__preview-eyebrow">Take your time</p>
+        <p className="lesson-hud__listen">
+          Find and hold <strong>{practiceChord}</strong> — no timer, no score
+        </p>
+        <div className="lesson-hud__practice-dots">
+          {Array.from({ length: practiceChordCount ?? 0 }, (_, i) => (
+            <span
+              key={i}
+              className={
+                'lesson-hud__dot' +
+                (i === practiceChordIndex ? ' is-active' : i < (practiceChordIndex ?? 0) ? ' is-done' : '')
+              }
+            />
+          ))}
+        </div>
         {hint && <p className="lesson-hud__hint">{hint}</p>}
-        <button className="lesson-hud__ready-btn" onClick={onReady}>
-          I&apos;ve got it →
-        </button>
       </div>
     );
   }
