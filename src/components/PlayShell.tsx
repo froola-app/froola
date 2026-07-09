@@ -18,6 +18,7 @@ import HandTiltPopup from './HandTiltPopup';
 import PlayWall from './PlayWall';
 import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { usePlayWall } from '../hooks/usePlayWall';
 import { useTheme } from '../useTheme';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,6 +66,7 @@ function CameraPrompt({ onCamera, error }: { onCamera: () => void; error: boolea
 
 export default function PlayShell({ initialInput = 'asking' }: { initialInput?: InputMode } = {}) {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const { profile } = useAuth();
   const ent = entitlementsFor(profile);
@@ -295,7 +297,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     <>
       <canvas ref={canvasRef} className="main-canvas" />
       {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
-      {showTutorial && mode === 'camera' && (
+      {!isMobile && showTutorial && mode === 'camera' && (
         <BeginnerTutorial
           key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
@@ -303,11 +305,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           onDone={() => setTutorialDone(true)}
         />
       )}
-      <FroolaGuide
-        key={`guide-${tutorialRun}`}
-        loopState={loopState}
-        active={tutorialDone && mode === 'camera'}
-      />
+      {!isMobile && (
+        <FroolaGuide
+          key={`guide-${tutorialRun}`}
+          loopState={loopState}
+          active={tutorialDone && mode === 'camera'}
+        />
+      )}
       {audioStuck && (
         <div className="nod-hint">tap anywhere for sound</div>
       )}
@@ -332,10 +336,15 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
       />
       </>}
-      {looper && mode === 'camera' && (
+      {!isMobile && looper && mode === 'camera' && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} onUpgrade={() => setUpsell('loops')} />
       )}
+      {/* Mobile keeps only the two controls that shape which notes are on
+          the wheels — instrument/theme/octave/arp stay at their defaults
+          (synth, froola theme, octave 0, arp on) and are only reachable on
+          a wider screen, so the phone HUD doesn't crowd the canvas. */}
       {mode !== 'asking' && <div className="hud-bottom">
+        {!isMobile && <>
         <select
           className="instrument-select"
           value={instrumentMode}
@@ -352,6 +361,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           ))}
         </select>
         {pianoLoading && <span className="instrument-loading">loading piano…</span>}
+        </>}
         <select
           className="instrument-select"
           value={keyOffset}
@@ -372,7 +382,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
-        <select
+        {!isMobile && <select
           className="instrument-select"
           value={themeId}
           onChange={e => {
@@ -387,14 +397,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
               {t.id !== 'froola' && !ent.visualThemesUnlocked ? `🔒 ${t.label} · plus` : t.label}
             </option>
           ))}
-        </select>
+        </select>}
       </div>}
       {/* Its own column on the side rather than packed into .hud-bottom: on a
           tall phone the four instrument/key/scale/theme pills alone already
           wrap to 2-3 rows, and stacking the octave/arp controls on top of
           that crammed everything into a strip at the very bottom while the
           rest of the canvas sat empty. */}
-      {mode !== 'asking' && <div className="hud-side">
+      {!isMobile && mode !== 'asking' && <div className="hud-side">
         <div className="octave-control" role="group" aria-label="Octave">
           <button
             className="octave-btn"
