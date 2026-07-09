@@ -534,15 +534,6 @@ body {
   .loop-panel { bottom: 9.5rem; }
 }
 
-/* Wrappers around the top-corner buttons. They're inert by default — the
-   buttons inside keep their own position:fixed placement — and only turn
-   into actual flex containers under the short-landscape query at the end
-   of this file (it has to come last to win the cascade over each button's
-   own position:fixed rule declared further down). */
-.hud-top-left, .hud-top-right {
-  display: contents;
-}
-
 .loop-slots {
   display: flex;
   align-items: center;
@@ -4968,60 +4959,3 @@ body {
   cursor: pointer;
 }
 .upsheet__link--dim { color: var(--lg-top-ink-dim); text-decoration: none; }
-
-/* Short-height landscape (a phone actually rotated) — the play HUD was
-   tuned for a tall viewport: five buttons stacked two corners deep plus a
-   two-row bottom bar, which eats most of a ~330px-tall canvas. Lay each
-   corner out as a single horizontal row instead of a vertical stack, and
-   force the bottom bar onto one (scrollable, if it must) row so the wheels
-   get the vertical room back. This block must stay last in the file to win
-   the cascade over each button's own position:fixed rule declared above. */
-@media (max-height: 500px) and (orientation: landscape) {
-  .permission-card { gap: 0.5rem; }
-  .permission-title { font-size: 1.35rem; margin-top: 0; }
-  .permission-body { font-size: 0.85rem; margin-top: 0; }
-  .permission-hint, .permission-privacy { display: none; }
-  .permission-buttons { margin-top: 0.35rem; gap: 0.4rem; }
-  .permission-btn-primary, .permission-btn-secondary { padding: 0.55rem 1.6rem; }
-
-  .hud-top-left, .hud-top-right {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    position: fixed;
-    top: 0.4rem;
-    z-index: 20;
-  }
-  .hud-top-left { left: 0.4rem; }
-  .hud-top-right { right: 0.4rem; }
-
-  .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn, .share-btn {
-    position: relative;
-    top: auto;
-    left: auto;
-    right: auto;
-    padding: 0.25rem 0.65rem;
-    font-size: 0.7rem;
-  }
-  .profile-btn { padding: 0; width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
-
-  .hud-bottom {
-    bottom: 0.35rem;
-    gap: 0.3rem;
-    flex-wrap: nowrap;
-    max-width: calc(100vw - 0.8rem);
-    overflow-x: auto;
-    padding: 0 0.1rem;
-  }
-  .instrument-select, .octave-control, .arp-btn {
-    padding: 0.18rem 0.55rem;
-    font-size: 0.68rem;
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  .octave-control { gap: 0.2rem; }
-  .octave-btn { width: 1.2rem; height: 1.2rem; font-size: 0.85rem; flex-shrink: 0; }
-  .octave-value { min-width: 3.2em; white-space: nowrap; }
-
-  .loop-panel { bottom: 2.6rem; gap: 0.25rem; }
-}

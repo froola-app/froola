@@ -27,15 +27,18 @@ export function storeInputMode(mode: 'camera'): void {
 }
 
 // MediaPipe's WebGL GPU delegate stalls badly in Safari/WebKit (texture
-// upload/readback overhead per frame with no compute-shader path), where it's
-// often *slower* than the CPU delegate — the opposite of Chrome. Safari also
-// has a heavier camera decode pipeline, so we ask for a smaller frame too.
-// Vendor check rather than a UA-string regex: every iOS browser (CriOS,
-// FxiOS, Edge…) is WebKit under the hood and needs the same treatment, and
-// they all report vendor 'Apple Computer, Inc.'.
-const isWebKit =
+// upload/readback overhead per frame with no compute-shader path) and is
+// also unreliable across many Android GPU/driver combos — it can throw on
+// first use, which (before the try/catch in the detection loop below) used
+// to silently kill hand tracking forever while the camera feed kept
+// playing. CPU delegate is slower but works everywhere, so every mobile
+// browser gets it rather than trying to allowlist specific GPUs; the same
+// flag also trims the requested camera resolution and, since Safari's CPU
+// delegate spends most of its budget on pixel readback, drives an
+// offscreen-canvas downscale before inference.
+const isMobile =
   typeof navigator !== 'undefined' &&
-  navigator.vendor === 'Apple Computer, Inc.';
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 // A single detected hand can only be on one wheel at a time, so we label it by
 // which half of the screen it's in: the left wheel sits near the left edge and
@@ -89,7 +92,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
       );
 
-      const videoConstraints = isWebKit
+      const videoConstraints = isMobile
         ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' as const }
         : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' as const };
 
@@ -129,7 +132,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         baseOptions: {
           modelAssetPath:
             'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-          delegate: isWebKit ? 'CPU' : 'GPU',
+          delegate: isMobile ? 'CPU' : 'GPU',
         },
         runningMode: 'VIDEO',
         numHands: 2,
@@ -197,7 +200,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       // work. Aspect ratio is preserved, so the normalized landmark coords
       // (and the viewport remap below) are unaffected.
       const INFER_MAX_WIDTH = 480;
-      const inferCtx = isWebKit
+      const inferCtx = isMobile
         ? document.createElement('canvas').getContext('2d')
         : null;
 
@@ -237,11 +240,21 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         if (cancelled || paused) return;
         const now = performance.now();
         if (now - lastInferenceTime >= handDelay) {
-          const result = landmarker.detectForVideo(inferenceSource(), now);
+          // A throw here (e.g. a flaky GPU delegate on some Android devices)
+          // used to abort this function before the requestAnimationFrame call
+          // below ran, silently killing hand tracking for the rest of the
+          // session while the camera feed kept playing. Swallow it and retry
+          // next frame instead.
+          let result: ReturnType<typeof landmarker.detectForVideo> | null = null;
+          try {
+            result = landmarker.detectForVideo(inferenceSource(), now);
+          } catch (err) {
+            console.error('[handTracking] detectForVideo failed', err);
+          }
           lastInferenceTime = now;
           handDelay = Math.max(INFERENCE_INTERVAL, (performance.now() - now) * 1.5);
 
-          if (result.landmarks.length === 0) {
+          if (!result || result.landmarks.length === 0) {
             // No hands in frame: explicitly clear so the renderer's guardrail
             // check (signals.some(s => s.present)) returns false and the
             // pulsing guide rings reappear.
