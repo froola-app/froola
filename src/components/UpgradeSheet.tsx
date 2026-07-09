@@ -7,7 +7,7 @@ import { useTheme } from '../useTheme';
 
 // The feature the user just reached for — drives the headline so the sheet
 // sells that feature, not a generic plan grid.
-export type LockedFeature = 'piano' | 'video' | 'loops' | 'replay-length' | 'themes';
+export type LockedFeature = 'piano' | 'video' | 'replay-length' | 'themes';
 
 const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recommend: PlanId }> = {
   piano: {
@@ -18,11 +18,6 @@ const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recomme
   video: {
     title: 'Keep what you just played.',
     body: 'Record your session as a video — your hands, your sound, ready to download and share anywhere.',
-    recommend: 'plus',
-  },
-  loops: {
-    title: 'Your loop wants more room.',
-    body: 'Four chords is a hook. Eight is a song. Plus doubles your loop slots so progressions can breathe.',
     recommend: 'plus',
   },
   themes: {
@@ -44,7 +39,7 @@ const PLAN_CARDS: { id: PlanId; name: string; price: string; perks: string[] }[]
     id: 'plus',
     name: 'Plus',
     price: '$1.99/wk',
-    perks: ['Piano instrument', 'Video recording & download (3 min)', '8 loop slots', 'Visual themes', 'No watermark'],
+    perks: ['Piano instrument', 'Video recording & download (3 min)', 'Chord looper', 'Visual themes', 'No watermark'],
   },
   {
     id: 'studio',

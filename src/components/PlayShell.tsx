@@ -310,6 +310,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           key={`guide-${tutorialRun}`}
           loopState={loopState}
           active={tutorialDone && mode === 'camera'}
+          loopUnlocked={ent.loopUnlocked}
         />
       )}
       {audioStuck && (
@@ -336,8 +337,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
       />
       </>}
-      {!isMobile && looper && mode === 'camera' && (
-        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} onUpgrade={() => setUpsell('loops')} />
+      {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
+        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
       )}
       {/* Mobile keeps only the two controls that shape which notes are on
           the wheels — instrument/theme/octave/arp stay at their defaults

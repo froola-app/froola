@@ -8,16 +8,18 @@ const INTRO_KEY = 'froola.frooIntroSeen';
 const CURSOR_KEY = 'froola.tipCursor';
 const CYCLED_KEY = 'froola.tipsCycled';
 
-// One tour, told by Froo. Steps that can be observed advance themselves
-// (watching the looper); the rest offer a quiet "got it". Progress persists
-// so a returning user never re-hears a step they finished.
-const STEPS: {
+type Step = {
   text: string;
   /** Advance automatically when this becomes true. */
   observe?: (loop: LooperState) => boolean;
   /** Auto-advance after this many ms on screen (for "just play" beats). */
   dwellMs?: number;
-}[] = [
+};
+
+// One tour, told by Froo. Steps that can be observed advance themselves
+// (watching the looper); the rest offer a quiet "got it". Progress persists
+// so a returning user never re-hears a step they finished.
+const STEPS: Step[] = [
   {
     text: 'Hi, I’m Froo. Hear a chord you like? Tap + chord below to keep it.',
     observe: loop => loop.slots.length >= 1,
@@ -39,32 +41,53 @@ const STEPS: {
   },
 ];
 
+// Free plan has no loop panel, so the tour skips straight to playing and
+// recording instead of teaching a feature that isn't on screen.
+const FREE_STEPS: Step[] = [
+  {
+    text: 'Hi, I’m Froo. Move your hands over the wheels — left picks the chord, right shapes it.',
+    dwellMs: 10000,
+  },
+  {
+    text: 'Try a few different chords. I’ll keep listening.',
+    dwellMs: 12000,
+  },
+  {
+    text: 'Sounding froolish? Record, top left, captures your jam to share.',
+  },
+  {
+    text: 'That’s the tour. Froo la la.',
+    dwellMs: 4000,
+  },
+];
+
 // Shown once ever, shortly after the tour ends — the only bubble with an ×.
 const INTRO_TEXT = 'Hi, I’m Froo. I keep time down here. Tap me whenever you want a tip.';
 
 // Tapping Froo cycles through these, one per tap, wrapping around. A few
 // also surface on their own (one every few minutes) until the cycle has
-// wrapped once; after that Froo only speaks when poked.
-const TIPS: string[] = [
-  'Not feeling light mode? Dark mode lives in your profile, top right.',
-  'Left wheel picks the chord, right wheel shapes it. That’s the whole instrument.',
-  'Press Enter to drop the chord you’re holding straight into the loop.',
-  'Make a fist to lock your chord while you move around.',
-  'Try a 7th on the right wheel. Instant jazz.',
-  'Feeling moody? Switch major to minor down below.',
-  'Songs live in keys. Try trading C for something braver.',
-  'Arrow keys nudge the octave up and down.',
-  'Synth not your thing? There’s a piano in the bottom row.',
-  'arp on breaks your chord into a rolling pattern. Off gives you a soft pad.',
-  'Loop dragging? The minus and plus around bpm set the pace. I’ll keep up.',
-  'Added a clunker? The backspace button removes the last chord.',
-  'clear wipes the loop when you want to build something new.',
-  'Record, top left, captures your jam as audio you can share.',
-  'Record video grabs the whole performance, wheels and all.',
-  'Share, top right, makes a link your friends can listen to.',
-  'Want to play real songs? The Learn button has lessons.',
-  'sus2 and sus4 float. Resolve them to a triad and feel the landing.',
-  'Miss the tutorial? Replay it any time from your profile settings.',
+// wrapped once; after that Froo only speaks when poked. Tips marked
+// `loopOnly` reference the loop panel and are skipped on the free plan.
+const TIPS: { text: string; loopOnly?: boolean }[] = [
+  { text: 'Not feeling light mode? Dark mode lives in your profile, top right.' },
+  { text: 'Left wheel picks the chord, right wheel shapes it. That’s the whole instrument.' },
+  { text: 'Press Enter to drop the chord you’re holding straight into the loop.', loopOnly: true },
+  { text: 'Make a fist to lock your chord while you move around.' },
+  { text: 'Try a 7th on the right wheel. Instant jazz.' },
+  { text: 'Feeling moody? Switch major to minor down below.' },
+  { text: 'Songs live in keys. Try trading C for something braver.' },
+  { text: 'Arrow keys nudge the octave up and down.' },
+  { text: 'Synth not your thing? There’s a piano in the bottom row.' },
+  { text: 'arp on breaks your chord into a rolling pattern. Off gives you a soft pad.' },
+  { text: 'Loop dragging? The minus and plus around bpm set the pace. I’ll keep up.', loopOnly: true },
+  { text: 'Added a clunker? The backspace button removes the last chord.', loopOnly: true },
+  { text: 'clear wipes the loop when you want to build something new.', loopOnly: true },
+  { text: 'Record, top left, captures your jam as audio you can share.' },
+  { text: 'Record video grabs the whole performance, wheels and all.' },
+  { text: 'Share, top right, makes a link your friends can listen to.' },
+  { text: 'Want to play real songs? The Learn button has lessons.' },
+  { text: 'sus2 and sus4 float. Resolve them to a triad and feel the landing.' },
+  { text: 'Miss the tutorial? Replay it any time from your profile settings.' },
 ];
 
 const TIP_INTRO_MS = 6_000;    // the intro shows soon after the tour ends
@@ -72,32 +95,37 @@ const TIP_FIRST_MS = 75_000;   // quiet stretch before the first auto tip
 const TIP_EVERY_MS = 180_000;  // and between auto tips after that
 const TIP_SHOW_MS = 14_000;    // how long a tip stays up untouched
 
-function storedStep(): number {
+function storedStep(max: number): number {
   const n = Number(localStorage.getItem(STEP_KEY));
-  return Number.isInteger(n) && n >= 0 && n < STEPS.length ? n : 0;
+  return Number.isInteger(n) && n >= 0 && n < max ? n : 0;
 }
 
-function storedCursor(): number {
+function storedCursor(max: number): number {
   const n = Number(localStorage.getItem(CURSOR_KEY));
-  return Number.isInteger(n) && n >= 0 && n < TIPS.length ? n : 0;
+  return Number.isInteger(n) && n >= 0 && n < max ? n : 0;
 }
 
 interface Props {
   loopState: LooperState;
   /** Suppressed while the tutorial overlay is up or no input mode is chosen. */
   active: boolean;
+  /** Free plan has no loop panel — swaps in the loop-free tour and tips. */
+  loopUnlocked: boolean;
 }
 
-export default function FroolaGuide({ loopState, active }: Props) {
+export default function FroolaGuide({ loopState, active, loopUnlocked }: Props) {
+  const steps = loopUnlocked ? STEPS : FREE_STEPS;
+  const tips = loopUnlocked ? TIPS : TIPS.filter(t => !t.loopOnly);
+
   const [tourDone, setTourDone] = useState(() => !!localStorage.getItem(DONE_KEY));
-  const [step, setStep] = useState(storedStep);
+  const [step, setStep] = useState(() => storedStep(steps.length));
   const [happy, setHappy] = useState(false);
   const happyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [introSeen, setIntroSeen] = useState(() => !!localStorage.getItem(INTRO_KEY));
   const [showIntro, setShowIntro] = useState(false);
   const [tip, setTip] = useState<string | null>(null);
-  const cursorRef = useRef(storedCursor());
+  const cursorRef = useRef(storedCursor(tips.length));
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const finishTour = () => {
@@ -115,7 +143,7 @@ export default function FroolaGuide({ loopState, active }: Props) {
     beHappy();
     setStep(s => {
       const next = s + 1;
-      if (next >= STEPS.length) {
+      if (next >= steps.length) {
         finishTour();
         return s;
       }
@@ -125,7 +153,7 @@ export default function FroolaGuide({ loopState, active }: Props) {
   };
 
   // Observed advancement — Froo reacts to what the player actually does.
-  const current = STEPS[step];
+  const current = steps[step];
   useEffect(() => {
     if (!active || tourDone) return;
     if (current.observe?.(loopState)) advance();
@@ -135,7 +163,7 @@ export default function FroolaGuide({ loopState, active }: Props) {
   // Dwell advancement for beats with nothing to observe but time.
   useEffect(() => {
     if (!active || tourDone || !current.dwellMs) return;
-    const isLast = step === STEPS.length - 1;
+    const isLast = step === steps.length - 1;
     const t = setTimeout(() => (isLast ? finishTour() : advance()), current.dwellMs);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,8 +178,8 @@ export default function FroolaGuide({ loopState, active }: Props) {
   // Show the next tip in the cycle and restart the auto-hide clock.
   const showNextTip = () => {
     const i = cursorRef.current;
-    setTip(TIPS[i]);
-    const next = (i + 1) % TIPS.length;
+    setTip(tips[i].text);
+    const next = (i + 1) % tips.length;
     cursorRef.current = next;
     try {
       localStorage.setItem(CURSOR_KEY, String(next));
