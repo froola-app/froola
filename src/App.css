@@ -4084,66 +4084,6 @@ body {
   .froo-guide { bottom: 12.5rem; }
 }
 
-/* ── Hand tilt popup ───────────────────────────────────────── */
-/* Above the tutorial overlay (z 50) — same layering as the old guardrail. */
-.tilt-popup {
-  position: fixed;
-  top: 5.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 55;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 420px;
-  padding: 0.85rem 1.2rem;
-  background: rgba(17, 17, 17, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  color: #ffffff;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  pointer-events: none;
-  animation: tilt-popup-in 0.25s ease-out both;
-}
-
-@keyframes tilt-popup-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-.tilt-popup__hands {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-  perspective: 200px;
-}
-
-.tilt-popup__hand {
-  font-size: 1.8rem;
-  line-height: 1;
-  display: inline-block;
-  opacity: 0.75;
-}
-
-.tilt-popup__hand--target {
-  opacity: 1;
-  filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.7));
-}
-
-.tilt-popup__arrow {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.tilt-popup__text {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.88);
-}
-
 /* ── Profile button + sidebar (play HUD) ─────────────────────
    The round avatar owns the top-right corner; clicking it slides a
    drawer in from the right. The drawer reuses the warm paper surface
