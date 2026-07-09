@@ -1,8 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { startCheckout, warmCheckoutApi, type PlanId } from '../billing';
 import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../pricingTiers';
 import SmileAccent from './SmileAccent';
+
+const PLUS_TIER = PRICING_TIERS.find(t => t.planId === 'plus')!;
+
+// Feature matrix for the comparison table. Strings render as-is; true renders
+// a check, false a dash. Kept here (not pricingTiers.ts) because it's purely
+// presentational — entitlements still come from the tier lists / server.
+const FEATURE_ROWS: { label: string; free: ReactNode | boolean; plus: ReactNode | boolean; studio: ReactNode | boolean }[] = [
+  { label: 'Instruments', free: 'Synth', plus: 'Synth + Piano', studio: 'Synth + Piano' },
+  { label: 'Camera hand tracking', free: true, plus: true, studio: true },
+  { label: 'Shareable replay links', free: '20s, watermarked', plus: 'Longer, no watermark', studio: 'Longer, no watermark' },
+  { label: 'Video recording & download', free: false, plus: 'Up to 3 minutes', studio: 'Unlimited length' },
+  { label: 'Chord looper', free: false, plus: '8 slots', studio: 'Unlimited slots' },
+  { label: 'Visual themes', free: false, plus: true, studio: true },
+  { label: 'Continuous instant-replay recording', free: false, plus: false, studio: true },
+  { label: 'Audio & MIDI export', free: false, plus: false, studio: 'MP3 · WAV · MIDI' },
+  { label: 'Early access to new features', free: false, plus: false, studio: true },
+];
+
+function Cell({ value }: { value: ReactNode | boolean }) {
+  if (value === true) return <span className="lp4__cmp-check" aria-label="Included">✓</span>;
+  if (value === false) return <span className="lp4__cmp-dash" aria-label="Not included">—</span>;
+  return <>{value}</>;
+}
 
 function UpgradeButton({ planId, interval, currentPlan }: {
   planId: PlanId;
@@ -30,10 +53,10 @@ function UpgradeButton({ planId, interval, currentPlan }: {
     setPending(false);
   }
 
-  const label = interval === 'month' ? `Try ${TRIAL_DAYS} days free` : 'Upgrade';
+  const label = interval === 'month' ? `Try ${TRIAL_DAYS} days free` : 'Get Plus';
   return (
     <button
-      className="lp4__pricing-cta"
+      className="lp4__pricing-cta lp4__cmp-cta"
       disabled={!authReady || pending}
       onClick={() => void handleClick()}
     >
@@ -52,13 +75,14 @@ export default function PricingSection() {
   // Upgrade doesn't stack a serverless cold start on top of the redirect.
   useEffect(() => { warmCheckoutApi(); }, []);
 
+  const plusPrice = interval === 'week' ? PLUS_TIER.price.week : PLUS_TIER.price.month;
+
   return (
     <section className="lp4__section" id="pricing" data-reveal>
       <h2 className="lp4__h2">Pricing that plays fair.</h2>
       <SmileAccent />
       <p className="lp4__prose">
-        Free forever. Plus and Studio add more instruments, longer recordings,
-        and pro tools. Cancel anytime.
+        One plan worth paying for. Everything else is free, forever.
       </p>
 
       <div className="lp4__pricing-toggle" role="group" aria-label="Billing interval">
@@ -73,45 +97,53 @@ export default function PricingSection() {
           onClick={() => setInterval('month')}
         >
           Monthly
-          <span className="lp4__pricing-toggle-save">save up to 48%</span>
         </button>
       </div>
 
-      <div className="lp4__pricing-grid">
-        {PRICING_TIERS.map(tier => {
-          const price = interval === 'week' && tier.price.week ? tier.price.week : tier.price.month;
-          const period = tier.planId ? (interval === 'week' ? '/wk' : '/mo') : undefined;
-          return (
-            <div
-              key={tier.name}
-              className={'lp4__pricing-card' + (tier.highlight ? ' lp4__pricing-card--highlight' : '')}
-            >
-              <div className="lp4__pricing-head">
-                <h3 className="lp4__pricing-name">{tier.name}</h3>
-                {tier.badge && <span className="lp4__pricing-badge">{tier.badge}</span>}
-              </div>
-              <p className="lp4__pricing-price">
-                {price}
-                {period && <span className="lp4__pricing-period">{period}</span>}
-              </p>
-              {tier.planId && tier.planId !== 'studio' && interval === 'month' && (
-                <p className="lp4__pricing-note">
-                  {tier.monthlySavings} · {TRIAL_DAYS}-day free trial
-                </p>
-              )}
-              <ul className="lp4__pricing-features">
-                {tier.features.map(f => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              {tier.planId === 'studio' ? (
-                <p className="lp4__pricing-current">Coming soon</p>
-              ) : tier.planId ? (
-                <UpgradeButton planId={tier.planId} interval={interval} currentPlan={currentPlan} />
-              ) : null}
+      <div className="lp4__cmp-scroll">
+        <div className="lp4__cmp" role="table" aria-label="Plan comparison">
+          <div className="lp4__cmp-row lp4__cmp-row--head" role="row">
+            <div className="lp4__cmp-lead" role="columnheader" />
+            <div className="lp4__cmp-plan" role="columnheader">
+              <h3 className="lp4__cmp-name">Free</h3>
+              <p className="lp4__cmp-price">$0</p>
+              <p className="lp4__cmp-sub">Everything you need to start. No card required.</p>
+              <p className="lp4__pricing-current">Free forever</p>
             </div>
-          );
-        })}
+            <div className="lp4__cmp-plan is-plus" role="columnheader">
+              <h3 className="lp4__cmp-name">Plus</h3>
+              {/* key remounts the price so the fade replays on toggle */}
+              <p className="lp4__cmp-price" key={interval}>
+                {plusPrice}
+                <span className="lp4__cmp-period">{interval === 'week' ? '/week' : '/month'}</span>
+              </p>
+              <p className="lp4__cmp-sub">
+                {interval === 'month'
+                  ? `${PLUS_TIER.monthlySavings} · ${TRIAL_DAYS}-day free trial`
+                  : 'Cancel anytime.'}
+              </p>
+              <UpgradeButton planId="plus" interval={interval} currentPlan={currentPlan} />
+            </div>
+            <div className="lp4__cmp-plan" role="columnheader">
+              <div className="lp4__pricing-name-row">
+                <h3 className="lp4__cmp-name">Studio</h3>
+                <span className="lp4__pricing-badge">Coming soon</span>
+              </div>
+              <p className="lp4__cmp-price lp4__cmp-price--muted">Pricing at launch</p>
+              <p className="lp4__cmp-sub">The full production toolkit.</p>
+              {currentPlan === 'studio' && <p className="lp4__pricing-current">Your current plan</p>}
+            </div>
+          </div>
+
+          {FEATURE_ROWS.map(row => (
+            <div className="lp4__cmp-row" role="row" key={row.label}>
+              <div className="lp4__cmp-lead" role="rowheader">{row.label}</div>
+              <div className="lp4__cmp-cell" role="cell"><Cell value={row.free} /></div>
+              <div className="lp4__cmp-cell is-plus" role="cell"><Cell value={row.plus} /></div>
+              <div className="lp4__cmp-cell" role="cell"><Cell value={row.studio} /></div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

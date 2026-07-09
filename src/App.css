@@ -914,6 +914,7 @@ body {
   --lp-faint: #86868b;
   --lp-accent: #d4500a;
   --lp-hairline: rgba(0, 0, 0, 0.1);
+  --lp-col-tint: rgba(0, 0, 0, 0.025);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.04);
   --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.07), 0 18px 44px rgba(0, 0, 0, 0.09);
   position: fixed;
@@ -941,6 +942,7 @@ body {
   --lp-faint: #7c7c85;
   --lp-accent: #f2650f;
   --lp-hairline: rgba(255, 255, 255, 0.1);
+  --lp-col-tint: rgba(255, 255, 255, 0.035);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.35);
   --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.45);
 }
@@ -1759,6 +1761,131 @@ body {
   text-decoration: underline;
 }
 
+/* Pricing comparison table: plan headers with price + CTA, feature rows
+   beneath. Old grid/card classes above are kept for PricingMockups. */
+.lp4__cmp-scroll {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 1020px;
+  overflow-x: auto;
+}
+
+.lp4__cmp {
+  min-width: 720px;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 20px;
+  box-shadow: var(--lp-card-shadow);
+  text-align: left;
+  overflow: hidden;
+}
+
+.lp4__cmp-row {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr 1fr;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.lp4__cmp-row--head { border-top: none; }
+
+.lp4__cmp-lead {
+  padding: 14px 20px 14px 28px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lp-ink);
+  display: flex;
+  align-items: center;
+}
+
+.lp4__cmp-cell {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--lp-gray);
+  display: flex;
+  align-items: center;
+}
+
+.lp4__cmp-check { color: var(--lp-ink); font-weight: 600; }
+.lp4__cmp-dash { color: var(--lp-faint); }
+
+/* The Plus column reads as one continuous band down the table. */
+.lp4__cmp .is-plus {
+  background: var(--lp-col-tint);
+  border-left: 1px solid var(--lp-hairline);
+  border-right: 1px solid var(--lp-hairline);
+}
+
+.lp4__cmp-plan {
+  padding: 28px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.lp4__cmp-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__cmp-price {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--lp-ink);
+  animation: lp4-price-pop 0.3s ease;
+}
+
+@keyframes lp4-price-pop {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp4__cmp-price { animation: none; }
+}
+
+.lp4__cmp-price--muted {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  /* Keep header heights aligned with the $-price columns. */
+  line-height: 36px;
+  animation: none;
+}
+
+.lp4__cmp-period {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  margin-left: 0.1rem;
+}
+
+.lp4__cmp-sub {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--lp-faint);
+  min-height: 2.2em;
+}
+
+.lp4__cmp-cta {
+  margin-top: 8px;
+  width: 100%;
+  padding: 9px 16px;
+  font-size: 14px;
+}
+
+.lp4__cmp-plan .lp4__pricing-current { margin-top: 8px; text-align: left; }
+
+.lp4__pricing-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.lp4__pricing-name-row .lp4__pricing-badge { white-space: nowrap; }
+
 /* Privacy lock */
 .lp4__lock {
   width: 44px;
@@ -2145,6 +2272,7 @@ body {
   --lp-gray: #6e6e73;
   --lp-accent: #d4500a;
   --lp-hairline: rgba(0, 0, 0, 0.1);
+  --lp-col-tint: rgba(0, 0, 0, 0.025);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.04);
   --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.07), 0 18px 44px rgba(0, 0, 0, 0.09);
   position: fixed;
@@ -2168,6 +2296,7 @@ body {
   --lp-gray: #a9a9b0;
   --lp-accent: #f2650f;
   --lp-hairline: rgba(255, 255, 255, 0.1);
+  --lp-col-tint: rgba(255, 255, 255, 0.035);
   --lp-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 14px 34px rgba(0, 0, 0, 0.35);
   --lp-card-shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.4), 0 20px 48px rgba(0, 0, 0, 0.45);
 }
