@@ -5,16 +5,19 @@ import PlayShell from './PlayShell';
 import { useCoordinator } from '../coordinator';
 import { usePlayWall } from '../hooks/usePlayWall';
 import { useAuth } from '../contexts/AuthContext';
+import { useScreenBlackout } from '../hooks/useScreenBlackout';
 
 const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: MemoryRouter });
 
 vi.mock('../coordinator', () => ({ useCoordinator: vi.fn() }));
 vi.mock('../hooks/usePlayWall', () => ({ usePlayWall: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../hooks/useScreenBlackout', () => ({ useScreenBlackout: vi.fn() }));
 
 const mockUseCoordinator = vi.mocked(useCoordinator);
 const mockUsePlayWall = vi.mocked(usePlayWall);
 const mockUseAuth = vi.mocked(useAuth);
+const mockUseScreenBlackout = vi.mocked(useScreenBlackout);
 
 function fakeEngine() {
   return {
@@ -56,6 +59,7 @@ beforeEach(() => {
     signOutUser: vi.fn(),
     completeOnboarding: vi.fn(),
   });
+  mockUseScreenBlackout.mockReturnValue(false);
 });
 
 describe('PlayShell — play wall wiring', () => {
@@ -120,5 +124,45 @@ describe('PlayShell — play wall wiring', () => {
     await vi.waitFor(() => {
       expect(container.querySelector('.play-wall')).not.toBeNull();
     });
+  });
+});
+
+describe('PlayShell — screen blackout', () => {
+  it('renders no overlay when useScreenBlackout reports false', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseScreenBlackout.mockReturnValue(false);
+    const { container } = render(<PlayShell />);
+    expect(container.querySelector('.screen-blackout')).toBeNull();
+  });
+
+  it('renders the overlay and suspends audio when useScreenBlackout reports true', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseScreenBlackout.mockReturnValue(true);
+    const { container } = render(<PlayShell />);
+    expect(container.querySelector('.screen-blackout')).not.toBeNull();
+    expect(engine.suspend).toHaveBeenCalled();
+  });
+
+  it('does not resume audio on refocus while the paywall is gating', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(true); // paywall active
+    mockUseScreenBlackout.mockReturnValue(false); // blackout cleared
+    render(<PlayShell />);
+    expect(engine.resume).not.toHaveBeenCalled();
+    expect(engine.suspend).toHaveBeenCalled();
+  });
+
+  it('calls useScreenBlackout with active=false while mode is asking', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue({ ...coordinatorState(engine), mode: 'asking' as const });
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseScreenBlackout.mockReturnValue(false);
+    render(<PlayShell />);
+    expect(mockUseScreenBlackout).toHaveBeenCalledWith(false);
   });
 });
