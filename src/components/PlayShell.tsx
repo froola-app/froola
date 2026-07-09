@@ -23,7 +23,6 @@ import { usePlayWall } from '../hooks/usePlayWall';
 import { useTheme } from '../useTheme';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
-import { VISUAL_THEMES, getVisualTheme, setVisualTheme } from '../engine/renderer/themes';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -71,16 +70,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   useEffect(() => {
     if (!ent.pianoUnlocked && instrumentMode === 'piano') setInstrumentMode('synth');
   }, [ent.pianoUnlocked, instrumentMode]);
-  // Canvas accent theme (Plus+). The renderer reads the themes module
-  // directly each frame; this state only drives the select.
-  const [themeId, setThemeId] = useState(() => getVisualTheme().id);
-  // Same downgrade rule as the piano: a lapsed plan reverts to the free look.
-  useEffect(() => {
-    if (!ent.visualThemesUnlocked && themeId !== 'froola') {
-      setThemeId(setVisualTheme('froola').id);
-    }
-  }, [ent.visualThemesUnlocked, themeId]);
-
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
@@ -106,11 +95,21 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     slots: [], playing: false, bpm: DEFAULT_BPM, beatsPerSlot: DEFAULT_BEATS_PER_SLOT, currentSlot: -1,
   });
 
-  // Arpeggiator: turns a sustained chord into a repeating pattern. Defaults
-  // on; the toggle button is an escape hatch back to a plain sustained pad.
+  // Arpeggiator: turns a sustained chord into a repeating pattern (Plus+).
+  // Defaults on; the toggle button is an escape hatch back to a plain
+  // sustained pad. Free plays a static pad only — no toggle, no arp.
   const arpRef = useRef<Arpeggiator | null>(null);
   const arpEnabledRef = useRef(true);
   const [arpEnabled, setArpEnabled] = useState(true);
+  // Same downgrade rule as piano/themes: a lapsed plan must not leave the
+  // arp running with no visible toggle to turn it off.
+  useEffect(() => {
+    if (!ent.arpUnlocked && arpEnabled) {
+      setArpEnabled(false);
+      arpEnabledRef.current = false;
+      arpRef.current?.stop();
+    }
+  }, [ent.arpUnlocked, arpEnabled]);
 
   const changeOctave = useCallback((delta: number) => {
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
@@ -344,9 +343,9 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
       )}
       {/* Mobile keeps only the two controls that shape which notes are on
-          the wheels — instrument/theme/octave/arp stay at their defaults
-          (synth, froola theme, octave 0, arp on) and are only reachable on
-          a wider screen, so the phone HUD doesn't crowd the canvas. */}
+          the wheels — instrument/octave/arp stay at their defaults
+          (synth, octave 0, arp on) and are only reachable on a wider
+          screen, so the phone HUD doesn't crowd the canvas. */}
       {mode !== 'asking' && <div className="hud-bottom">
         {!isMobile && <>
         <select
@@ -386,30 +385,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
-        {!isMobile && <select
-          className="instrument-select"
-          value={themeId}
-          onChange={e => {
-            const next = e.target.value;
-            if (next !== 'froola' && !ent.visualThemesUnlocked) { setUpsell('themes'); return; }
-            setThemeId(setVisualTheme(next).id);
-          }}
-          aria-label="Visual theme"
-        >
-          {VISUAL_THEMES.map(t => (
-            <option key={t.id} value={t.id}>
-              {t.id !== 'froola' && !ent.visualThemesUnlocked ? `🔒 ${t.label} · plus` : t.label}
-            </option>
-          ))}
-        </select>}
-      </div>}
-      {/* Its own column on the side rather than packed into .hud-bottom: on a
-          tall phone the four instrument/key/scale/theme pills alone already
-          wrap to 2-3 rows, and stacking the octave/arp controls on top of
-          that crammed everything into a strip at the very bottom while the
-          rest of the canvas sat empty. */}
-      {!isMobile && mode !== 'asking' && <div className="hud-side">
-        <div className="octave-control" role="group" aria-label="Octave">
+        {!isMobile && <div className="octave-control" role="group" aria-label="Octave">
           <button
             className="octave-btn"
             onClick={() => changeOctave(-1)}
@@ -429,8 +405,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           >
             +
           </button>
-        </div>
-        <button
+        </div>}
+        {!isMobile && ent.arpUnlocked && <button
           className="octave-btn arp-btn"
           onClick={toggleArp}
           aria-pressed={arpEnabled}
@@ -438,7 +414,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           title="When held, arpeggiate the sustained chord instead of a static pad"
         >
           arp {arpEnabled ? 'on' : 'off'}
-        </button>
+        </button>}
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
       {gated && <PlayWall />}

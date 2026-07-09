@@ -365,21 +365,6 @@ body {
   max-width: calc(100vw - 2rem);
 }
 
-/* right-edge column — octave stepper + arp toggle. Split out of .hud-bottom
-   so a tall phone spends its unused vertical space instead of cramming
-   every control into one strip at the bottom edge (see PlayShell.tsx). */
-.hud-side {
-  position: fixed;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-}
-
 .instrument-select {
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 0.85rem;
