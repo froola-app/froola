@@ -80,12 +80,12 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
       if (advancingRef.current) return;
 
       const signals = signalRef.current;
-      const { outerR, innerR, leftCx, rightCx, cy } = wheelGeometry(
+      const { outerR, innerR, leftCx, rightCx, leftCy, rightCy } = wheelGeometry(
         window.innerWidth,
         window.innerHeight,
       );
 
-      const inRing = (x: number, y: number, cx: number) => {
+      const inRing = (x: number, y: number, cx: number, cy: number) => {
         const d = Math.hypot(x * window.innerWidth - cx, y * window.innerHeight - cy);
         return d >= innerR && d <= outerR;
       };
@@ -97,14 +97,14 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
       if (step === 0) {
         advance = signals.length > 0;
       } else if (step === 1) {
-        advance = !!left?.present && inRing(left.x, left.y, leftCx);
+        advance = !!left?.present && inRing(left.x, left.y, leftCx, leftCy);
       } else if (step === 2) {
-        if (left?.present && inRing(left.x, left.y, leftCx)) {
+        if (left?.present && inRing(left.x, left.y, leftCx, leftCy)) {
           visitedRef.current.add(selectedRef.current.noteIdx);
         }
         advance = visitedRef.current.size >= 3;
       } else if (step === 3) {
-        advance = !!right?.present && inRing(right.x, right.y, rightCx);
+        advance = !!right?.present && inRing(right.x, right.y, rightCx, rightCy);
       }
 
       if (advance) {

@@ -117,8 +117,13 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
       );
 
+      // Mobile detection is CPU-bound often enough (WebKit always, Android on
+      // GPU-delegate fallback) that a smaller capture resolution is worth
+      // the tradeoff — a phone held at arm's length fills most of the frame
+      // with hands anyway, so 960x540 loses little for tracking purposes
+      // while cutting decode + downscale cost well below 1280x720.
       const videoConstraints = isMobile
-        ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' as const }
+        ? { width: { ideal: 960 }, height: { ideal: 540 }, facingMode: 'user' as const }
         : { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'user' as const };
 
       let stream: MediaStream;
@@ -245,21 +250,23 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       })();
       let lastFacingLogMs = 0;
 
-      // On WebKit the CPU delegate spends most of its budget acquiring
-      // pixels: every detect call reads back the full 720p frame (~3.7 MB)
-      // and resizes it in WASM, though the models consume only 192-224 px
-      // inputs. Drawing the video into a small offscreen canvas first cuts
-      // that readback ~7x. Chrome keeps the direct video path — its GPU
-      // delegate samples the frame as a texture, so the copy would only add
-      // work. Aspect ratio is preserved, so the normalized landmark coords
-      // (and the viewport remap below) are unaffected.
-      const INFER_MAX_WIDTH = 480;
+      // On the CPU delegate, most of the per-frame budget goes to acquiring
+      // pixels: every detect call reads back the full captured frame (~1.5
+      // MB at 960x540) and resizes it in WASM, though the models consume
+      // only 192-224 px inputs. Drawing the video into a small offscreen
+      // canvas first cuts that readback dramatically. The GPU delegate
+      // samples the frame directly as a texture, so this copy would only
+      // add work there — gate on the *current* delegate (which can change
+      // at runtime via fallBackToCpu), not just on mobile. Aspect ratio is
+      // preserved, so the normalized landmark coords (and the viewport
+      // remap below) are unaffected.
+      const INFER_MAX_WIDTH = 320;
       const inferCtx = isMobile
         ? document.createElement('canvas').getContext('2d')
         : null;
 
       function inferenceSource(): HTMLVideoElement | HTMLCanvasElement {
-        if (!inferCtx) return video;
+        if (!inferCtx || currentDelegate === 'GPU') return video;
         const vw = video.videoWidth;
         const vh = video.videoHeight;
         if (!vw || !vh) return video;

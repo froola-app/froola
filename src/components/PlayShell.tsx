@@ -297,7 +297,11 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     <>
       <canvas ref={canvasRef} className="main-canvas" />
       {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
-      {!isMobile && showTutorial && mode === 'camera' && (
+      {/* Unlike Froo's post-tutorial tour and the loop panel (still
+          mobile-hidden below), this teaches hand positioning — "no
+          tutorial, no warning of the hand not being well positioned" was
+          the actual complaint, so mobile keeps it. */}
+      {showTutorial && mode === 'camera' && (
         <BeginnerTutorial
           key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
