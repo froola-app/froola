@@ -15,15 +15,13 @@ Froola uses [MediaPipe](https://mediapipe.dev/) to track your hands entirely on-
 - **Height** — how high your hands are controls the register (octave range)
 - **Make a fist** — locks your current chord selection while you move freely
 
-No camera? Froola falls back to **mouse mode** (desktop) or **touch mode** (mobile), where your cursor or finger controls the left orb.
-
 ---
 
 ## Features
 
 ### Free
 - Both instrument modes — **synth** and **piano**
-- Camera hand tracking (on-device, private) + mouse/touch fallback
+- Camera hand tracking (on-device, private)
 - Recordings up to 30 seconds
 - Shareable replay links
 
@@ -103,7 +101,7 @@ npm run lint       # lint
 src/
 ├── engine/
 │   ├── audio/        # Web Audio engine (synth, sampler, AudioContext management)
-│   ├── input/        # Hand tracking + mouse/touch gesture input
+│   ├── input/        # Hand tracking gesture input
 │   ├── music/        # Chord voicings, scales, gesture → musical command mapping
 │   ├── renderer/     # Canvas 2D rendering (dials, orbs, particles)
 │   └── types.ts      # Shared types (GestureSignal, MusicalCommand, etc.)
@@ -138,13 +136,13 @@ Returning users skip onboarding and go straight to the app. The `/replay` route 
 
 ## Browser support
 
-| Browser | Camera mode | Touch/Mouse mode |
-|---|---|---|
-| Chrome (desktop) | ✅ | ✅ |
-| Safari (desktop) | ✅ | ✅ |
-| Chrome (Android) | ✅ | ✅ |
-| Safari (iOS 15.4+) | ✅ | ✅ |
-| Firefox | ✅ | ✅ |
+| Browser | Camera mode |
+|---|---|
+| Chrome (desktop) | ✅ |
+| Safari (desktop) | ✅ |
+| Chrome (Android) | ✅ |
+| Safari (iOS 15.4+) | ✅ |
+| Firefox | ✅ |
 
 MediaPipe's WASM runtime runs entirely in the browser — no backend involved in hand tracking.
 

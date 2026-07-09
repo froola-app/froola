@@ -27,26 +27,14 @@ afterEach(() => {
 });
 
 describe('BeginnerTutorial', () => {
-  it('shows step 1 headline on first render in camera mode', () => {
+  it('shows step 1 headline on first render', () => {
     render(
       <BeginnerTutorial
         signalRef={makeSignalRef()}
         selectedRef={makeSelectedRef()}
-        mode="camera"
       />
     );
     expect(screen.getByText('Hold your hands up')).toBeDefined();
-  });
-
-  it('shows step 2 in mouse mode (skips camera step)', () => {
-    render(
-      <BeginnerTutorial
-        signalRef={makeSignalRef()}
-        selectedRef={makeSelectedRef()}
-        mode="mouse"
-      />
-    );
-    expect(screen.getByText('Play the left circle')).toBeDefined();
   });
 
   it('advances from step 1 when a hand signal is present', async () => {
@@ -55,7 +43,6 @@ describe('BeginnerTutorial', () => {
       <BeginnerTutorial
         signalRef={signalRef}
         selectedRef={makeSelectedRef()}
-        mode="camera"
       />
     );
     expect(screen.getByText('Hold your hands up')).toBeDefined();
@@ -81,7 +68,6 @@ describe('BeginnerTutorial', () => {
       <BeginnerTutorial
         signalRef={makeSignalRef()}
         selectedRef={makeSelectedRef()}
-        mode="camera"
       />
     );
     screen.getByText('Skip tutorial').click();

@@ -106,6 +106,13 @@ body {
   letter-spacing: 0.02em;
 }
 
+.permission-error {
+  font-size: 0.86rem;
+  color: #b3261e;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .permission-buttons {
   display: flex;
   flex-direction: column;
@@ -176,39 +183,6 @@ body {
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-.mode-badge {
-  position: fixed;
-  /* Top centre — the bottom band is owned by the loop panel + HUD row, which
-     covered the badge entirely at its old bottom offset. */
-  top: 1.2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  max-width: min(92vw, 46rem);
-  text-align: center;
-  padding: 0.45rem 0.95rem;
-  border-radius: 999px;
-  background: var(--lg-top-fill, rgba(252, 250, 246, 0.6));
-  box-shadow: var(--lg-top-shadow, 0 4px 16px rgba(0, 0, 0, 0.14));
-  border: 1px solid var(--lg-top-stroke, rgba(24, 22, 19, 0.12));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.82rem;
-  color: var(--lg-top-ink-dim, rgba(24, 22, 19, 0.66));
-  transition: color 0.3s;
-}
-
-.mode-badge kbd {
-  font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.05rem 0.3rem;
-  border-radius: 4px;
-  border: 1px solid currentColor;
-  opacity: 0.85;
-}
-
 .link-btn {
   background: none;
   border: none;
@@ -265,8 +239,8 @@ body {
 }
 
 /* ── Liquid glass HUD ────────────────────────────────────────────
-   In-app controls float over the live camera feed (or the dark
-   mouse-mode background). The glass recipe is: near-clear fill,
+   In-app controls float over the live camera feed. The glass
+   recipe is: near-clear fill,
    heavy blur + saturation pulling real color through, a specular
    top rim (inset highlight), a hairline stroke, and a soft drop
    shadow — so the pill reads as a lens over the scene, not a matte
@@ -558,10 +532,6 @@ body {
 
 @media (max-width: 480px) {
   .loop-panel { bottom: 9.5rem; }
-  /* Supplementary hint text, not a control — rather than stack it above an
-     already-tall control cluster on a small screen, drop it here. The
-     camera-mode switch is still reachable from the landing page. */
-  .mode-badge { display: none; }
 }
 
 .loop-slots {

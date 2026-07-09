@@ -32,10 +32,7 @@ const MODES: { value: InstrumentMode; label: string }[] = [
 const OCTAVE_MIN = -2;
 const OCTAVE_MAX = 2;
 
-const isTouchDevice = () => navigator.maxTouchPoints > 0;
-
-function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: () => void }) {
-  const touch = isTouchDevice();
+function CameraPrompt({ onCamera, error }: { onCamera: () => void; error: boolean }) {
   const { theme } = useTheme();
   return (
     <div className="permission-screen">
@@ -51,30 +48,17 @@ function CameraPrompt({ onCamera, onMouse }: { onCamera: () => void; onMouse: ()
           You&apos;ll move both hands over two wheels — left picks the chord, right shapes it.
         </p>
         <p className="permission-privacy">Your camera never leaves your device.</p>
+        {error && (
+          <p className="permission-error">
+            Couldn&apos;t access your camera. Check your browser&apos;s permission settings and try again.
+          </p>
+        )}
         <div className="permission-buttons">
-          <button onClick={onCamera} className="permission-btn-primary">Enable camera</button>
-          <button onClick={onMouse} className="permission-btn-secondary">
-            {touch ? 'Use touch instead' : 'Use mouse instead'}
+          <button onClick={onCamera} className="permission-btn-primary">
+            {error ? 'Try again' : 'Enable camera'}
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MouseModeBadge({ onSwitch }: { onSwitch: () => void }) {
-  const touch = isTouchDevice();
-  return (
-    <div className="mode-badge">
-      {touch ? (
-        <>Touch mode — touch the left wheel to play, the right wheel to shape the chord</>
-      ) : (
-        <>
-          Mouse &amp; keys — hover a wheel, or hold <kbd>1</kbd>–<kbd>7</kbd> to play
-          and <kbd>Q</kbd>–<kbd>U</kbd> to shape · <kbd>Space</kbd> sustains
-        </>
-      )}{' '}
-      — <button onClick={onSwitch} className="link-btn">try camera mode</button>
     </div>
   );
 }
@@ -169,7 +153,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const gatedRef = useRef(false);
-  const { mode, requestCamera, useMouse, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
 
   const gated = usePlayWall(mode !== 'asking');
   useEffect(() => { gatedRef.current = gated; }, [gated]);
@@ -233,11 +217,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     return () => { cancelled = true; };
   }, [instrumentMode, engineRef, preloadSampler]);
 
-  // Keep the persisted choice in sync with the live mode — covers a manual
-  // in-session switch (mouse ↔ camera) and the automatic camera-denied
-  // fallback, not just the initial choice made on the landing page.
+  // Keep the persisted choice in sync with the live mode — not just the
+  // initial choice made on the landing page.
   useEffect(() => {
-    if (mode === 'camera' || mode === 'mouse') storeInputMode(mode);
+    if (mode === 'camera') storeInputMode(mode);
   }, [mode]);
 
   const [showTutorial, setShowTutorial] = useState(
@@ -330,19 +313,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     <>
       <canvas ref={canvasRef} className="main-canvas" />
       {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
-      {showTutorial && mode !== 'asking' && (
+      {showTutorial && mode === 'camera' && (
         <BeginnerTutorial
           key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
           selectedRef={selectedRef}
-          mode={mode}
           onDone={() => setTutorialDone(true)}
         />
       )}
       <FroolaGuide
         key={`guide-${tutorialRun}`}
         loopState={loopState}
-        active={tutorialDone && (mode === 'camera' || mode === 'mouse')}
+        active={tutorialDone && mode === 'camera'}
       />
       {volumeDisplay !== null && (
         <div className="volume-badge">vol {volumeDisplay}%</div>
@@ -354,13 +336,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         <div className="nod-hint">tilt head up ↑ &amp; hold = louder · down ↓ = quieter</div>
       )}
       {mode === 'asking' && (
-        <CameraPrompt onCamera={requestCamera} onMouse={useMouse} />
-      )}
-      {mode === 'mouse' && (
-        <MouseModeBadge onSwitch={requestCamera} />
+        <CameraPrompt onCamera={requestCamera} error={cameraError} />
       )}
       {/* The permission screen (mode 'asking') is a full-viewport layer below
-          the HUD's z-index, so hide the HUD until an input mode is chosen. */}
+          the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
       <ShareButton />
       <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} watermark={ent.replayWatermark} />
@@ -374,14 +353,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <ProfileButton
-        play={mode === 'camera' || mode === 'mouse' ? {
-          inputMode: mode,
-          onSwitchInput: mode === 'camera' ? useMouse : requestCamera,
-          onReplayTutorial: replayTutorial,
-        } : undefined}
+        play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
       />
       </>}
-      {looper && (mode === 'camera' || mode === 'mouse') && (
+      {looper && mode === 'camera' && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} onUpgrade={() => setUpsell('loops')} />
       )}
       {mode !== 'asking' && <div className="hud-bottom">

@@ -32,9 +32,9 @@ function fakeEngine() {
 
 function coordinatorState(engine: ReturnType<typeof fakeEngine>) {
   return {
-    mode: 'mouse' as const,
+    mode: 'camera' as const,
     requestCamera: vi.fn(),
-    useMouse: vi.fn(),
+    cameraError: false,
     selectedRef: { current: { noteIdx: 0, qualIdx: 0 } },
     vibe: 'warm',
     preloadSampler: vi.fn().mockResolvedValue(undefined),

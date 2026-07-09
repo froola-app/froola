@@ -48,24 +48,16 @@ describe('LandingPage', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('renders the headline and both input choices', () => {
+  it('renders the headline and the camera CTA', () => {
     render(<LandingPage />);
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /enable camera/i }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i }).length).toBeGreaterThan(0);
   });
 
   it('stores camera mode and navigates to /play when enabling the camera', async () => {
     render(<LandingPage />);
     await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
     expect(sessionStorage.getItem('froola.inputMode')).toBe('camera');
-    expect(navigate).toHaveBeenCalledWith('/play');
-  });
-
-  it('stores pointer mode and navigates to /play when choosing pointer input', async () => {
-    render(<LandingPage />);
-    await userEvent.click(screen.getAllByRole('button', { name: /use (mouse|touch) instead/i })[0]);
-    expect(sessionStorage.getItem('froola.inputMode')).toBe('mouse');
     expect(navigate).toHaveBeenCalledWith('/play');
   });
 });

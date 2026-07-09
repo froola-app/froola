@@ -28,7 +28,7 @@ export const PRICING_TIERS: PricingTier[] = [
     price: { month: '$0' },
     features: [
       'Synth instrument',
-      'Camera mode & mouse mode',
+      'Camera hand tracking',
       'Shareable replay links, up to 20s (watermarked)',
       '4 chord-loop slots',
     ],

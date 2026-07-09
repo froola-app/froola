@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
-import { composePointerSignals, noteKeyIndex, extensionKeyIndex } from './pointerKeyboard';
 import {
   createTiltHoldDetector,
   createShakeDetector,
@@ -16,25 +15,25 @@ import {
 // tilt down and hold = quieter (steps repeat while held), head-shake =
 // quieter (a redundant secondary path).
 
-export type InputMode = 'asking' | 'camera' | 'mouse';
+export type InputMode = 'asking' | 'camera';
 
-// Single persistence mechanism for the user's camera/mouse choice, shared by
+// Single persistence mechanism for the user's camera choice, shared by
 // LandingPage (decides whether to skip the hero on mount) and PlayShell
-// (keeps it in sync when the mode changes after mount — a manual switch or
-// an automatic camera-denied fallback). sessionStorage, not localStorage: the
-// choice should survive the /learn round trip within a tab, not outlive it.
+// (keeps it in sync when the mode changes after mount). sessionStorage, not
+// localStorage: the choice should survive the /learn round trip within a
+// tab, not outlive it.
 const INPUT_MODE_KEY = 'froola.inputMode';
 
 export function storedInputMode(): InputMode | null {
   try {
     const v = sessionStorage.getItem(INPUT_MODE_KEY);
-    return v === 'camera' || v === 'mouse' ? v : null;
+    return v === 'camera' ? v : null;
   } catch {
     return null;
   }
 }
 
-export function storeInputMode(mode: 'camera' | 'mouse'): void {
+export function storeInputMode(mode: 'camera'): void {
   try { sessionStorage.setItem(INPUT_MODE_KEY, mode); } catch { /* private mode */ }
 }
 
@@ -49,11 +48,11 @@ const isWebKit =
   typeof navigator !== 'undefined' &&
   navigator.vendor === 'Apple Computer, Inc.';
 
-// A single mouse pointer can only be on one wheel at a time, so we label it by
+// A single detected hand can only be on one wheel at a time, so we label it by
 // which half of the screen it's in: the left wheel sits near the left edge and
 // the right (extension) wheel near the right edge, so a mid-screen split lets
-// the cursor drive either wheel. Without this the pointer is always 'left' and
-// the extension wheel is unreachable (mouse users are stuck on plain triads).
+// it drive either wheel. Without this the hand is always 'left' and the
+// extension wheel is unreachable.
 export function pointerHandId(xNorm: number): 'left' | 'right' {
   return xNorm < 0.5 ? 'left' : 'right';
 }
@@ -62,7 +61,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   signalRef: React.RefObject<GestureSignal[]>;
   mode: InputMode;
   requestCamera: () => void;
-  useMouse: () => void;
+  // Set when the last requestCamera() call failed (permission denied, no
+  // device, etc.) — the caller shows a retry prompt instead of silently
+  // sitting on the 'asking' screen.
+  cameraError: boolean;
   cameraVideoRef: React.RefObject<HTMLVideoElement | null>;
   headGestureRef: React.RefObject<HeadGestureEvent | null>;
 } {
@@ -71,117 +73,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   // (sessionStorage) — this hook always receives an explicit initialMode from
   // its caller and just tracks it as live state.
   const [mode, setMode] = useState<InputMode>(initialMode);
+  const [cameraError, setCameraError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const headGestureRef = useRef<HeadGestureEvent | null>(null);
 
-  function switchToMouse() {
-    setMode('mouse');
-  }
-
   function requestCamera() {
+    setCameraError(false);
     setMode('camera');
   }
-
-  // Mouse / touch / keyboard mode
-  useEffect(() => {
-    if (mode !== 'mouse') return;
-    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
-
-    // Keyboard path: hold 1–7 to play a note slice, Q–U to hold an extension
-    // slice (see pointerKeyboard.ts). Most-recent press wins per hand, and
-    // releasing a key falls back to the next one still held — matches how a
-    // player rolls between keys on a piano.
-    let mouse: { x: number; y: number } | null = { x: 0.5, y: 0.5 };
-    const heldNotes: number[] = [];
-    const heldExts: number[] = [];
-
-    function publish() {
-      signalRef.current = composePointerSignals(
-        mouse,
-        heldNotes.length ? heldNotes[heldNotes.length - 1] : null,
-        heldExts.length ? heldExts[heldExts.length - 1] : null,
-        window.innerWidth,
-        window.innerHeight,
-      );
-    }
-
-    const editableTarget = (t: EventTarget | null) =>
-      t instanceof HTMLElement &&
-      (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.repeat || editableTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
-      const note = noteKeyIndex(e.key);
-      const ext = extensionKeyIndex(e.key);
-      if (note !== null && !heldNotes.includes(note)) heldNotes.push(note);
-      else if (ext !== null && !heldExts.includes(ext)) heldExts.push(ext);
-      else return;
-      publish();
-    }
-
-    function onKeyUp(e: KeyboardEvent) {
-      const note = noteKeyIndex(e.key);
-      const ext = extensionKeyIndex(e.key);
-      let changed = false;
-      if (note !== null) {
-        const i = heldNotes.indexOf(note);
-        if (i !== -1) { heldNotes.splice(i, 1); changed = true; }
-      }
-      if (ext !== null) {
-        const i = heldExts.indexOf(ext);
-        if (i !== -1) { heldExts.splice(i, 1); changed = true; }
-      }
-      if (changed) publish();
-    }
-
-    function onMove(e: MouseEvent) {
-      mouse = { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
-      publish();
-    }
-
-    function onTouch(e: TouchEvent) {
-      e.preventDefault();
-      const touches = Array.from(e.touches);
-      if (touches.length === 0) {
-        signalRef.current = [];
-        return;
-      }
-      // Sort touches by x so the leftmost maps to 'left' hand and rightmost to 'right'
-      touches.sort((a, b) => a.clientX - b.clientX);
-      signalRef.current = touches.slice(0, 2).map((t, i) => ({
-        x: t.clientX / window.innerWidth,
-        y: t.clientY / window.innerHeight,
-        present: true,
-        handId: (i === 0 ? 'left' : 'right') as 'left' | 'right',
-      }));
-    }
-
-    function onTouchEnd(e: TouchEvent) {
-      e.preventDefault();
-      const touches = Array.from(e.touches);
-      if (touches.length === 0) {
-        signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
-        return;
-      }
-      onTouch(e);
-    }
-
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('touchstart', onTouch, { passive: false });
-    window.addEventListener('touchmove', onTouch, { passive: false });
-    window.addEventListener('touchend', onTouchEnd, { passive: false });
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-      window.removeEventListener('touchstart', onTouch);
-      window.removeEventListener('touchmove', onTouch);
-      window.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [mode]);
 
   // Camera mode
   useEffect(() => {
@@ -210,9 +110,8 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
       } catch {
-        // Persisting this fallback is PlayShell's job (it syncs `mode` on
-        // every change) — the hook itself only tracks live state.
-        setMode('mouse');
+        setMode('asking');
+        setCameraError(true);
         return;
       }
       if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
@@ -639,5 +538,5 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, useMouse: switchToMouse, cameraVideoRef: videoRef, headGestureRef };
+  return { signalRef, mode, requestCamera, cameraError, cameraVideoRef: videoRef, headGestureRef };
 }

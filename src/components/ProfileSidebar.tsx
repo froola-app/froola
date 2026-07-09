@@ -15,8 +15,6 @@ const PLAN_LABEL: Record<string, string> = { free: 'Free', plus: 'Plus', studio:
 // stays portable — mount it on a screen without these and the rows
 // simply don't render.
 export interface PlayActions {
-  inputMode: 'camera' | 'mouse';
-  onSwitchInput: () => void;
   onReplayTutorial: () => void;
 }
 
@@ -146,17 +144,6 @@ function SettingsPanel({ play, onClose, theme, onToggleTheme }: {
       </SettingsRow>
       {play && (
         <>
-          <SettingsRow
-            label="Input"
-            hint={play.inputMode === 'camera' ? 'Hands on camera' : 'Mouse or touch'}
-          >
-            <button
-              className="profile-drawer__row-btn"
-              onClick={() => { play.onSwitchInput(); onClose(); }}
-            >
-              {play.inputMode === 'camera' ? 'Use mouse' : 'Try camera'}
-            </button>
-          </SettingsRow>
           <SettingsRow label="Beginner tutorial" hint="Bring back the intro tips">
             <button
               className="profile-drawer__row-btn"

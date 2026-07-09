@@ -6,7 +6,6 @@ const TIPS = [
   { icon: '✋', text: 'Hold your hand flat and open in front of the camera to start playing' },
   { icon: '↕️', text: 'Move your hand up and down to change the note' },
   { icon: '↔️', text: 'Move left and right to change the chord or quality' },
-  { icon: '🖱️', text: 'No camera? Mouse mode works too — just move your cursor around the canvas' },
 ];
 
 export default function LearningCurveStep({ onContinue }: Props) {
