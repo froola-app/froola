@@ -72,6 +72,11 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
   // Prevents the interval from firing the advance logic more than once
   // while the checkmark flash is playing.
   const advancingRef = useRef(false);
+  // The finish timeout fires up to ~2.3s after the last step completes — a
+  // ref keeps it calling whatever onDone is current then, not whichever one
+  // was in scope when the interval closure was created.
+  const onDoneRef = useRef(onDone);
+  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
     if (doneMessage || gone || step >= STEPS.length) return;
@@ -118,7 +123,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
           if (next >= STEPS.length) {
             localStorage.setItem(TUTORIAL_KEY, 'true');
             setDoneMessage(true);
-            setTimeout(() => { setGone(true); onDone?.(); }, 1500);
+            setTimeout(() => { setGone(true); onDoneRef.current?.(); }, 1500);
           } else {
             setStep(next);
           }
@@ -128,7 +133,7 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
     }, 100);
 
     return () => clearInterval(id);
-  }, [step, doneMessage, gone, signalRef, selectedRef]);
+  }, [step, doneMessage, gone, signalRef, selectedRef, STEPS.length]);
 
   function skip() {
     localStorage.setItem(TUTORIAL_KEY, 'true');

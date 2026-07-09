@@ -15,6 +15,7 @@ import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
 import FroolaGuide from './FroolaGuide';
 import PlayWall from './PlayWall';
+import GlassDials from './GlassDials';
 import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -65,10 +66,15 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
   // A downgrade mid-session (subscription lapses, sign-out) must not leave a
-  // locked instrument playing.
-  useEffect(() => {
+  // locked instrument playing. Adjusted during render rather than in an
+  // effect — a pure state correction, so it can land before the invalid
+  // selection gets a frame to play through (see react.dev "Adjusting some
+  // state when a prop changes").
+  const [prevPianoUnlocked, setPrevPianoUnlocked] = useState(ent.pianoUnlocked);
+  if (prevPianoUnlocked !== ent.pianoUnlocked) {
+    setPrevPianoUnlocked(ent.pianoUnlocked);
     if (!ent.pianoUnlocked && instrumentMode === 'piano') setInstrumentMode('synth');
-  }, [ent.pianoUnlocked, instrumentMode]);
+  }
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
@@ -101,9 +107,12 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const arpEnabledRef = useRef(true);
   const [arpEnabled, setArpEnabled] = useState(true);
   // Same downgrade rule as piano/themes: a lapsed plan must not leave the
-  // arp running with no visible toggle to turn it off.
+  // arp running with no visible toggle to turn it off. Unlike the piano
+  // guard above, this also stops the (external, impure) arpeggiator engine —
+  // a real side effect, not just a state correction — so it stays an effect.
   useEffect(() => {
     if (!ent.arpUnlocked && arpEnabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- also stops the arpeggiator engine below, a real external side effect
       setArpEnabled(false);
       arpEnabledRef.current = false;
       arpRef.current?.stop();
@@ -293,6 +302,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {mode === 'camera' && <GlassDials />}
       {/* Unlike Froo's post-tutorial tour and the loop panel (still
           mobile-hidden below), this teaches hand positioning — "no
           tutorial, no warning of the hand not being well positioned" was
