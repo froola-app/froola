@@ -328,20 +328,24 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {/* The permission screen (mode 'asking') is a full-viewport layer below
           the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
-      <ShareButton />
-      <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} watermark={ent.replayWatermark} />
-      <VideoRecordButton
-        canvasRef={canvasRef}
-        cameraVideoRef={cameraVideoRef}
-        engineRef={engineRef}
-        maxDurationMs={ent.maxVideoRecordMs}
-        locked={!ent.videoRecordUnlocked}
-        onLockedClick={() => setUpsell('video')}
-      />
-      <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
-      <ProfileButton
-        play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
-      />
+      <div className="hud-top-left">
+        <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} watermark={ent.replayWatermark} />
+        <VideoRecordButton
+          canvasRef={canvasRef}
+          cameraVideoRef={cameraVideoRef}
+          engineRef={engineRef}
+          maxDurationMs={ent.maxVideoRecordMs}
+          locked={!ent.videoRecordUnlocked}
+          onLockedClick={() => setUpsell('video')}
+        />
+        <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
+      </div>
+      <div className="hud-top-right">
+        <ShareButton />
+        <ProfileButton
+          play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
+        />
+      </div>
       </>}
       {looper && mode === 'camera' && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} onUpgrade={() => setUpsell('loops')} />
