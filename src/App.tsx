@@ -12,6 +12,7 @@ const ReplayShell = lazy(() => import('./components/ReplayShell'));
 const AuthPopup = lazy(() => import('./components/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
 const PricingPage = lazy(() => import('./components/PricingPage'));
+const PricingMockups = lazy(() => import('./components/PricingMockups'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
@@ -39,6 +40,7 @@ function AppRoutes() {
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/pricing-mockups" element={<PricingMockups />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -68,9 +70,20 @@ function AppRoutes() {
   );
 }
 
+function RotateDeviceOverlay() {
+  return (
+    <div className="rotate-device-overlay" role="alert" aria-live="assertive">
+      <div className="rotate-device-icon" aria-hidden="true">📱</div>
+      <p className="rotate-device-title">Turn your phone sideways</p>
+      <p className="rotate-device-body">Froola plays best in landscape. Rotate your device to continue.</p>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
+      <RotateDeviceOverlay />
       <Suspense fallback={null}>
         <AppRoutes />
       </Suspense>
