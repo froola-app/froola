@@ -388,6 +388,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
             </option>
           ))}
         </select>
+      </div>}
+      {/* Its own column on the side rather than packed into .hud-bottom: on a
+          tall phone the four instrument/key/scale/theme pills alone already
+          wrap to 2-3 rows, and stacking the octave/arp controls on top of
+          that crammed everything into a strip at the very bottom while the
+          rest of the canvas sat empty. */}
+      {mode !== 'asking' && <div className="hud-side">
         <div className="octave-control" role="group" aria-label="Octave">
           <button
             className="octave-btn"

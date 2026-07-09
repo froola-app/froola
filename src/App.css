@@ -357,7 +357,7 @@ body {
     var(--lg-top-shadow-hover);
 }
 
-/* bottom-center HUD row — holds instrument / key / scale pickers + octave stepper */
+/* bottom-center HUD row — holds instrument / key / scale / theme pickers */
 .hud-bottom {
   position: fixed;
   bottom: 1.5rem;
@@ -370,6 +370,21 @@ body {
   flex-wrap: wrap;
   gap: 0.6rem;
   max-width: calc(100vw - 2rem);
+}
+
+/* right-edge column — octave stepper + arp toggle. Split out of .hud-bottom
+   so a tall phone spends its unused vertical space instead of cramming
+   every control into one strip at the bottom edge (see PlayShell.tsx). */
+.hud-side {
+  position: fixed;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .instrument-select {
