@@ -43,16 +43,19 @@ type WheelPalette = {
   inkStrong: string;     // emphasized labels + active center chord name
 };
 
+// Lighter than a fully opaque material now that GlassDials.tsx puts a real
+// backdrop-blurred disc underneath each wheel — this is just the tint riding
+// on top of that blur, not the whole "glass" effect.
 const DARK_PALETTE: WheelPalette = {
-  disc: 'rgba(22,22,24,0.58)',
-  hub: 'rgba(22,22,24,0.92)',
+  disc: 'rgba(22,22,24,0.34)',
+  hub: 'rgba(22,22,24,0.82)',
   ink: a => `rgba(255,255,255,${a})`,
   inkStrong: '#fff',
 };
 
 const LIGHT_PALETTE: WheelPalette = {
-  disc: 'rgba(250,249,246,0.62)',
-  hub: 'rgba(252,251,248,0.94)',
+  disc: 'rgba(250,249,246,0.38)',
+  hub: 'rgba(252,251,248,0.86)',
   ink: a => `rgba(24,22,19,${a})`,
   inkStrong: 'rgba(24,22,19,0.95)',
 };

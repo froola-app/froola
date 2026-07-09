@@ -86,7 +86,7 @@ export function useCoordinator(
       engine.suspend();
       for (const ev of events) window.removeEventListener(ev, resume);
     };
-  }, []);
+  }, [gatedRef]);
 
   // Pause all audio while the tab is backgrounded: Web Audio keeps scheduling
   // sound (sustained chords, arps, backing loops) even when rAF is throttled,
@@ -101,7 +101,7 @@ export function useCoordinator(
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
+  }, [gatedRef]);
 
   // Hot path: rAF loop — reads dial selection + y-register, drives audio
   useEffect(() => {
@@ -292,7 +292,7 @@ export function useCoordinator(
       // eslint-disable-next-line react-hooks/exhaustive-deps
       arpRef?.current?.stop();
     };
-  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, arpRef, arpEnabledRef]);
+  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, arpRef, arpEnabledRef, gatedRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,

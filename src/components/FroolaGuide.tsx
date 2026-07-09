@@ -153,9 +153,12 @@ export default function FroolaGuide({ loopState, active, loopUnlocked }: Props) 
   };
 
   // Observed advancement — Froo reacts to what the player actually does.
+  // advance() writes to localStorage and starts a timer alongside setStep,
+  // so this is a real synchronization effect, not just a state correction.
   const current = steps[step];
   useEffect(() => {
     if (!active || tourDone) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- advance() also writes localStorage and starts a timer, a real synchronization effect
     if (current.observe?.(loopState)) advance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, tourDone, step, loopState]);

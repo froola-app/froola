@@ -116,6 +116,26 @@ function JoyfulTitle() {
   );
 }
 
+type CheckoutResultState =
+  | { kind: 'success'; plan: PlanId | null; firstCharge: string }
+  | { kind: 'cancel' }
+  | null;
+
+// Reads ?checkout=success|cancel (and &plan=) left by Stripe's redirect. Runs
+// once as the lazy useState initializer (rather than an effect) so the parsed
+// result — including the impure "now + trial" date computed for the success
+// card — is settled before first paint instead of causing a second render.
+function parseCheckoutResult(): CheckoutResultState {
+  const params = new URLSearchParams(window.location.search);
+  const checkout = params.get('checkout');
+  if (checkout !== 'success' && checkout !== 'cancel') return null;
+  if (checkout === 'cancel') return { kind: 'cancel' };
+  const plan = params.get('plan');
+  const firstCharge = new Date(Date.now() + TRIAL_DAYS * 86_400_000)
+    .toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  return { kind: 'success', plan: plan === 'plus' || plan === 'studio' ? plan : null, firstCharge };
+}
+
 /**
  * Post-checkout feedback on /pricing. Reads ?checkout=success|cancel (and
  * &plan=) left by Stripe's redirect, then strips them from the URL so a
@@ -123,20 +143,16 @@ function JoyfulTitle() {
  */
 export default function CheckoutResult() {
   const navigate = useNavigate();
-  const [result, setResult] = useState<{ kind: 'success'; plan: PlanId | null } | { kind: 'cancel' } | null>(null);
+  const [result, setResult] = useState<CheckoutResultState>(parseCheckoutResult);
   const ctaRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const checkout = params.get('checkout');
-    if (checkout !== 'success' && checkout !== 'cancel') return;
-    const plan = params.get('plan');
-    setResult(
-      checkout === 'success'
-        ? { kind: 'success', plan: plan === 'plus' || plan === 'studio' ? plan : null }
-        : { kind: 'cancel' },
-    );
+    if (!result) return;
     window.history.replaceState(null, '', window.location.pathname);
+    // Runs once against the result captured at mount — re-stripping on every
+    // `result` change would be a no-op anyway since the query string is
+    // already gone after the first run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -165,8 +181,7 @@ export default function CheckoutResult() {
   }
 
   const planName = result.plan ? PLAN_NAMES[result.plan] : null;
-  const firstCharge = new Date(Date.now() + TRIAL_DAYS * 86_400_000)
-    .toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  const { firstCharge } = result;
 
   return (
     <div className="lp4__checkout-overlay" onClick={() => setResult(null)}>
