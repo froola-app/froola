@@ -70,20 +70,9 @@ function AppRoutes() {
   );
 }
 
-function RotateDeviceOverlay() {
-  return (
-    <div className="rotate-device-overlay" role="alert" aria-live="assertive">
-      <div className="rotate-device-icon" aria-hidden="true">📱</div>
-      <p className="rotate-device-title">Turn your phone sideways</p>
-      <p className="rotate-device-body">Froola plays best in landscape. Rotate your device to continue.</p>
-    </div>
-  );
-}
-
 export default function App() {
   return (
     <AuthProvider>
-      <RotateDeviceOverlay />
       <Suspense fallback={null}>
         <AppRoutes />
       </Suspense>

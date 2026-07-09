@@ -32,6 +32,16 @@ const MODES: { value: InstrumentMode; label: string }[] = [
 const OCTAVE_MIN = -2;
 const OCTAVE_MAX = 2;
 
+function RotateDeviceOverlay() {
+  return (
+    <div className="rotate-device-overlay" role="alert" aria-live="assertive">
+      <div className="rotate-device-icon" aria-hidden="true">📱</div>
+      <p className="rotate-device-title">Turn your phone sideways</p>
+      <p className="rotate-device-body">Froola plays best in landscape. Rotate your device to continue.</p>
+    </div>
+  );
+}
+
 function CameraPrompt({ onCamera, error }: { onCamera: () => void; error: boolean }) {
   const { theme } = useTheme();
   return (
@@ -294,6 +304,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
+      {mode === 'camera' && <RotateDeviceOverlay />}
       {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
       {showTutorial && mode === 'camera' && (
         <BeginnerTutorial
