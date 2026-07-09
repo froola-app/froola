@@ -8,8 +8,10 @@ const KEY = 'froola-theme';
 const EVENT = 'froola-theme-change';
 
 export function storedTheme(): Theme {
-  if (typeof localStorage === 'undefined') return 'light';
-  return localStorage.getItem(KEY) === 'dark' ? 'dark' : 'light';
+  if (typeof localStorage === 'undefined') return 'dark';
+  // Dark is the default for anyone without a stored preference; an explicit
+  // past choice (either way) is always honored.
+  return localStorage.getItem(KEY) === 'light' ? 'light' : 'dark';
 }
 
 // The play screen's HUD and dials read the theme from <html data-theme>,
