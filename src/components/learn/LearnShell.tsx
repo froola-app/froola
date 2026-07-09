@@ -152,6 +152,15 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
     }
   }
 
+  const practiceChord = runner.practiceTarget
+    ? diatonicChord(
+        runner.practiceTarget.noteIdx,
+        runner.practiceTarget.qualIdx,
+        lesson.musicConfig.keyOffset,
+        lesson.musicConfig.scale,
+      ).label
+    : undefined;
+
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
@@ -204,7 +213,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
         </div>
       )}
 
-      {(runner.phase === 'preview' || runner.phase === 'warmup' || runner.phase === 'countdown' || runner.phase === 'attempt') && (
+      {(runner.phase === 'preview' || runner.phase === 'practice' || runner.phase === 'countdown' || runner.phase === 'attempt') && (
         <LessonHUD
           phase={runner.phase}
           stepIndex={runner.stepIndex}
@@ -219,7 +228,9 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
           chordNow={chordNow}
           chordNext={chordNext}
           sustained={sustained}
-          onReady={runner.beginCountdown}
+          practiceChord={practiceChord}
+          practiceChordIndex={runner.practiceChordIndex}
+          practiceChordCount={runner.practiceChordCount}
         />
       )}
 

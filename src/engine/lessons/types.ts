@@ -105,9 +105,9 @@ export type DrillProgress = {
 export type LessonPhase =
   | 'idle'
   | 'preview'
-  // Self-paced practice with no timer or scoring, inserted only before the
-  // very first step a brand-new user ever attempts (see useLessonRunner).
-  | 'warmup'
+  // Self-paced chord-by-chord practice: no timer, no scoring. All steps
+  // except a lesson's final play-through run here after their preview.
+  | 'practice'
   | 'countdown'
   | 'attempt'
   | 'step-result'

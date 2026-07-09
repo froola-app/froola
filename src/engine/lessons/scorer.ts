@@ -22,3 +22,48 @@ export function accuracy(hits: boolean[]): number {
 export function combinedScore(noteAccuracy: number, qualAccuracy: number): number {
   return Math.round((noteAccuracy + qualAccuracy) / 2);
 }
+
+import type { Recording } from '../types';
+
+// A run of consecutive identical chords in a target recording.
+export type ChordSpan = { noteIdx: number; qualIdx: number; startMs: number; endMs: number };
+
+export function chordSpans(recording: Recording): ChordSpan[] {
+  const spans: ChordSpan[] = [];
+  let t = 0;
+  for (const s of recording.samples) {
+    const last = spans[spans.length - 1];
+    if (last && last.noteIdx === s.noteIdx && last.qualIdx === s.qualityIdx) {
+      last.endMs = t + s.dt;
+    } else {
+      spans.push({ noteIdx: s.noteIdx, qualIdx: s.qualityIdx, startMs: t, endMs: t + s.dt });
+    }
+    t += s.dt;
+  }
+  return spans;
+}
+
+export type LiveFrame = { tMs: number; noteIdx: number; qualIdx: number };
+export type ChordScore = { score: number; noteAccuracy: number; qualAccuracy: number };
+
+const MAX_GRACE_MS = 500;
+
+// Each chord counts once: hit if the live selection matched it at any logged
+// frame inside [startMs − grace, endMs + grace]. Late transitions never cost
+// the chord — playing every chord in order is a genuine 100.
+export function scoreChords(spans: ChordSpan[], frames: LiveFrame[], noteOnly: boolean): ChordScore {
+  if (spans.length === 0) return { score: 0, noteAccuracy: 0, qualAccuracy: 0 };
+  let noteHits = 0, qualHits = 0, fullHits = 0;
+  for (const span of spans) {
+    const grace = Math.min(MAX_GRACE_MS, (span.endMs - span.startMs) / 2);
+    const inWindow = frames.filter(f => f.tMs >= span.startMs - grace && f.tMs <= span.endMs + grace);
+    const noteHit = inWindow.some(f => f.noteIdx === span.noteIdx);
+    const qualHit = inWindow.some(f => f.qualIdx === span.qualIdx);
+    const fullHit = noteOnly ? noteHit : inWindow.some(f => f.noteIdx === span.noteIdx && f.qualIdx === span.qualIdx);
+    if (noteHit) noteHits++;
+    if (noteOnly ? noteHit : qualHit) qualHits++;
+    if (fullHit) fullHits++;
+  }
+  const pct = (n: number) => Math.round((n / spans.length) * 100);
+  return { score: pct(fullHits), noteAccuracy: pct(noteHits), qualAccuracy: pct(qualHits) };
+}
