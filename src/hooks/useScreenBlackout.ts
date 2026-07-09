@@ -11,10 +11,7 @@ export function useScreenBlackout(active: boolean): boolean {
   const [blacked, setBlacked] = useState(false);
 
   useEffect(() => {
-    if (!active) {
-      setBlacked(false);
-      return;
-    }
+    if (!active) return;
 
     const syncFromFocusState = () => {
       setBlacked(document.hidden || !document.hasFocus());
@@ -43,5 +40,5 @@ export function useScreenBlackout(active: boolean): boolean {
     };
   }, [active]);
 
-  return blacked;
+  return active && blacked;
 }
