@@ -14,7 +14,6 @@ import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
 import FroolaGuide from './FroolaGuide';
-import HandTiltPopup from './HandTiltPopup';
 import PlayWall from './PlayWall';
 import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
@@ -294,7 +293,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   return (
     <>
       <canvas ref={canvasRef} className="main-canvas" />
-      {mode === 'camera' && <HandTiltPopup signalRef={signalRef} />}
       {/* Unlike Froo's post-tutorial tour and the loop panel (still
           mobile-hidden below), this teaches hand positioning — "no
           tutorial, no warning of the hand not being well positioned" was
