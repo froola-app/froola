@@ -7,7 +7,6 @@ import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
 import { buildCommand, melodyMidi, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
-import { volumeDeltaForGesture } from './engine/input/headGestures';
 import type { Arpeggiator } from './engine/arp';
 
 const REGISTER_THRESHOLD = 0.5 / 24;
@@ -35,7 +34,6 @@ export function useCoordinator(
   musicRef?: RefObject<MusicConfig>,
   // Optional ghost orb signals for lesson mode — translucent target-hand indicators.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
-  onVolumeChange?: (v: number) => void,
   // When true, the chord looper drives the chord pad; the hand solos a melody
   // lead instead of triggering chords.
   loopPlayingRef?: RefObject<boolean>,
@@ -54,14 +52,13 @@ export function useCoordinator(
   const engineRef = useRef<AudioEngine | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const selectedRef = useRef<DialSelection>({ noteIdx: 0, qualIdx: 0 });
-  const volumeRef = useRef(1.0);
   // Written every hot-loop frame; read by UI that wants to show a fist-lock /
   // sustain indicator without re-rendering on every frame itself.
   const sustainedRef = useRef(false);
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
-  const { mode, requestCamera, cameraError, cameraVideoRef, headGestureRef } = input;
+  const { mode, requestCamera, cameraError, cameraVideoRef } = input;
 
   // Create AudioEngine once. Browsers create the context suspended until the
   // page has user activation. The landing-page CTA click happens before this
@@ -225,18 +222,6 @@ export function useCoordinator(
       const sustained = spaceHeld || sustainToggle;
       sustainedRef.current = sustained;
 
-      // Head gesture → discrete volume step: tilt up (held) = louder, tilt
-      // down (held) / head-shake = quieter; the detector repeats while held.
-      const headGesture = headGestureRef.current;
-      if (headGesture && engine) {
-        const next = volumeRef.current + volumeDeltaForGesture(headGesture);
-        volumeRef.current = Math.min(Math.max(next, 0.0), 2.0);
-        volumeRef.current = Math.round(volumeRef.current * 10) / 10;
-        engine.setVolume(volumeRef.current);
-        onVolumeChange?.(volumeRef.current);
-        headGestureRef.current = null;
-      }
-
       // Left hand on its wheel = chord plays. Right hand on its wheel modifies
       // the chord quality. If the right hand is absent, fall back to a plain
       // triad (qualIdx 0).
@@ -307,7 +292,7 @@ export function useCoordinator(
       // eslint-disable-next-line react-hooks/exhaustive-deps
       arpRef?.current?.stop();
     };
-  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, headGestureRef, onVolumeChange, arpRef, arpEnabledRef]);
+  }, [signalRef, modeRef, octaveRef, canvasRef, loopPlayingRef, musicRef, arpRef, arpEnabledRef]);
 
   useRenderer(
     canvasRef as RefObject<HTMLCanvasElement>,

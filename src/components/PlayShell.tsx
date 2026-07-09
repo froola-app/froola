@@ -125,23 +125,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
 
-  const [volumeDisplay, setVolumeDisplay] = useState<number | null>(null);
-  const volumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Nod-to-volume is otherwise invisible — there's no control for it on the
-  // wheel, just a head gesture. Show a small hint until the user's first nod
-  // actually changes the volume, then never again.
-  const [showNodHint, setShowNodHint] = useState(
-    () => !localStorage.getItem('froola.nodHintSeen')
-  );
-  const handleVolumeChange = useCallback((v: number) => {
-    setVolumeDisplay(Math.round(v * 100));
-    if (volumeTimerRef.current) clearTimeout(volumeTimerRef.current);
-    volumeTimerRef.current = setTimeout(() => setVolumeDisplay(null), 1500);
-    try { localStorage.setItem('froola.nodHintSeen', '1'); } catch { /* private mode */ }
-    setShowNodHint(false);
-  }, []);
-
-
   // Arrow keys are a quick shortcut for the on-screen octave stepper.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -153,7 +136,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const gatedRef = useRef(false);
-  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, handleVolumeChange, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
 
   const gated = usePlayWall(mode !== 'asking');
   useEffect(() => { gatedRef.current = gated; }, [gated]);
@@ -236,11 +219,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const [tutorialRun, setTutorialRun] = useState(0);
 
   // Sidebar Settings → "Replay": clear the seen flags so the intro tips
-  // and the nod hint run again, right now and on the next visit.
+  // run again, right now and on the next visit.
   const replayTutorial = useCallback(() => {
     try {
       localStorage.removeItem('froola.tutorialSeen');
-      localStorage.removeItem('froola.nodHintSeen');
       // Restart froo's tour too — replaying the tutorial signals the user
       // wants the guidance back, and the guide remounts via tutorialRun.
       localStorage.removeItem('froola.guideStep');
@@ -249,7 +231,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     setShowTutorial(true);
     setTutorialDone(false);
     setTutorialRun(r => r + 1);
-    setShowNodHint(true);
   }, []);
 
   // Create the looper after mount (the engine exists by then), wiring its
@@ -326,14 +307,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         loopState={loopState}
         active={tutorialDone && mode === 'camera'}
       />
-      {volumeDisplay !== null && (
-        <div className="volume-badge">vol {volumeDisplay}%</div>
-      )}
       {audioStuck && (
         <div className="nod-hint">tap anywhere for sound</div>
-      )}
-      {!audioStuck && mode === 'camera' && showNodHint && volumeDisplay === null && (
-        <div className="nod-hint">tilt head up ↑ &amp; hold = louder · down ↓ = quieter</div>
       )}
       {mode === 'asking' && (
         <CameraPrompt onCamera={requestCamera} error={cameraError} />
