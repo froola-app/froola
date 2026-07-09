@@ -77,7 +77,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
     selectedRef,
     engineRef,
     sustainedRef,
-  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef, undefined, undefined, undefined, undefined, guardrailRef);
+  } = useCoordinator(canvasRef, modeRef, INITIAL_INPUT, undefined, undefined, musicRef, ghostSignalsRef, undefined, undefined, undefined, guardrailRef);
 
   const runner = useLessonRunner(lesson, selectedRef, engineRef, canvasRef, ghostSignalsRef);
 

@@ -3,17 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
-import {
-  createTiltHoldDetector,
-  createShakeDetector,
-  pitchFromMatrix,
-  yawFromMatrix,
-  type HeadGestureEvent,
-} from './headGestures';
-
-// Discrete head-gesture events for volume control: tilt up and hold = louder,
-// tilt down and hold = quieter (steps repeat while held), head-shake =
-// quieter (a redundant secondary path).
 
 export type InputMode = 'asking' | 'camera';
 
@@ -66,7 +55,6 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   // sitting on the 'asking' screen.
   cameraError: boolean;
   cameraVideoRef: React.RefObject<HTMLVideoElement | null>;
-  headGestureRef: React.RefObject<HeadGestureEvent | null>;
 } {
   const signalRef = useRef<GestureSignal[]>([]);
   // The input-mode choice itself is persisted one layer up, in LandingPage
@@ -76,7 +64,6 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
   const [cameraError, setCameraError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
-  const headGestureRef = useRef<HeadGestureEvent | null>(null);
 
   function requestCamera() {
     setCameraError(false);
@@ -92,7 +79,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     const INFERENCE_INTERVAL = 33; // ms (~30 fps inference)
 
     async function startCamera() {
-      const { HandLandmarker, FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
       if (cancelled) return;
 
       // Kick off model loading and stream acquisition in parallel so the user
@@ -138,42 +125,26 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return;
       }
 
-      // Load hand and face models in parallel rather than sequentially.
-      const [landmarker, faceLandmarker] = await Promise.all([
-        HandLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-            delegate: isWebKit ? 'CPU' : 'GPU',
-          },
-          runningMode: 'VIDEO',
-          numHands: 2,
-          // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
-          // held close to the camera) made it accept low-confidence/blurry hands:
-          // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
-          // registered as a fist, freezing the reported position at center
-          // ("stuck in the middle"). 0.5 restores stable tracking.
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        }),
-        FaceLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath:
-              'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-            delegate: isWebKit ? 'CPU' : 'GPU',
-          },
-          runningMode: 'VIDEO',
-          numFaces: 1,
-          minFaceDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-          outputFacialTransformationMatrixes: true,
-        }),
-      ]);
+      const landmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+          delegate: isWebKit ? 'CPU' : 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numHands: 2,
+        // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
+        // held close to the camera) made it accept low-confidence/blurry hands:
+        // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
+        // registered as a fist, freezing the reported position at center
+        // ("stuck in the middle"). 0.5 restores stable tracking.
+        minHandDetectionConfidence: 0.5,
+        minHandPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+      });
 
       if (cancelled) {
         landmarker.close();
-        faceLandmarker.close();
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
         return;
@@ -247,31 +218,14 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return canvas;
       }
 
-      // ~30Hz so a fast ~300ms nod lands on ~9 samples instead of aliasing away.
-      const FACE_INTERVAL = 33;
-      let lastFaceInferenceTime = 0;
-      // Set localStorage 'froola.debugNod' = '1' to log pitch and detector
-      // transitions (for verifying the pitch sign convention on a real camera).
-      const nodDebug = (() => {
-        try { return localStorage.getItem('froola.debugNod') === '1'; } catch { return false; }
-      })();
-      let lastNodLogMs = 0;
-      const nodDetector = createTiltHoldDetector(
-        nodDebug ? (msg) => console.log(`[nod] ${msg}`) : undefined,
-      );
-      const shakeDetector = createShakeDetector(
-        nodDebug ? (msg) => console.log(`[shake] ${msg}`) : undefined,
-      );
-
-      // Adaptive pacing: each delay stretches to a multiple of the measured
+      // Adaptive pacing: the delay stretches to a multiple of the measured
       // cost of the last detect call, so slow inference (WebKit's CPU
       // delegate) lowers its own rate instead of re-running on every rAF
       // tick and saturating the main thread — that saturation is what made
       // the whole page (video included) jank on Safari. On Chrome the GPU
-      // calls take a few ms, so both delays stay pinned at their nominal
-      // intervals.
+      // calls take a few ms, so the delay stays pinned at its nominal
+      // interval.
       let handDelay = INFERENCE_INTERVAL;
-      let faceDelay = FACE_INTERVAL;
 
       // Set true while the tab is hidden: the detection loop is halted (and the
       // camera released after a grace period — see the visibilitychange handler
@@ -282,16 +236,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       function loop() {
         if (cancelled || paused) return;
         const now = performance.now();
-        // Starvation guard: hand inference is due nearly every tick (its
-        // interval is short and it takes priority below), so on a low
-        // refresh-rate display the face branch could be due forever and
-        // never get to run. Once it's gone three intervals unserved, force
-        // it through this tick and let the hand branch skip instead. Scaled
-        // by the adaptive faceDelay so the guard never forces face inference
-        // faster than the slow-delegate backoff allows.
-        const faceStarved =
-          now - lastFaceInferenceTime >= Math.max(3 * FACE_INTERVAL, 1.5 * faceDelay);
-        if (!faceStarved && now - lastInferenceTime >= handDelay) {
+        if (now - lastInferenceTime >= handDelay) {
           const result = landmarker.detectForVideo(inferenceSource(), now);
           lastInferenceTime = now;
           handDelay = Math.max(INFERENCE_INTERVAL, (performance.now() - now) * 1.5);
@@ -396,52 +341,6 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             }
             signalRef.current = signals;
           }
-        } else if (now - lastFaceInferenceTime >= faceDelay || faceStarved) {
-          // Face inference (~30Hz) for nod detection. `else if`, not `if`:
-          // the two detect calls must never share a rAF tick, or they stack
-          // into one long main-thread stall — the periodic hitch that read as
-          // jitter (mild on Chrome, severe on Safari's CPU delegate). The
-          // `faceStarved` guard above already forces this branch — and skips
-          // the hand branch — once the face branch has gone unserved for
-          // three intervals, so it isn't starved out by hand priority.
-          const faceResult = faceLandmarker.detectForVideo(inferenceSource(), now);
-          lastFaceInferenceTime = now;
-          faceDelay = Math.max(FACE_INTERVAL, (performance.now() - now) * 2);
-
-          const matrix = faceResult.facialTransformationMatrixes?.[0];
-          if (faceResult.faceLandmarks.length === 0) {
-            // Face lost: next detection re-seeds instead of firing on the gap.
-            nodDetector.reset();
-            shakeDetector.reset();
-          } else if (!matrix) {
-            // Landmarks present but the transformation matrix hasn't arrived
-            // yet (can lag a frame behind landmarks): skip this sample
-            // rather than resetting, so an in-flight nod isn't killed by a
-            // transient gap.
-            if (nodDebug && now - lastNodLogMs > 500) {
-              console.log('[nod] no matrix');
-              lastNodLogMs = now;
-            }
-          } else {
-            const pitch = pitchFromMatrix(matrix.data);
-            const yaw = yawFromMatrix(matrix.data);
-            if (nodDebug && now - lastNodLogMs > 500) {
-              console.log(`[nod] pitch=${pitch.toFixed(1)} yaw=${yaw.toFixed(1)}`);
-              lastNodLogMs = now;
-            }
-            // Mutual suppression: a firing gesture puts the other detector
-            // into refractory, so the pitch wobble of a vigorous shake (or
-            // the slight yaw of a nod) can't double-fire the volume.
-            const nod = nodDetector.sample(pitch, now);
-            const shake = shakeDetector.sample(yaw, now);
-            if (nod && !shake) {
-              headGestureRef.current = nod === 'up' ? 'tilt-up' : 'tilt-down';
-              shakeDetector.suppress(now);
-            } else if (shake) {
-              headGestureRef.current = 'shake';
-              nodDetector.suppress(now);
-            }
-          }
         }
         animFrameId = requestAnimationFrame(loop);
       }
@@ -482,11 +381,8 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           clearReleaseTimer();
           if (!paused || reacquiring) return;
           // Came back within the grace period — the stream is still live, so
-          // just reset the detectors (a gap shouldn't fire a phantom gesture)
-          // and resume detection without touching the camera.
+          // just resume detection without touching the camera.
           if (!released) {
-            nodDetector.reset();
-            shakeDetector.reset();
             paused = false;
             animFrameId = requestAnimationFrame(loop);
             return;
@@ -503,9 +399,6 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             video.srcObject = stream;
             await video.play();
             if (cancelled || document.hidden) return;
-            // A detection gap shouldn't fire a phantom gesture on return.
-            nodDetector.reset();
-            shakeDetector.reset();
             paused = false;
             animFrameId = requestAnimationFrame(loop);
           } catch {
@@ -523,7 +416,6 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         clearReleaseTimer();
         stream.getTracks().forEach(t => t.stop());
         landmarker.close();
-        faceLandmarker.close();
         cancelAnimationFrame(animFrameId);
         if (video.parentNode) video.parentNode.removeChild(video);
       };
@@ -538,5 +430,5 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     };
   }, [mode]);
 
-  return { signalRef, mode, requestCamera, cameraError, cameraVideoRef: videoRef, headGestureRef };
+  return { signalRef, mode, requestCamera, cameraError, cameraVideoRef: videoRef };
 }

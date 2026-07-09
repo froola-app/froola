@@ -3716,30 +3716,6 @@ body {
 }
 .lesson-complete__btn--primary:hover { background: linear-gradient(160deg, #E8630F, #9c3c05 60%, #D4500A 100%); }
 
-.volume-badge {
-  position: fixed;
-  top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  background: var(--lg-top-fill);
-  color: var(--lg-top-ink);
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid var(--lg-top-stroke);
-  box-shadow: inset 0 1px 0 var(--lg-top-rim), var(--lg-top-shadow);
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  padding: 0.3rem 0.75rem;
-  border-radius: 999px;
-  pointer-events: none;
-}
-
-/* Persistent until the first nod actually changes the volume — same slot as
-   .volume-badge (only one is ever shown at a time) so it doesn't compete for
-   attention with the HUD or the hand-tilt popup. */
 .nod-hint {
   position: fixed;
   top: 1rem;
@@ -4716,7 +4692,7 @@ body {
    randomly tinted. The fill is opaque enough to carry the material now. */
 .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
 .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
-.volume-badge, .nod-hint,
+.nod-hint,
 .instrument-select {
   backdrop-filter: blur(24px) saturate(130%);
   -webkit-backdrop-filter: blur(24px) saturate(130%);
@@ -4724,7 +4700,7 @@ body {
 
 .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
 .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
-.volume-badge, .nod-hint {
+.nod-hint {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
     transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -4742,7 +4718,7 @@ body {
 .share-btn::before, .record-btn::before, .vid-record-btn::before,
 .learn-nav-btn::before, .profile-btn::before, .octave-control::before,
 .arp-btn::before, .loop-controls::before, .loop-slot::before,
-.tutorial-skip::before, .volume-badge::before, .nod-hint::before {
+.tutorial-skip::before, .nod-hint::before {
   content: '';
   position: absolute;
   inset: 0;

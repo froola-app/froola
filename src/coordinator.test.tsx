@@ -48,7 +48,7 @@ describe('useCoordinator — gated audio unlock', () => {
       const canvasRef = useRef<HTMLCanvasElement | null>(null);
       const modeRef = useRef<InstrumentMode>('synth');
       const gatedRef = useRefForGate(true);
-      return useCoordinator(canvasRef, modeRef, 'asking', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
+      return useCoordinator(canvasRef, modeRef, 'asking', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
     });
 
     mockAudioContext.resume.mockClear();
@@ -61,7 +61,7 @@ describe('useCoordinator — gated audio unlock', () => {
       const canvasRef = useRef<HTMLCanvasElement | null>(null);
       const modeRef = useRef<InstrumentMode>('synth');
       const gatedRef = useRefForGate(true);
-      return useCoordinator(canvasRef, modeRef, 'asking', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
+      return useCoordinator(canvasRef, modeRef, 'asking', undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
     });
 
     mockAudioContext.resume.mockClear();
@@ -93,7 +93,7 @@ describe('useCoordinator — gated hot loop', () => {
       const canvasRef = useRef<HTMLCanvasElement | null>(null);
       const modeRef = useRef<InstrumentMode>('synth');
       const gatedRef = useRefForGate(true);
-      return useCoordinator(canvasRef, modeRef, 'asking', undefined, signalRef, undefined, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
+      return useCoordinator(canvasRef, modeRef, 'asking', undefined, signalRef, undefined, undefined, undefined, undefined, undefined, undefined, gatedRef);
     });
 
     // Drive one rAF tick.

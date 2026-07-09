@@ -83,7 +83,7 @@ describe('PlayShell — play wall wiring', () => {
     mockUsePlayWall.mockReturnValue(true);
     render(<PlayShell />);
 
-    const gatedRefArg = mockUseCoordinator.mock.calls[0][12];
+    const gatedRefArg = mockUseCoordinator.mock.calls[0][11];
     expect(gatedRefArg).toEqual({ current: true });
   });
 

@@ -50,7 +50,6 @@ const TIPS: string[] = [
   'Left wheel picks the chord, right wheel shapes it. That’s the whole instrument.',
   'Press Enter to drop the chord you’re holding straight into the loop.',
   'Make a fist to lock your chord while you move around.',
-  'Tilt your head up or down and hold — volume keeps changing until you level out.',
   'Try a 7th on the right wheel. Instant jazz.',
   'Feeling moody? Switch major to minor down below.',
   'Songs live in keys. Try trading C for something braver.',

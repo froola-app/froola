@@ -253,43 +253,6 @@ describe('AudioEngine — resume() / suspend()', () => {
   })
 })
 
-describe('AudioEngine — setVolume', () => {
-  it('ramps masterGain to clamped value over 80ms', () => {
-    const engine = new AudioEngine()
-    const gainNode = mockAudioContext.createGain.mock.results[0].value
-    engine.setVolume(0.5)
-    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      0.5,
-      expect.any(Number),
-    )
-  })
-
-  it('allows boost up to 2.0 and clamps above it', () => {
-    const engine = new AudioEngine()
-    const gainNode = mockAudioContext.createGain.mock.results[0].value
-    engine.setVolume(1.5)
-    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      1.5,
-      expect.any(Number),
-    )
-    engine.setVolume(2.5)
-    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      2.0,
-      expect.any(Number),
-    )
-  })
-
-  it('clamps volume below 0.0 to 0.0', () => {
-    const engine = new AudioEngine()
-    const gainNode = mockAudioContext.createGain.mock.results[0].value
-    engine.setVolume(-0.2)
-    expect(gainNode.gain.linearRampToValueAtTime).toHaveBeenCalledWith(
-      0.0,
-      expect.any(Number),
-    )
-  })
-})
-
 describe('AudioEngine — sampler loading', () => {
   it('reports the piano sampler as not ready until it finishes loading', async () => {
     const engine = new AudioEngine()
