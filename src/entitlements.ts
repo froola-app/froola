@@ -23,6 +23,8 @@ export interface Entitlements {
   maxReplayRecordMs: number;
   /** Hard stop for the video recorder. Infinity on Studio. */
   maxVideoRecordMs: number;
+  /** Chord looper (Plus+). Free doesn't get the feature at all. */
+  loopUnlocked: boolean;
   /** Chord-loop slots the UI lets the user fill (engine caps at MAX_SLOTS). */
   loopSlots: number;
 }
@@ -37,7 +39,8 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     replayWatermark: true,
     maxReplayRecordMs: 20_000,
     maxVideoRecordMs: 0,
-    loopSlots: 4,
+    loopUnlocked: false,
+    loopSlots: 0,
   },
   plus: {
     pianoUnlocked: true,
@@ -48,6 +51,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     replayWatermark: false,
     maxReplayRecordMs: 30_000,
     maxVideoRecordMs: 180_000,
+    loopUnlocked: true,
     loopSlots: 8,
   },
   studio: {
@@ -59,6 +63,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     replayWatermark: false,
     maxReplayRecordMs: 30_000,
     maxVideoRecordMs: Infinity,
+    loopUnlocked: true,
     loopSlots: Infinity,
   },
 };
