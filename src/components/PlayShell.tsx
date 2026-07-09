@@ -33,31 +33,20 @@ const MODES: { value: InstrumentMode; label: string }[] = [
 const OCTAVE_MIN = -2;
 const OCTAVE_MAX = 2;
 
-function CameraPrompt({ onCamera, error }: { onCamera: () => void; error: boolean }) {
+// Camera access is requested automatically on mount (see the effect below),
+// so this only ever appears after a denial — there's no explainer screen to
+// click through first, just a way to retry once the user fixes permissions.
+function CameraDenied({ onCamera }: { onCamera: () => void }) {
   const { theme } = useTheme();
   return (
     <div className="permission-screen">
       <div className="permission-card">
         <FroolaLogo size={56} color={theme === 'dark' ? '#F5F5F7' : '#111111'} />
-        <p className="permission-eyebrow">Camera access</p>
-        <h1 className="permission-title">Conduct with your hands</h1>
-        <p className="permission-body">
-          Froola turns your hand movements into music. MediaPipe runs entirely on
-          your device — no video is ever transmitted or stored.
+        <p className="permission-error">
+          Couldn&apos;t access your camera. Check your browser&apos;s permission settings and try again.
         </p>
-        <p className="permission-hint">
-          You&apos;ll move both hands over two wheels — left picks the chord, right shapes it.
-        </p>
-        <p className="permission-privacy">Your camera never leaves your device.</p>
-        {error && (
-          <p className="permission-error">
-            Couldn&apos;t access your camera. Check your browser&apos;s permission settings and try again.
-          </p>
-        )}
         <div className="permission-buttons">
-          <button onClick={onCamera} className="permission-btn-primary">
-            {error ? 'Try again' : 'Enable camera'}
-          </button>
+          <button onClick={onCamera} className="permission-btn-primary">Try again</button>
         </div>
       </div>
     </div>
@@ -139,6 +128,16 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
 
   const gatedRef = useRef(false);
   const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+
+  // No explainer screen to click through — ask for the camera the moment
+  // the page loads. Only fires once: after a denial, mode reverts to
+  // 'asking' too, and re-requesting there would loop the browser prompt.
+  const autoRequestedRef = useRef(false);
+  useEffect(() => {
+    if (mode !== 'asking' || cameraError || autoRequestedRef.current) return;
+    autoRequestedRef.current = true;
+    requestCamera();
+  }, [mode, cameraError, requestCamera]);
 
   const gated = usePlayWall(mode !== 'asking');
   useEffect(() => { gatedRef.current = gated; }, [gated]);
@@ -320,8 +319,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {audioStuck && (
         <div className="nod-hint">tap anywhere for sound</div>
       )}
-      {mode === 'asking' && (
-        <CameraPrompt onCamera={requestCamera} error={cameraError} />
+      {mode === 'asking' && cameraError && (
+        <CameraDenied onCamera={requestCamera} />
       )}
       {/* The permission screen (mode 'asking') is a full-viewport layer below
           the HUD's z-index, so hide the HUD until camera access is granted. */}
