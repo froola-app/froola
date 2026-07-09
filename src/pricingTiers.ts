@@ -52,7 +52,7 @@ export const PRICING_TIERS: PricingTier[] = [
     monthlySavings: 'Save 48%',
     planId: 'studio',
     highlight: true,
-    badge: 'Best value',
+    badge: 'Coming soon',
     features: [
       'Everything in Plus',
       'Continuous instant-replay recording',

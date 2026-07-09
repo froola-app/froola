@@ -94,7 +94,7 @@ export default function PricingSection() {
                 {price}
                 {period && <span className="lp4__pricing-period">{period}</span>}
               </p>
-              {tier.planId && interval === 'month' && (
+              {tier.planId && tier.planId !== 'studio' && interval === 'month' && (
                 <p className="lp4__pricing-note">
                   {tier.monthlySavings} · {TRIAL_DAYS}-day free trial
                 </p>
@@ -104,9 +104,11 @@ export default function PricingSection() {
                   <li key={f}>{f}</li>
                 ))}
               </ul>
-              {tier.planId && (
+              {tier.planId === 'studio' ? (
+                <p className="lp4__pricing-current">Coming soon</p>
+              ) : tier.planId ? (
                 <UpgradeButton planId={tier.planId} interval={interval} currentPlan={currentPlan} />
-              )}
+              ) : null}
             </div>
           );
         })}

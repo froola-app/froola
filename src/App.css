@@ -1701,6 +1701,19 @@ body {
   color: var(--lp-accent);
 }
 
+.lp4__pricing-note--muted {
+  color: var(--lp-gray);
+}
+
+.lp4__pricing-note--link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
 /* Privacy lock */
 .lp4__lock {
   width: 44px;
