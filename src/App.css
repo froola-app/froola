@@ -99,13 +99,6 @@ body {
   line-height: 1.5;
 }
 
-.permission-privacy {
-  font-size: 0.78rem;
-  color: #D4500A;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
 .permission-error {
   font-size: 0.86rem;
   color: #b3261e;
