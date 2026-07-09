@@ -19,7 +19,6 @@ import PlayWall from './PlayWall';
 import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { usePlayWall } from '../hooks/usePlayWall';
-import { useScreenBlackout } from '../hooks/useScreenBlackout';
 import { useTheme } from '../useTheme';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
@@ -142,12 +141,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const gated = usePlayWall(mode !== 'asking');
   useEffect(() => { gatedRef.current = gated; }, [gated]);
 
-  const blacked = useScreenBlackout(mode !== 'asking');
-
   useEffect(() => {
-    if (gated || blacked) engineRef.current?.suspend();
+    if (gated) engineRef.current?.suspend();
     else engineRef.current?.resume();
-  }, [gated, blacked, engineRef]);
+  }, [gated, engineRef]);
 
   // React can't recover if an external actor (browser devtools) deletes a
   // node it rendered — reconciliation throws when it tries to remove the
@@ -424,11 +421,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
       {gated && <PlayWall />}
-      {blacked && (
-        <div className="screen-blackout" role="alert">
-          Paused — tab not focused
-        </div>
-      )}
     </>
   );
 }
