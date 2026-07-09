@@ -27,6 +27,8 @@ export interface Entitlements {
   loopUnlocked: boolean;
   /** Chord-loop slots the UI lets the user fill (engine caps at MAX_SLOTS). */
   loopSlots: number;
+  /** Arpeggiator (Plus+). Free doesn't get the feature at all. */
+  arpUnlocked: boolean;
 }
 
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
@@ -41,6 +43,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     maxVideoRecordMs: 0,
     loopUnlocked: false,
     loopSlots: 0,
+    arpUnlocked: false,
   },
   plus: {
     pianoUnlocked: true,
@@ -53,6 +56,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     maxVideoRecordMs: 180_000,
     loopUnlocked: true,
     loopSlots: 8,
+    arpUnlocked: true,
   },
   studio: {
     pianoUnlocked: true,
@@ -65,6 +69,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     maxVideoRecordMs: Infinity,
     loopUnlocked: true,
     loopSlots: Infinity,
+    arpUnlocked: true,
   },
 };
 

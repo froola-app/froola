@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-export const TIMER_MS = 60_000;
+export const TIMER_MS = 120_000;
 export const TRIGGERED_KEY = 'froola.playWallTriggered';
 
-// Anonymous visitors get 1 minute of actual play (once an input mode is
+// Anonymous visitors get 2 minutes of actual play (once an input mode is
 // chosen) before every future visit on this browser hard-gates behind a
 // sign-up wall — persisted via localStorage, not sessionStorage, so it
 // doesn't reset per tab.
