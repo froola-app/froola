@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, type Theme } from '../useTheme';
 import { openBillingPortal } from '../billing';
+import { effectivePlan } from '../entitlements';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
@@ -75,7 +76,11 @@ function SettingsRow({ label, hint, children }: {
 function PlanRow({ onClose }: { onClose: () => void }) {
   const { profile } = useAuth();
   const [pending, setPending] = useState(false);
-  const plan = profile?.plan ?? 'free';
+  const plan = effectivePlan(profile);
+
+  if (profile?.betaTester) {
+    return <SettingsRow label="Plan" hint="Studio (beta)">{null}</SettingsRow>;
+  }
 
   if (plan === 'free') {
     return (
