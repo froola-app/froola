@@ -49,7 +49,8 @@ export function useAmbientLuminance(
   useEffect(() => {
     const root = document.documentElement;
 
-    // Mouse mode renders on the app's dark background; no sampling needed.
+    // The asking (permission) screen renders on the app's dark background;
+    // no sampling needed until the camera feed is live.
     if (mode !== 'camera') {
       root.removeAttribute('data-hud-top');
       root.removeAttribute('data-hud-bottom');

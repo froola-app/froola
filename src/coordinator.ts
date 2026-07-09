@@ -28,7 +28,7 @@ export function useCoordinator(
   initialMode: InputMode = 'asking',
   octaveRef?: RefObject<number>,
   // When provided, drive playback from this signal source (e.g. recorded replay)
-  // instead of live hand/mouse input. The gesture-input hook still runs but its
+  // instead of live hand input. The gesture-input hook still runs but its
   // signals are ignored, so live and replay share one audio/render pipeline.
   externalSignalRef?: RefObject<GestureSignal[]>,
   // Current key + scale; selects the 7 wheel notes. Defaults to C major.
@@ -61,14 +61,7 @@ export function useCoordinator(
 
   const input = useGestureInput(initialMode);
   const signalRef = externalSignalRef ?? input.signalRef;
-  const { mode, requestCamera, useMouse, cameraVideoRef, headGestureRef } = input;
-
-  // Pointer modes (mouse/touch) have a single pointer that can't hold the
-  // extension wheel while playing the note wheel, so the chosen extension has
-  // to stick. Camera mode keeps the two-hand behaviour (lift the right hand →
-  // triad). A ref because the hot-path rAF loop below reads it without re-running.
-  const stickyExtensionRef = useRef(mode === 'mouse');
-  useEffect(() => { stickyExtensionRef.current = mode === 'mouse'; }, [mode]);
+  const { mode, requestCamera, cameraError, cameraVideoRef, headGestureRef } = input;
 
   // Create AudioEngine once. Browsers create the context suspended until the
   // page has user activation. The landing-page CTA click happens before this
@@ -245,11 +238,10 @@ export function useCoordinator(
       }
 
       // Left hand on its wheel = chord plays. Right hand on its wheel modifies
-      // the chord quality. If the right hand is absent, camera mode falls back
-      // to a plain triad (qualIdx 0); pointer modes keep the last-dialled
-      // extension (stickyExtension) since there's no second hand to hold it.
+      // the chord quality. If the right hand is absent, fall back to a plain
+      // triad (qualIdx 0).
       const touching = leftInDial;
-      const effectiveQualIdx = (rightInDial || stickyExtensionRef.current) ? qualIdx : 0;
+      const effectiveQualIdx = rightInDial ? qualIdx : 0;
       if (touching) lastTouchMs = nowMs;
       // A brief loss of contact (crossing the centre hub between slices, a dropped
       // tracking frame) holds the note instead of cutting it — avoids glitchy
@@ -325,7 +317,6 @@ export function useCoordinator(
     undefined,
     musicRef,
     ghostSignalsRef,
-    stickyExtensionRef,
     guardrailRef,
   );
 
@@ -339,7 +330,7 @@ export function useCoordinator(
   return {
     mode,
     requestCamera,
-    useMouse,
+    cameraError,
     signalRef,
     // The angle-derived note/quality selection the audio path actually plays.
     // The recorder samples this (not raw x) so a recording matches what was heard.

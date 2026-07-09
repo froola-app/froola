@@ -20,17 +20,17 @@ Editorial, light mode, single scroll. Tokens match `design/tokens.json`
 
 - **Hero section**: logo, headline ("Make music with your hands."), an
   animated waveform (`WaveVisual` — 40 CSS-height-animated bars, `rAF` loop,
-  every 7th bar accented orange), two buttons (**Enable camera** primary /
-  **Use mouse instead** secondary, "Use touch instead" on touch devices via
-  `navigator.maxTouchPoints`), a "scroll to see how it works" hint.
+  every 7th bar accented orange), an **Enable camera** button, a "scroll to
+  see how it works" hint.
 - **How it works**: 3 numbered steps (Allow camera / Move your hands / Make
   music), same numbered-step visual language as the design system doc.
 - **Why we built it**: one paragraph + "Built by two high school students."
-- **Get in touch**: contact prose + email + the same two input buttons again.
+- **Get in touch**: contact prose + email + the same Enable camera button again.
 - **Footer**: copyright line.
 
-Clicking either input button calls `chooseInput('camera' | 'mouse')`, which
-persists the choice and swaps to `<PlayShell initialInput={...} />`.
+Clicking the camera button persists the choice (`storeInputMode('camera')`)
+and swaps to `<PlayShell initialInput={...} />`. Camera is the only input
+mode — there is no mouse/touch/keyboard fallback.
 
 ## 2. PlayShell (`src/components/PlayShell.tsx`)
 
@@ -48,15 +48,16 @@ because the canvas underneath needs a dark, low-contrast frame.
 `CameraPrompt` — full-viewport light card (`permission-screen`, reuses the
 `#FAFAF8` editorial palette, not the dark HUD one): logo, "Camera access"
 eyebrow, headline, privacy copy, a one-line mechanic hint ("You'll move both
-hands over two wheels — left picks the chord, right shapes it."), Enable
-camera / Use mouse buttons. The rest of the HUD is hidden entirely while this
-gate is showing (it sits at a lower z-index than the HUD and would otherwise
-show frosted pills floating uselessly on top of it).
+hands over two wheels — left picks the chord, right shapes it."), an Enable
+camera button (relabels to "Try again" with an error line if permission was
+denied). The rest of the HUD is hidden entirely while this gate is showing
+(it sits at a lower z-index than the HUD and would otherwise show frosted
+pills floating uselessly on top of it).
 
 ### Once a mode is chosen
 
-- **`HandTiltPopup`** (camera mode only) — warns when a hand's facing angle
-  is out of range for reliable tracking.
+- **`HandTiltPopup`** — warns when a hand's facing angle is out of range for
+  reliable tracking.
 - **`BeginnerTutorial`** — 4-step gesture walkthrough overlay, shown once
   per browser (`localStorage['froola.tutorialSeen']`). See
   `design/onboarding.md`... actually this is the *in-app* tutorial, distinct
@@ -65,13 +66,7 @@ show frosted pills floating uselessly on top of it).
 - **Volume badge** — appears for 1.5s after a head-nod changes volume
   (`vol NN%`), top-center.
 - **Nod hint** — persistent "nod ↕ your head to change volume" pill, shown
-  until the first successful nod, camera mode only.
-- **`MouseModeBadge`** (mouse/touch mode only) — small "Mouse mode — try
-  camera mode" link, bottom-center. **Known bug**: this collides with the
-  bottom instrument HUD once it wraps to multiple rows (happens at both
-  mobile and, less severely, some desktop widths) — hidden entirely below
-  480px as a stopgap (`@media (max-width: 480px) { .mode-badge { display:
-  none; } }` in `App.css`), not fixed at other widths.
+  until the first successful nod.
 - **`ShareButton`**, **`RecordButton`**, **`VideoRecordButton`**, **Learn**
   nav button — top corners.
 - **`LoopPanel`** — chord-loop builder (add/undo/clear slots, bpm, play),
@@ -95,7 +90,5 @@ grown incrementally and isn't stable API.
 
 ## Known issues at time of writing
 
-- Mode-badge/hud-bottom overlap (above) — mobile-only fix landed, desktop
-  instance still open.
 - `useCoordinator`'s positional-optional-params signature is fragile to
   extend; a props-object would be safer if it grows further.

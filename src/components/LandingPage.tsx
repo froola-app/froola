@@ -13,8 +13,6 @@ import ThemeToggle from './ThemeToggle';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
-const isTouchDevice = () => navigator.maxTouchPoints > 0;
-
 // Real songs from the lesson curriculum — the marquee shows the product's
 // soul (what you actually get to play) instead of empty hero margins.
 const MARQUEE_SONGS = SONG_PATH.map(s => ({ title: s.title, artist: s.artist ?? '' }));
@@ -89,7 +87,6 @@ const STEPS = [
 
 export default function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const touch = isTouchDevice();
   // Cursor is hovering a primary CTA — the nearest living face perks up.
   const [logoExcited, setLogoExcited] = useState(false);
   const [bandExcited, setBandExcited] = useState(false);
@@ -98,9 +95,9 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   // Remember the choice so PlayShell on /play skips its own prompt and drops
-  // the user straight into the instrument in the mode they picked.
-  const chooseInput = (mode: 'camera' | 'mouse') => {
-    storeInputMode(mode);
+  // the user straight into the instrument.
+  const chooseCamera = () => {
+    storeInputMode('camera');
     navigate('/play');
   };
 
@@ -109,12 +106,8 @@ export default function LandingPage() {
 
   const ctas = (
     <div className="lp4__ctas">
-      <button className="lp4__pill" onClick={() => chooseInput('camera')}>
+      <button className="lp4__pill" onClick={chooseCamera}>
         Enable camera
-      </button>
-      <button className="lp4__link-btn" onClick={() => chooseInput('mouse')}>
-        {touch ? 'Use touch instead' : 'Use mouse instead'}
-        <span aria-hidden="true"> ›</span>
       </button>
     </div>
   );

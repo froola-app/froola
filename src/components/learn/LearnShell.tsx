@@ -74,7 +74,6 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
   const {
     mode,
     requestCamera,
-    useMouse,
     selectedRef,
     engineRef,
     sustainedRef,
@@ -160,10 +159,9 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
         <div className="permission-screen" style={{ inset: 0 }}>
           <div className="permission-card">
             <p className="permission-eyebrow">Lesson mode</p>
-            <h1 className="permission-title">Choose your input</h1>
+            <h1 className="permission-title">Enable your camera</h1>
             <div className="permission-buttons">
               <button onClick={requestCamera} className="permission-btn-primary">Enable camera</button>
-              <button onClick={useMouse} className="permission-btn-secondary">Use mouse</button>
             </div>
           </div>
         </div>

@@ -64,8 +64,8 @@ and adapts. `src/hooks/useAmbientLuminance.ts`:
    `data-hud-bottom="light|dark"`. CSS does the rest — no React re-renders,
    no per-component wiring.
 
-In mouse mode the attributes are removed (the app background is dark, the
-defaults already fit) and the sampler never runs.
+On the permission-asking screen the attributes are removed (the app
+background is dark, the defaults already fit) and the sampler never runs.
 
 ### The two palettes
 

@@ -3,7 +3,6 @@ import { flushSync } from 'react-dom';
 import type { RefObject } from 'react';
 import type { GestureSignal } from '../engine/types';
 import type { DialSelection } from '../engine/renderer';
-import type { InputMode } from '../engine/input';
 import { wheelGeometry } from '../engine/renderer/geometry';
 import FroolaMascot from './FroolaMascot';
 
@@ -28,28 +27,9 @@ const CAMERA_STEPS = [
   },
 ] as const;
 
-// Pointer mode skips the hands-up step (its runner starts at step 1), so the
-// first entry here is never shown — it's a placeholder to keep indices aligned.
-const MOUSE_STEPS = [
-  CAMERA_STEPS[0],
-  {
-    headline: 'Play the left circle',
-    body: 'Move your mouse onto the ring of the left circle — or hold a number key 1–7. You should hear a chord.',
-  },
-  {
-    headline: 'Slide around to change the chord',
-    body: 'Stay on the ring and move around it (or press different number keys). The music changes as you go.',
-  },
-  {
-    headline: 'Shape the chord on the right circle',
-    body: 'Hover the right circle — or hold Q–U — to change the flavor of the chord. Your pick sticks while you play on the left.',
-  },
-] as const;
-
 interface Props {
   signalRef: RefObject<GestureSignal[]>;
   selectedRef: RefObject<DialSelection>;
-  mode: InputMode;
   /** Fired once when the tutorial leaves the screen (finished or skipped). */
   onDone?: () => void;
 }
@@ -82,10 +62,9 @@ function playSuccessSound() {
   } catch { /* ignore — audio unavailable */ }
 }
 
-export default function BeginnerTutorial({ signalRef, selectedRef, mode, onDone }: Props) {
-  const initialStep = mode === 'mouse' ? 1 : 0;
-  const STEPS = mode === 'mouse' ? MOUSE_STEPS : CAMERA_STEPS;
-  const [step, setStep] = useState(initialStep);
+export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Props) {
+  const STEPS = CAMERA_STEPS;
+  const [step, setStep] = useState(0);
   const [doneMessage, setDoneMessage] = useState(false);
   const [gone, setGone] = useState(false);
   const [flashComplete, setFlashComplete] = useState(false);

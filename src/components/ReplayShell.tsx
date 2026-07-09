@@ -50,7 +50,7 @@ export default function ReplayShell() {
   // instead of live hands. We feed it synthesised "hands" parked on the slices
   // the performer selected; the coordinator + renderer do the rest.
   const signalRef = useRef<GestureSignal[]>([]);
-  // 'asking' keeps the gesture-input hook idle (no camera/mouse listeners); our
+  // 'asking' keeps the gesture-input hook idle (no camera listeners); our
   // playback clock is the only thing that writes to signalRef.
   useCoordinator(canvasRef, modeRef, 'asking', undefined, signalRef);
 

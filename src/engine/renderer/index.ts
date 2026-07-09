@@ -3,9 +3,6 @@ import type { RefObject } from 'react';
 import type { GestureSignal, MusicalCommand } from '../types';
 import { NOTES } from '../types';
 import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
-import { NOTE_KEYS, EXTENSION_KEYS } from '../input/pointerKeyboard';
-
-const EXTENSION_KEY_LABELS = EXTENSION_KEYS.map(k => k.toUpperCase());
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
 import { getVisualTheme, type VisualTheme } from './themes';
@@ -90,9 +87,6 @@ function drawWheel(
   // and here's its name" instead of a dashed ring floating with no label.
   ghostIdx?: number,
   ghostColor?: string,
-  // Per-slice keyboard shortcut hints ("1"…"7" / "Q"…"U"), drawn in pointer
-  // mode only — they're the discoverability layer for keyboard play.
-  keyHints?: readonly string[],
 ) {
   const n = labels.length;
   const innerR = outerR * 0.36;
@@ -139,14 +133,6 @@ function drawWheel(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(labels[i], cx + Math.cos(midA) * lr, cy + Math.sin(midA) * lr);
-
-    // Keyboard hint: small key cap under the rim of each slice.
-    if (keyHints?.[i]) {
-      const hr = outerR * 0.9;
-      ctx.font = `500 ${Math.round(9 * s)}px ${UI_FONT}`;
-      ctx.fillStyle = pal.ink(emphasize ? 0.7 : 0.38);
-      ctx.fillText(keyHints[i], cx + Math.cos(midA) * hr, cy + Math.sin(midA) * hr);
-    }
   }
 
   // Hairline boundary ticks near the rim (camera-dial style) instead of
@@ -291,9 +277,6 @@ export function useRenderer(
   // Optional ghost orbs — translucent dashed rings showing lesson target positions.
   // Drawn before live orbs so live hands always appear on top.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
-  // When set, the extension (qualIdx) persists while the right wheel is untouched
-  // instead of snapping back to a triad — for single-pointer mouse/touch play.
-  stickyExtensionRef?: RefObject<boolean>,
   guardrailRef?: RefObject<boolean>,
 ): void {
   const particlesRef = useRef(new ParticleSystem());
@@ -373,12 +356,11 @@ export function useRenderer(
       const noteIdx = leftInDial
         ? stickySlice(notePos, NOTES.length, prevSel.noteIdx)
         : (left?.present ? prevSel.noteIdx : 0);
-      // Hold the extension while the right hand is present-but-off-ring; also
-      // hold it in sticky (pointer) mode where there's no right hand at all.
-      // Otherwise (camera, right hand gone) fall back to a plain triad.
+      // Hold the extension while the right hand is present-but-off-ring.
+      // Otherwise (right hand gone) fall back to a plain triad.
       const qualIdx = rightInDial
         ? stickySlice(qualPos, EXTENSIONS.length, prevSel.qualIdx)
-        : (right?.present || stickyExtensionRef?.current ? prevSel.qualIdx : 0);
+        : (right?.present ? prevSel.qualIdx : 0);
       const bothActive = leftInDial && rightInDial;
 
       // Labels follow the selected key/scale. The note wheel shows the scale's
@@ -394,10 +376,6 @@ export function useRenderer(
       const leftGhost = ghostSignals.find(gs => gs.present && gs.handId === 'left');
       const rightGhost = ghostSignals.find(gs => gs.present && gs.handId === 'right');
 
-      // In pointer (mouse/keyboard) mode, print each slice's shortcut key on
-      // the wheel — hovering is otherwise the only, invisible, way in.
-      const pointerMode = !!stickyExtensionRef?.current;
-
       // Left wheel — chord root (its major/minor quality comes from the scale)
       const leftCenterLabel = (bothActive || leftInDial) ? chordName : 'NOTE';
       drawWheel(
@@ -408,7 +386,6 @@ export function useRenderer(
         pal,
         leftGhost?.sliceIdx,
         theme.left.ghost,
-        pointerMode ? NOTE_KEYS : undefined,
       );
 
       // Right wheel — chord extension (triad / 7th / sus / …)
@@ -421,7 +398,6 @@ export function useRenderer(
         pal,
         rightGhost?.sliceIdx,
         theme.right.ghost,
-        pointerMode ? EXTENSION_KEY_LABELS : undefined,
       );
 
       // Publish slice selection so the coordinator can drive audio
@@ -448,5 +424,5 @@ export function useRenderer(
       cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, stickyExtensionRef, guardrailRef, musicRef, selectedRef]);
+  }, [canvasRef, signalsRef, analyserRef, commandRef, ghostSignalsRef, guardrailRef, musicRef, selectedRef]);
 }

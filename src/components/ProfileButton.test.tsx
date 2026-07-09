@@ -130,17 +130,16 @@ describe('ProfileButton', () => {
 
   it('Settings section shows the theme row, plus play rows when play actions are passed', () => {
     mockUseAuth.mockReturnValue(authState());
-    const onSwitchInput = vi.fn();
     const onReplayTutorial = vi.fn();
     render(
       <ProfileButton
-        play={{ inputMode: 'camera', onSwitchInput, onReplayTutorial }}
+        play={{ onReplayTutorial }}
       />,
     );
     openSidebar();
     expect(screen.getByText('Theme')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: /use mouse/i }));
-    expect(onSwitchInput).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: /replay/i }));
+    expect(onReplayTutorial).toHaveBeenCalledOnce();
     // acting on a play row also closes the drawer
     expect(screen.queryByRole('dialog')).toBeNull();
   });
@@ -150,7 +149,6 @@ describe('ProfileButton', () => {
     render(<ProfileButton />);
     openSidebar();
     expect(screen.getByText('Theme')).toBeDefined();
-    expect(screen.queryByText('Input')).toBeNull();
     expect(screen.queryByRole('button', { name: /replay/i })).toBeNull();
   });
 });

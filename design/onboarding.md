@@ -29,9 +29,8 @@ centered below.
    content creator / learning music), each a full-width button with emoji +
    label + description + arrow. Clicking one sets `selectedType` and
    advances immediately.
-2. **`LearningCurveStep`** — "A quick heads-up." 4 tips (flat hand, ↕ note,
-   ↔ chord/quality, mouse-mode fallback) as an icon list, then a single
-   "Got it →" button.
+2. **`LearningCurveStep`** — "A quick heads-up." 3 tips (flat hand, ↕ note,
+   ↔ chord/quality) as an icon list, then a single "Got it →" button.
 3. **`PricingStep`** — "Free forever, upgrade when you're ready." Two cards
    (Free features list / Pro features list, tagged "coming soon"), then
    "Start playing →", which calls `completeOnboarding(selectedType)` and
