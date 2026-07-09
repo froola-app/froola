@@ -313,7 +313,7 @@ export function useRenderer(
         amplitude = freqData.reduce((a, b) => a + b, 0) / freqData.length / 255;
       }
 
-      const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
+      const { outerR, innerR, leftCx, rightCx, leftCy, rightCy } = wheelGeometry(w, h);
       // Read per frame — cheap, and it makes a theme toggle repaint instantly.
       const pal = currentPalette();
       const theme = getVisualTheme();
@@ -332,15 +332,15 @@ export function useRenderer(
 
       // Orb positions in pixels
       const leftOrbX  = left  ? left.x  * w : leftCx;
-      const leftOrbY  = left  ? left.y  * h : wheelCy;
+      const leftOrbY  = left  ? left.y  * h : leftCy;
       const rightOrbX = right ? right.x * w : rightCx;
-      const rightOrbY = right ? right.y * h : wheelCy;
+      const rightOrbY = right ? right.y * h : rightCy;
 
       // Orb touches a slice only when it is in the annular ring (innerR..outerR).
       // Inside innerR (center hub) atan2 is unstable — tiny tremors flip the
       // selected slice — so we treat that zone as inactive.
-      const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - wheelCy);
-      const rightDist = Math.hypot(rightOrbX - rightCx, rightOrbY - wheelCy);
+      const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - leftCy);
+      const rightDist = Math.hypot(rightOrbX - rightCx, rightOrbY - rightCy);
       const leftInDial  = !!left?.present  && leftDist  >= innerR && leftDist  <= outerR;
       const rightInDial = !!right?.present && rightDist >= innerR && rightDist <= outerR;
 
@@ -348,8 +348,8 @@ export function useRenderer(
       // wheel can show the full chord name). selectedRef persists the last choice
       // across frames, which doubles as the hysteresis state.
       const prevSel = selectedRef.current;
-      const notePos = angleToSlicePos(leftOrbX, leftOrbY, leftCx, wheelCy, NOTES.length);
-      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, wheelCy, EXTENSIONS.length);
+      const notePos = angleToSlicePos(leftOrbX, leftOrbY, leftCx, leftCy, NOTES.length);
+      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, rightCy, EXTENSIONS.length);
       // Apply hysteresis while on the wheel; hold the last selection while the hand
       // is present but off-ring (e.g. crossing the centre hub between slices, where
       // atan2 is unstable); reset only when the hand disappears entirely.
@@ -379,7 +379,7 @@ export function useRenderer(
       // Left wheel — chord root (its major/minor quality comes from the scale)
       const leftCenterLabel = (bothActive || leftInDial) ? chordName : 'NOTE';
       drawWheel(
-        ctx, leftCx, wheelCy, outerR,
+        ctx, leftCx, leftCy, outerR,
         noteLabels, noteIdx, leftInDial,
         () => theme.noteAccent,
         leftCenterLabel,
@@ -390,7 +390,7 @@ export function useRenderer(
 
       // Right wheel — chord extension (triad / 7th / sus / …)
       drawWheel(
-        ctx, rightCx, wheelCy, outerR,
+        ctx, rightCx, rightCy, outerR,
         EXTENSIONS.map(e => e.label),
         qualIdx, rightInDial,
         (i) => extensionColor(i, EXTENSIONS.length, theme),

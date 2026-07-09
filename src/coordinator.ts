@@ -159,13 +159,13 @@ export function useCoordinator(
       const canvas = canvasRef.current;
       const w = canvas?.width  ?? window.innerWidth;
       const h = canvas?.height ?? window.innerHeight;
-      const { outerR, innerR, leftCx, rightCx, cy: wheelCy } = wheelGeometry(w, h);
-      const inRing = (x: number, y: number, cx: number) => {
-        const d = Math.hypot(x * w - cx, y * h - wheelCy);
+      const { outerR, innerR, leftCx, rightCx, leftCy, rightCy } = wheelGeometry(w, h);
+      const inRing = (x: number, y: number, cx: number, cy: number) => {
+        const d = Math.hypot(x * w - cx, y * h - cy);
         return d >= innerR && d <= outerR;
       };
-      const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx);
-      const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx);
+      const leftInDial  = !!left?.present  && inRing(left.x,  left.y,  leftCx,  leftCy);
+      const rightInDial = !!right?.present && inRing(right.x, right.y, rightCx, rightCy);
 
       const { noteIdx, qualIdx } = selectedRef.current;
       const instrMode = modeRef.current;

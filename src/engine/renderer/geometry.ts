@@ -8,18 +8,42 @@ export type WheelGeometry = {
   innerR: number;
   leftCx: number;
   rightCx: number;
+  leftCy: number;
+  rightCy: number;
+  // Kept for callers (BeginnerTutorial, desktop-only) that only ever see the
+  // side-by-side layout, where the two wheels share one row. Equals
+  // leftCy/rightCy there; meaningless once the wheels are staggered.
   cy: number;
 };
 
 export function wheelGeometry(w: number, h: number): WheelGeometry {
+  // A tall, narrow viewport (phone portrait) staggers the wheels diagonally
+  // instead of side by side. Side by side, both wheels compete for the same
+  // horizontal band, so a narrow screen caps their radius hard; staggered,
+  // each wheel gets its own vertical band and can be much bigger.
+  if (h > w) {
+    const outerR = Math.min(w, h) * 0.3;
+    return {
+      outerR,
+      innerR: outerR * 0.36,
+      leftCx: outerR * 1.3,
+      rightCx: w - outerR * 1.3,
+      leftCy: h * 0.36,
+      rightCy: h * 0.68,
+      cy: h * 0.52,
+    };
+  }
   // Cap so the two wheels (centred at outerR*1.5 from each edge) never overlap.
   const outerR = Math.min(Math.min(w, h) * 0.24, (w - 8) / 5);
+  const cy = h * 0.65;
   return {
     outerR,
     innerR: outerR * 0.36,
     leftCx: outerR * 1.5,
     rightCx: w - outerR * 1.5,
-    cy: h * 0.65,
+    leftCy: cy,
+    rightCy: cy,
+    cy,
   };
 }
 

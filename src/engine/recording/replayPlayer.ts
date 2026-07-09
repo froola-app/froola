@@ -48,10 +48,10 @@ export function signalsAt(
   const idx = sampleIndexAt(ends, ms);
   if (idx < 0) return [];
   const sample = recording.samples[idx];
-  const { outerR, leftCx, rightCx, cy } = wheelGeometry(w, h);
+  const { outerR, leftCx, rightCx, leftCy, rightCy } = wheelGeometry(w, h);
 
-  const left = sliceToPoint(sample.noteIdx, NOTES.length, leftCx, cy, outerR, w, h);
-  const right = sliceToPoint(sample.qualityIdx, QUALITIES.length, rightCx, cy, outerR, w, h);
+  const left = sliceToPoint(sample.noteIdx, NOTES.length, leftCx, leftCy, outerR, w, h);
+  const right = sliceToPoint(sample.qualityIdx, QUALITIES.length, rightCx, rightCy, outerR, w, h);
 
   return [
     { x: left.x, y: left.y, present: true, handId: 'left', sliceIdx: sample.noteIdx },

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
+import { wheelGeometry, type WheelGeometry } from '../renderer/geometry';
 
 export type InputMode = 'asking' | 'camera';
 
@@ -26,27 +27,51 @@ export function storeInputMode(mode: 'camera'): void {
   try { sessionStorage.setItem(INPUT_MODE_KEY, mode); } catch { /* private mode */ }
 }
 
-// MediaPipe's WebGL GPU delegate stalls badly in Safari/WebKit (texture
-// upload/readback overhead per frame with no compute-shader path) and is
-// also unreliable across many Android GPU/driver combos — it can throw on
-// first use, which (before the try/catch in the detection loop below) used
-// to silently kill hand tracking forever while the camera feed kept
-// playing. CPU delegate is slower but works everywhere, so every mobile
-// browser gets it rather than trying to allowlist specific GPUs; the same
-// flag also trims the requested camera resolution and, since Safari's CPU
-// delegate spends most of its budget on pixel readback, drives an
-// offscreen-canvas downscale before inference.
+// Trims the requested camera resolution and, since a CPU delegate spends
+// most of its budget on pixel readback, drives an offscreen-canvas
+// downscale before inference (see inferenceSource below) on any mobile
+// browser once it's on the CPU delegate.
 const isMobile =
   typeof navigator !== 'undefined' &&
   /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-// A single detected hand can only be on one wheel at a time, so we label it by
-// which half of the screen it's in: the left wheel sits near the left edge and
-// the right (extension) wheel near the right edge, so a mid-screen split lets
-// it drive either wheel. Without this the hand is always 'left' and the
-// extension wheel is unreachable.
-export function pointerHandId(xNorm: number): 'left' | 'right' {
-  return xNorm < 0.5 ? 'left' : 'right';
+// MediaPipe's WebGL GPU delegate stalls badly in Safari/WebKit specifically
+// (texture upload/readback overhead per frame with no compute-shader path,
+// where it's often *slower* than the CPU delegate) — so WebKit starts on
+// CPU. Every other mobile browser starts on GPU, which is several times
+// faster than CPU when it works; GPU delegate failures are common enough
+// across Android GPU/driver combos, though, that startCamera falls back to
+// CPU at runtime (see gpuFailed below) rather than assuming it always works
+// or always avoiding it.
+const isWebKit =
+  typeof navigator !== 'undefined' &&
+  navigator.vendor === 'Apple Computer, Inc.';
+
+// A single detected hand can only be on one wheel at a time, so we label it
+// by which wheel center it's nearest — on the desktop/landscape side-by-side
+// layout that's equivalent to a left/right screen-half split, but on the
+// portrait diagonal layout (see wheelGeometry) the two wheels sit close
+// together on the x-axis, so an x-only split would misassign hands reaching
+// for the vertically-staggered wheel.
+export function assignHandIds(
+  points: { rx: number; ry: number }[],
+  geo: WheelGeometry,
+  dw: number,
+  dh: number
+): ('left' | 'right')[] {
+  const distTo = (p: { rx: number; ry: number }, cx: number, cy: number) =>
+    Math.hypot(p.rx * dw - cx, p.ry * dh - cy);
+
+  if (points.length === 1) {
+    const p = points[0];
+    return [distTo(p, geo.leftCx, geo.leftCy) <= distTo(p, geo.rightCx, geo.rightCy) ? 'left' : 'right'];
+  }
+  // Two hands: pick whichever left/right pairing has the lower total
+  // distance instead of assuming index 0 is always the left wheel.
+  const [a, b] = points;
+  const straight = distTo(a, geo.leftCx, geo.leftCy) + distTo(b, geo.rightCx, geo.rightCy);
+  const swapped = distTo(a, geo.rightCx, geo.rightCy) + distTo(b, geo.leftCx, geo.leftCy);
+  return straight <= swapped ? ['left', 'right'] : ['right', 'left'];
 }
 
 export function useGestureInput(initialMode: InputMode = 'asking'): {
@@ -128,23 +153,52 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return;
       }
 
-      const landmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
-          delegate: isMobile ? 'CPU' : 'GPU',
-        },
-        runningMode: 'VIDEO',
-        numHands: 2,
-        // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
-        // held close to the camera) made it accept low-confidence/blurry hands:
-        // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
-        // registered as a fist, freezing the reported position at center
-        // ("stuck in the middle"). 0.5 restores stable tracking.
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
+      const MODEL_ASSET_PATH =
+        'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+      function createLandmarker(delegate: 'CPU' | 'GPU') {
+        return HandLandmarker.createFromOptions(vision, {
+          baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate },
+          runningMode: 'VIDEO',
+          numHands: 2,
+          // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
+          // held close to the camera) made it accept low-confidence/blurry hands:
+          // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
+          // registered as a fist, freezing the reported position at center
+          // ("stuck in the middle"). 0.5 restores stable tracking.
+          minHandDetectionConfidence: 0.5,
+          minHandPresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+      }
+
+      let currentDelegate: 'CPU' | 'GPU' = isWebKit ? 'CPU' : 'GPU';
+      let landmarker: Awaited<ReturnType<typeof createLandmarker>>;
+      try {
+        landmarker = await createLandmarker(currentDelegate);
+      } catch {
+        // GPU delegate creation itself can throw (not just first detect) on
+        // devices that don't support the backend at all.
+        currentDelegate = 'CPU';
+        landmarker = await createLandmarker('CPU');
+      }
+      let fallingBack = false;
+
+      async function fallBackToCpu() {
+        if (fallingBack || currentDelegate === 'CPU') return;
+        fallingBack = true;
+        console.error('[handTracking] GPU delegate failed, falling back to CPU');
+        try {
+          const cpu = await createLandmarker('CPU');
+          landmarker.close();
+          landmarker = cpu;
+          currentDelegate = 'CPU';
+        } catch (err) {
+          console.error('[handTracking] CPU delegate fallback also failed', err);
+        } finally {
+          fallingBack = false;
+        }
+      }
 
       if (cancelled) {
         landmarker.close();
@@ -243,13 +297,14 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           // A throw here (e.g. a flaky GPU delegate on some Android devices)
           // used to abort this function before the requestAnimationFrame call
           // below ran, silently killing hand tracking for the rest of the
-          // session while the camera feed kept playing. Swallow it and retry
-          // next frame instead.
+          // session while the camera feed kept playing. Swallow it, kick off
+          // a CPU fallback if we were still on GPU, and retry next frame.
           let result: ReturnType<typeof landmarker.detectForVideo> | null = null;
           try {
             result = landmarker.detectForVideo(inferenceSource(), now);
           } catch (err) {
             console.error('[handTracking] detectForVideo failed', err);
+            fallBackToCpu();
           }
           lastInferenceTime = now;
           handDelay = Math.max(INFERENCE_INTERVAL, (performance.now() - now) * 1.5);
@@ -273,9 +328,8 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             // handedness label: handedness flickers frame-to-frame, which
             // swapped the wheel a hand was driving mid-play, and two
             // detections with the same label collided the per-hand EMA state
-            // and left one wheel unreachable. Leftmost orb → left/note wheel,
-            // rightmost → right/extension wheel; a single hand gets the wheel
-            // for the side it's on (the same rule as pointer input).
+            // and left one wheel unreachable. Each hand is assigned to
+            // whichever wheel center it's nearest (see assignHandIds).
             const detections = result.landmarks.slice(0, 2).map((lm, i) => {
               const fist = isFist(lm);
               // Open hand tracks the index fingertip; a fist tracks the palm
@@ -290,13 +344,14 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
                 // normalized landmarks give distorted out-of-plane angles.
                 worldLm: result.worldLandmarks[i],
               };
-            }).sort((a, b) => a.rx - b.rx);
+            });
+            const wheelGeo = wheelGeometry(dw, dh);
+            const handIds = assignHandIds(detections, wheelGeo, dw, dh);
 
             const signals: GestureSignal[] = [];
             for (let i = 0; i < detections.length; i++) {
               const { rx, ry, fist, worldLm } = detections[i];
-              const handId: 'left' | 'right' =
-                detections.length === 1 ? pointerHandId(rx) : i === 0 ? 'left' : 'right';
+              const handId = handIds[i];
               const s = smooth[handId];
 
               // Jump EMA to actual position on first appearance or after a tracking
