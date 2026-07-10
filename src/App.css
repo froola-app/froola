@@ -310,14 +310,18 @@ body {
    now: when the scene behind a zone fights the fill (bright scene
    under dark glass, dark scene under light glass) the fill
    thickens slightly. Ink never flips with the scene. */
+/* Fill shade + alpha are pinned to the dial material — LIGHT_PALETTE.disc /
+   DARK_PALETTE.disc in src/engine/renderer/index.ts — so every glass surface
+   on /play (buttons and dials alike) reads as the same material. Keep the
+   two in sync if either changes. */
 :root, :root[data-theme='light'] {
   /* shared ink accents */
   --lg-on-ink: #fafaf8;           /* text on an ink-colored chip */
   /* top zone — corner buttons + center badges */
   --lg-top-ink: rgba(24, 22, 19, 0.92);
   --lg-top-ink-dim: rgba(24, 22, 19, 0.66);
-  --lg-top-fill: rgba(252, 250, 246, 0.60);
-  --lg-top-fill-hover: rgba(255, 253, 250, 0.78);
+  --lg-top-fill: rgba(250, 249, 246, 0.38);
+  --lg-top-fill-hover: rgba(255, 253, 250, 0.50);
   --lg-top-stroke: rgba(24, 22, 19, 0.12);
   --lg-top-rim: rgba(255, 255, 255, 0.90);
   --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
@@ -327,8 +331,8 @@ body {
   /* bottom zone — hud-bottom row + loop panel */
   --lg-bottom-ink: rgba(24, 22, 19, 0.92);
   --lg-bottom-ink-dim: rgba(24, 22, 19, 0.66);
-  --lg-bottom-fill: rgba(252, 250, 246, 0.60);
-  --lg-bottom-fill-hover: rgba(255, 253, 250, 0.78);
+  --lg-bottom-fill: rgba(250, 249, 246, 0.38);
+  --lg-bottom-fill-hover: rgba(255, 253, 250, 0.50);
   --lg-bottom-stroke: rgba(24, 22, 19, 0.12);
   --lg-bottom-rim: rgba(255, 255, 255, 0.90);
   --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
@@ -341,8 +345,8 @@ body {
   --lg-on-ink: #131317;
   --lg-top-ink: rgba(255, 255, 255, 0.92);
   --lg-top-ink-dim: rgba(255, 255, 255, 0.70);
-  --lg-top-fill: rgba(19, 21, 27, 0.55);
-  --lg-top-fill-hover: rgba(31, 34, 43, 0.68);
+  --lg-top-fill: rgba(22, 22, 24, 0.34);
+  --lg-top-fill-hover: rgba(34, 34, 38, 0.44);
   --lg-top-stroke: rgba(255, 255, 255, 0.16);
   --lg-top-rim: rgba(255, 255, 255, 0.25);
   --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
@@ -351,8 +355,8 @@ body {
   --lg-top-inner-hover: rgba(255, 255, 255, 0.24);
   --lg-bottom-ink: rgba(255, 255, 255, 0.92);
   --lg-bottom-ink-dim: rgba(255, 255, 255, 0.70);
-  --lg-bottom-fill: rgba(19, 21, 27, 0.55);
-  --lg-bottom-fill-hover: rgba(31, 34, 43, 0.68);
+  --lg-bottom-fill: rgba(22, 22, 24, 0.34);
+  --lg-bottom-fill-hover: rgba(34, 34, 38, 0.44);
   --lg-bottom-stroke: rgba(255, 255, 255, 0.16);
   --lg-bottom-rim: rgba(255, 255, 255, 0.25);
   --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
