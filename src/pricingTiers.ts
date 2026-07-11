@@ -29,7 +29,7 @@ export const PRICING_TIERS: PricingTier[] = [
     features: [
       'Synth instrument',
       'Camera hand tracking',
-      'Shareable replay links, up to 20s (watermarked)',
+      'Record & share, up to 20s (watermarked)',
     ],
   },
   {
@@ -40,8 +40,7 @@ export const PRICING_TIERS: PricingTier[] = [
     features: [
       'Everything in Free',
       'Piano instrument unlocked',
-      'Video recording & download, up to 3 minutes',
-      'Replays up to 3 minutes, no watermark',
+      'Recordings & replay links up to 3 minutes, no watermark',
       'Chord looper, 8 slots',
       'Visual themes for the wheels & orbs',
     ],
