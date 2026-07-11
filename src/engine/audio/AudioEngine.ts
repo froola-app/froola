@@ -139,13 +139,20 @@ export class AudioEngine {
 
   // Always return exactly VOICES notes so every oscillator is driven each chord
   // (an undriven oscillator would keep sounding the previous chord's note). Short
-  // chords are padded by octave-doubling from the bottom — soundgo padded a triad
-  // to 4 voices the same way, by adding the root an octave up.
+  // chords are padded by octave-doubling — soundgo padded a triad to 4 voices the
+  // same way, by adding the root an octave up. Every chord shape here (triad,
+  // 6th/7th/9th, sus2/sus4) puts the 5th at voicing[2], so when a 2nd voice needs
+  // padding we double the 5th before the 3rd: doubling the root+5th ("open"
+  // voicing) reads clearly, while doubling the root+3rd instead leaves the 5th as
+  // the only tone with a single voice — on a C6 triad that made the 5th (G) get
+  // buried under two Cs and one E, so the chord read as an Am first inversion.
   private voicingFor(cmd: MusicalCommand): number[] {
     const len = cmd.voicing.length
     const out = cmd.voicing.slice(0, VOICES)
+    const fifthIdx = Math.min(2, len - 1)
+    const fillOrder = [0, fifthIdx, ...Array.from({ length: len }, (_, i) => i).filter(i => i !== 0 && i !== fifthIdx)]
     for (let i = len; i < VOICES; i++) {
-      out.push(cmd.voicing[i % len] + 12 * Math.floor(i / len))
+      out.push(cmd.voicing[fillOrder[(i - len) % len]] + 12 * Math.floor(i / len))
     }
     return out
   }

@@ -14,7 +14,13 @@ export const SCALES: Record<ScaleName, number[]> = {
 export const SCALE_NAMES = Object.keys(SCALES) as ScaleName[];
 
 // Pitch-class names; index doubles as the semitone offset above C used for `keyOffset`.
+// Tonic spelling only (used to pick the key's starting letter) — always natural or
+// single-sharp. Individual scale degrees are spelled diatonically from that tonic
+// letter (see `degreeLabel`) so e.g. C minor reads C-D-Eb-F-G-Ab-Bb, not C-D-D#-...
 export const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+const NATURAL_SEMITONE: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 
 // C4 — base register; octave 0 plays from C4, +1 from C5, etc.
 const TONIC_MIDI = 60;
@@ -25,11 +31,50 @@ export type MusicConfig = { keyOffset: number; scale: ScaleName };
 
 export const DEFAULT_MUSIC: MusicConfig = { keyOffset: 0, scale: 'major' };
 
+// Signed semitone distance from `pitchClass` to `letter`'s natural pitch,
+// normalized to [-6, 6] (0 = natural, ±1 = single accidental, ±2 = double, ...).
+function accidentalFor(letter: string, pitchClass: number): number {
+  const diff = ((pitchClass - NATURAL_SEMITONE[letter] + 6 + 120) % 12) - 6;
+  return diff === -6 ? 6 : diff; // keep the tritone case on one consistent side
+}
+
+// Pick which of the 7 letters should spell the scale's tonic. C is unambiguous
+// (natural). The 5 "black key" pitch classes alias two letters a semitone apart
+// (e.g. keyOffset 3 = D# or Eb) — trying both and keeping whichever spells the
+// *whole* scale without a double accidental is what keeps Eb major as Eb-F-G-Ab-Bb-C-D
+// instead of D#-E#-F##-G#-A#-B#-C## (mathematically equivalent, unreadable).
+function pickTonicLetter(keyOffset: number, scale: ScaleName): string {
+  const candidates = LETTERS.filter(letter => Math.abs(accidentalFor(letter, ((keyOffset % 12) + 12) % 12)) <= 1);
+  const worstAccidental = (tonicLetter: string) =>
+    Math.max(...SCALES[scale].map((interval, degree) => {
+      const letter = LETTERS[(LETTERS.indexOf(tonicLetter) + degree) % 7];
+      const target = ((keyOffset + interval) % 12 + 12) % 12;
+      return Math.abs(accidentalFor(letter, target));
+    }));
+  // Prefer whichever candidate keeps every degree to a single accidental; on a
+  // genuine tie (e.g. F#/Gb, both clean) keep the sharp spelling already used
+  // for the tonic elsewhere in the app (KEYS is sharp-only).
+  return candidates.reduce((best, candidate) =>
+    worstAccidental(candidate) < worstAccidental(best) ? candidate : best
+  );
+}
+
+// Spell scale degree `degreeInScale` (0-6) diatonically: advance one letter per
+// degree from the scale's tonic letter, then pick the accidental that lands on
+// `targetPitchClass`.
+function spellDegree(keyOffset: number, scale: ScaleName, degreeInScale: number, targetPitchClass: number): string {
+  const tonicLetter = pickTonicLetter(keyOffset, scale);
+  const letter = LETTERS[(LETTERS.indexOf(tonicLetter) + degreeInScale) % 7];
+  const diff = accidentalFor(letter, targetPitchClass);
+  const symbol = diff === 0 ? '' : diff > 0 ? '#'.repeat(diff) : 'b'.repeat(-diff);
+  return letter + symbol;
+}
+
 /** The 7 wheel notes (label + root MIDI) for a given key offset and scale.
  *  `scaleNotes(0, 'major')` reproduces the original C-major wheel exactly. */
 export function scaleNotes(keyOffset: number, scale: ScaleName): ScaleNote[] {
-  return SCALES[scale].map(interval => ({
-    label: KEYS[(keyOffset + interval) % 12],
+  return SCALES[scale].map((interval, degree) => ({
+    label: spellDegree(keyOffset, scale, degree, ((keyOffset + interval) % 12 + 12) % 12),
     midi: TONIC_MIDI + keyOffset + interval,
   }));
 }
@@ -96,7 +141,8 @@ export function diatonicChord(
         ...(ext.addSemitones ?? []).map(s => root + s),
       ];
 
-  const rootLabel = KEYS[(keyOffset + iv[((degree % n) + n) % n] + 1200) % 12];
+  const degreeInScale = ((degree % n) + n) % n;
+  const rootLabel = spellDegree(keyOffset, scale, degreeInScale, ((keyOffset + iv[degreeInScale]) % 12 + 12) % 12);
   const third = tone(degree + 2) - tone(degree);
   const fifth = tone(degree + 4) - tone(degree);
   let q = '';

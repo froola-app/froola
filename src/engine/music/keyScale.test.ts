@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { scaleNotes, diatonicChord, SCALES, KEYS } from './keyScale';
+import { scaleNotes, diatonicChord, SCALES } from './keyScale';
 
 describe('scaleNotes', () => {
   it('default C major reproduces the wheel (C4 ascending)', () => {
@@ -29,9 +29,28 @@ describe('scaleNotes', () => {
     }
   });
 
-  it('labels wrap within the 12 pitch classes', () => {
+  it('labels use each of the 7 letters exactly once, spelled diatonically from the tonic', () => {
     const notes = scaleNotes(11, 'major'); // B major — wraps past B back to lower letters
-    for (const n of notes) expect(KEYS).toContain(n.label);
+    expect(new Set(notes.map(n => n.label[0]))).toEqual(new Set(['B', 'C', 'D', 'E', 'F', 'G', 'A']));
+  });
+
+  it('minor-key scales spell with flats, not enharmonic sharps', () => {
+    // C minor: C-D-Eb-F-G-Ab-Bb, not C-D-D#-F-G-G#-A#
+    expect(scaleNotes(0, 'minor').map(n => n.label)).toEqual(['C', 'D', 'Eb', 'F', 'G', 'Ab', 'Bb']);
+  });
+
+  it('never spells a degree with a double accidental, across every key and scale', () => {
+    for (let keyOffset = 0; keyOffset < 12; keyOffset++) {
+      for (const scale of Object.keys(SCALES) as (keyof typeof SCALES)[]) {
+        for (const note of scaleNotes(keyOffset, scale)) {
+          expect(note.label).not.toMatch(/##|bb/);
+        }
+      }
+    }
+  });
+
+  it('a key whose tonic is a "black key" still spells cleanly (Eb major, not D#/E#/F##)', () => {
+    expect(scaleNotes(3, 'major').map(n => n.label)).toEqual(['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D']);
   });
 });
 
