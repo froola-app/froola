@@ -15,17 +15,19 @@ describe('entitlements', () => {
     expect(e.maxReplayRecordMs).toBe(20_000);
   });
 
-  it('unlocks piano, arp, and 3-minute video on plus', () => {
+  it('unlocks piano, arp, 3-minute video, and 3-minute replays on plus', () => {
     const e = entitlementsFor({ plan: 'plus', betaTester: false });
     expect(e.pianoUnlocked).toBe(true);
     expect(e.videoRecordUnlocked).toBe(true);
     expect(e.arpUnlocked).toBe(true);
     expect(e.maxVideoRecordMs).toBe(180_000);
+    expect(e.maxReplayRecordMs).toBe(180_000);
   });
 
-  it('removes the video length cap on studio', () => {
+  it('removes the video length cap and allows 5-minute replays on studio', () => {
     const e = entitlementsFor({ plan: 'studio', betaTester: false });
     expect(e.maxVideoRecordMs).toBe(Infinity);
+    expect(e.maxReplayRecordMs).toBe(300_000);
   });
 
   it('gives beta testers studio-level access regardless of plan', () => {
