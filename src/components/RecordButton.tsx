@@ -10,11 +10,24 @@ type Props = {
   maxDurationMs: number;
   /** Plan-gated: free replays play back with a "made with froola" overlay. */
   watermark?: boolean;
+  /** Locked keeps the button visible as a teaser (Plus unlocks recording). */
+  locked?: boolean;
+  onLockedClick?: () => void;
 };
 
-export default function RecordButton({ selectedRef, vibe, maxDurationMs, watermark = true }: Props) {
+export default function RecordButton({ selectedRef, vibe, maxDurationMs, watermark = true, locked, onLockedClick }: Props) {
   const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe, maxDurationMs, watermark);
   const [copied, setCopied] = useState(false);
+
+  // Locked plans still see the control — it advertises what Plus unlocks and
+  // opens the upgrade sheet instead of recording.
+  if (locked) {
+    return (
+      <button className="record-btn record-btn--idle" onClick={onLockedClick}>
+        <span className="rec-dot" /> Record <span className="lock-chip">plus</span>
+      </button>
+    );
+  }
 
   async function handleShare() {
     if (!shareUrl) return;

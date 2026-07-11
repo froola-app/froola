@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import { storeInputMode, type InputMode } from '../engine/input';
@@ -162,7 +162,11 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   // already-gone node. So don't remount: put the exact node back where it
   // was and React never notices. Audio/input stay gated regardless (see
   // coordinator.ts's gatedRef), but the wall should never be removable.
-  useEffect(() => {
+  // Layout effect, not passive: when `gated` flips false (user signs in),
+  // the observer's microtask fires between React's DOM removal and passive
+  // cleanup, re-inserting the wall it was just legitimately removed —
+  // layout cleanup disconnects synchronously inside the commit instead.
+  useLayoutEffect(() => {
     if (!gated) return;
     const observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
@@ -346,7 +350,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
       <ShareButton />
-      <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} watermark={ent.replayWatermark} />
+      <RecordButton
+        selectedRef={selectedRef}
+        vibe={vibe}
+        maxDurationMs={ent.maxReplayRecordMs}
+        watermark={ent.replayWatermark}
+        locked={!ent.replayRecordUnlocked}
+        onLockedClick={() => setUpsell('recordings')}
+      />
       <VideoRecordButton
         canvasRef={canvasRef}
         cameraVideoRef={cameraVideoRef}
@@ -363,6 +374,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       </>}
       {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
         <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
+      )}
+      {/* Free plans see where the looper lives — a teaser pill in the
+          panel's spot that opens the upgrade sheet. */}
+      {!isMobile && mode === 'camera' && !ent.loopUnlocked && (
+        <button className="loop-teaser" onClick={() => setUpsell('loop')}>
+          Loops <span className="lock-chip">plus</span>
+        </button>
       )}
       {/* Mobile keeps only the two controls that shape which notes are on
           the wheels — instrument/octave/arp stay at their defaults
@@ -438,7 +456,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
             +
           </button>
         </div>}
-        {!isMobile && ent.arpUnlocked && <button
+        {!isMobile && (ent.arpUnlocked ? <button
           className="octave-btn arp-btn"
           onClick={toggleArp}
           aria-pressed={arpEnabled}
@@ -446,7 +464,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           title="When held, arpeggiate the sustained chord instead of a static pad"
         >
           arp {arpEnabled ? 'on' : 'off'}
-        </button>}
+        </button> : <button
+          className="octave-btn arp-btn"
+          onClick={() => setUpsell('arp')}
+          aria-label="Arpeggiator (Plus feature)"
+          title="Plus turns a held chord into a rolling arpeggio pattern"
+        >
+          arp <span className="lock-chip">plus</span>
+        </button>)}
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
       {gated && <PlayWall />}

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase, supabaseConfigured } from '../supabase';
 
@@ -44,6 +44,10 @@ interface AuthContextValue {
   signInWithEmail: (email: string) => Promise<void>;
   signOutUser: () => Promise<void>;
   completeOnboarding: (userType: UserType) => Promise<void>;
+  /** Re-reads the profile row for the signed-in user — used after Stripe
+      checkout, where the webhook updates `plan` server-side and no auth
+      state change fires to make the client notice. */
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -69,6 +73,49 @@ function toAppUser(session: Session | null): AppUser | null {
   };
 }
 
+// Selecting a column that doesn't exist yet fails the whole PostgREST
+// query (data comes back null), which would null the profile and
+// re-run onboarding — so the billing columns are tried first and this
+// falls back to the pre-billing column set if migration
+// 0002_billing.sql hasn't been applied to this Supabase project yet
+// (see supabase/migrations conventions: not auto-applied).
+async function fetchProfileRow(userId: string): Promise<{
+  user_type: string | null;
+  onboarding_complete: boolean;
+  plan?: string | null;
+  subscription_status?: string | null;
+  beta_tester?: boolean | null;
+} | null> {
+  if (!supabase) return null;
+  const full = await supabase
+    .from('profiles')
+    .select('user_type, onboarding_complete, plan, subscription_status, beta_tester')
+    .eq('id', userId)
+    .maybeSingle();
+  if (!full.error) return full.data;
+  const base = await supabase
+    .from('profiles')
+    .select('user_type, onboarding_complete')
+    .eq('id', userId)
+    .maybeSingle();
+  return base.error ? null : base.data;
+}
+
+function rowToProfile(data: NonNullable<Awaited<ReturnType<typeof fetchProfileRow>>>): UserProfile {
+  return {
+    userType: (data.user_type ?? null) as UserType,
+    onboardingComplete: !!data.onboarding_complete,
+    // Not selected above on purpose: asking PostgREST for a
+    // column that doesn't exist yet fails the whole query,
+    // which would null the profile and re-run onboarding.
+    // Add avatar_url to the select once the column ships.
+    avatarUrl: null,
+    plan: (data.plan ?? 'free') as Plan,
+    betaTester: !!data.beta_tester,
+    subscriptionStatus: data.subscription_status ?? null,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -77,34 +124,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
     let cancelled = false;
-
-    // Selecting a column that doesn't exist yet fails the whole PostgREST
-    // query (data comes back null), which would null the profile and
-    // re-run onboarding — so the billing columns are tried first and this
-    // falls back to the pre-billing column set if migration
-    // 0002_billing.sql hasn't been applied to this Supabase project yet
-    // (see supabase/migrations conventions: not auto-applied).
-    async function fetchProfileRow(userId: string): Promise<{
-      user_type: string | null;
-      onboarding_complete: boolean;
-      plan?: string | null;
-      subscription_status?: string | null;
-      beta_tester?: boolean | null;
-    } | null> {
-      if (!supabase) return null;
-      const full = await supabase
-        .from('profiles')
-        .select('user_type, onboarding_complete, plan, subscription_status, beta_tester')
-        .eq('id', userId)
-        .maybeSingle();
-      if (!full.error) return full.data;
-      const base = await supabase
-        .from('profiles')
-        .select('user_type, onboarding_complete')
-        .eq('id', userId)
-        .maybeSingle();
-      return base.error ? null : base.data;
-    }
 
     // Fetch the profile BEFORE committing user + profile together, so the
     // onboarding check in App.tsx never sees a signed-in user with a
@@ -116,20 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (nextUser && supabase) {
         try {
           const data = await fetchProfileRow(nextUser.id);
-          if (data) {
-            nextProfile = {
-              userType: (data.user_type ?? null) as UserType,
-              onboardingComplete: !!data.onboarding_complete,
-              // Not selected above on purpose: asking PostgREST for a
-              // column that doesn't exist yet fails the whole query,
-              // which would null the profile and re-run onboarding.
-              // Add avatar_url to the select once the column ships.
-              avatarUrl: null,
-              plan: (data.plan ?? 'free') as Plan,
-              betaTester: !!data.beta_tester,
-              subscriptionStatus: data.subscription_status ?? null,
-            };
-          }
+          if (data) nextProfile = rowToProfile(data);
         } catch { /* profile stays null */ }
       }
       if (cancelled) return;
@@ -182,10 +188,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/popup` },
+      options: {
+        // Explicit (it's also the default): a magic link doubles as sign-up
+        // for addresses without an account. If Supabase's "Allow new users
+        // to sign up" toggle is off, this is the call that starts failing.
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/auth/popup`,
+      },
     });
     if (error) throw error;
   }
+
+  const refreshProfile = useCallback(async () => {
+    if (!supabase) return;
+    const { data } = await supabase.auth.getSession();
+    const userId = data.session?.user.id;
+    if (!userId) return;
+    try {
+      const row = await fetchProfileRow(userId);
+      if (row) setProfile(rowToProfile(row));
+    } catch { /* keep the profile we have */ }
+  }, []);
 
   async function signOutUser() {
     if (!supabase) return;
@@ -221,6 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithEmail,
       signOutUser,
       completeOnboarding,
+      refreshProfile,
     }}>
       {children}
     </AuthContext.Provider>

@@ -39,4 +39,18 @@ describe('RecordButton', () => {
       expect.stringMatching(/\/replay\?d=/)
     );
   });
+
+  it('locked: shows the plus teaser and fires onLockedClick instead of recording', async () => {
+    const onLockedClick = vi.fn();
+    function LockedHarness() {
+      const selectedRef = useRef({ noteIdx: 0, qualIdx: 0 });
+      return <RecordButton selectedRef={selectedRef} vibe="warm" locked onLockedClick={onLockedClick} />;
+    }
+    render(<LockedHarness />);
+    const btn = screen.getByRole('button', { name: /record/i });
+    expect(btn.textContent).toMatch(/plus/i);
+    await userEvent.click(btn);
+    expect(onLockedClick).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('button', { name: /stop/i })).not.toBeInTheDocument();
+  });
 });
