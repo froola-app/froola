@@ -14,6 +14,9 @@ type SampleNode = { stop(when?: number): void }
 const VOICES = 5                 // soundgo used 4; we use 5 so a 9th chord's top note isn't dropped
 const SYNTH_LOWPASS_HZ = 1800    // soundgo chordFilter cutoff
 const CHORD_GLIDE = 0.12         // soundgo o.frequency.rampTo(freq, 0.12)
+// Glide only when a voice moves a small interval; larger moves jump instantly
+// (a 120ms sweep across a big interval reads as an irritating glissando).
+const GLIDE_MAX_SEMITONES = 2
 const CHORD_GAIN_RAMP = 0.06     // soundgo chordGain.gain.rampTo(_, 0.06)
 const SYNTH_TOTAL_GAIN = 0.2     // soundgo targetChordGain cap
 const SYNTH_VOICE_GAIN = SYNTH_TOTAL_GAIN / VOICES
@@ -55,6 +58,9 @@ export class AudioEngine {
   private samplers: Partial<Record<'piano', Player>> = {}
   private samplerLoadPromises: Partial<Record<'piano', Promise<void>>> = {}
   private activeSampleNodes: SampleNode[] = []
+  // Last MIDI note each pad voice was sent — glide-vs-jump decisions measure
+  // distance against this (reading frequency.value mid-ramp is unreliable).
+  private lastVoiceMidi: (number | null)[] = Array<number | null>(VOICES).fill(null)
 
   constructor() {
     this.ctx = new AudioContext()
@@ -223,6 +229,7 @@ export class AudioEngine {
       const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
+        this.lastVoiceMidi[i] = midi
         this.oscillators[i].frequency.cancelScheduledValues(now)
         this.oscillators[i].frequency.setValueAtTime(hz, now)
         this.voiceGains[i].gain.cancelScheduledValues(now)
@@ -236,9 +243,15 @@ export class AudioEngine {
     // chord pad: gentle per-voice gain, notes glide to pitch over CHORD_GLIDE.
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
+      const prev = this.lastVoiceMidi[i]
+      this.lastVoiceMidi[i] = midi
       this.oscillators[i].frequency.cancelScheduledValues(now)
-      this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
-      this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
+      if (prev !== null && Math.abs(midi - prev) <= GLIDE_MAX_SEMITONES) {
+        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
+        this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
+      } else {
+        this.oscillators[i].frequency.setValueAtTime(hz, now)
+      }
       this.voiceGains[i].gain.cancelScheduledValues(now)
       this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
       this.voiceGains[i].gain.linearRampToValueAtTime(SYNTH_VOICE_GAIN, now + CHORD_GAIN_RAMP)
@@ -266,6 +279,7 @@ export class AudioEngine {
       const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
+        this.lastVoiceMidi[i] = midi
         this.oscillators[i].frequency.cancelScheduledValues(when)
         this.oscillators[i].frequency.setValueAtTime(hz, when)
         this.voiceGains[i].gain.cancelScheduledValues(when)
@@ -278,6 +292,7 @@ export class AudioEngine {
     // Synth path
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
+      this.lastVoiceMidi[i] = midi
       this.oscillators[i].frequency.cancelScheduledValues(when)
       this.oscillators[i].frequency.setValueAtTime(hz, when)
       this.voiceGains[i].gain.cancelScheduledValues(when)
