@@ -105,6 +105,39 @@ describe('useLessonRunner — practice phase', () => {
     expect(result.current.phase).toBe('attempt');
   });
 
+  it('song lessons play an audible one-bar count-in at the lesson tempo', () => {
+    const countIn = vi.fn();
+    const backing = { countIn, start: vi.fn(), stop: vi.fn(), startAudio: vi.fn() };
+    const engine = {
+      createBackingTrack: () => backing,
+      play: vi.fn(),
+      silence: vi.fn(),
+      decodeAudio: vi.fn(),
+    };
+    const lesson: Lesson = { ...makeLesson('song', 2), bpm: 120, backing: 'pop' };
+    liveSelectedRef.current = { noteIdx: 0, qualIdx: 0 };
+    const mockEngineRef = { current: engine as unknown as import('../audio').AudioEngine };
+    const { result } = renderHook(() =>
+      useLessonRunner(lesson, liveSelectedRef, mockEngineRef, canvasRef, ghostSignalsRef));
+    act(() => result.current.start());
+    act(() => { vi.advanceTimersByTime(2500); });
+    act(() => { vi.advanceTimersByTime(800); });
+    liveSelectedRef.current = { noteIdx: 3, qualIdx: 0 };
+    act(() => { vi.advanceTimersByTime(800); }); // → step 1 preview
+    act(() => { vi.advanceTimersByTime(2500); }); // preview over
+    expect(result.current.phase).toBe('countdown');
+
+    // One bar of pop = 4 beats at 120bpm; clicks scheduled up front.
+    expect(countIn).toHaveBeenCalledWith(120, 4);
+    expect(result.current.countdown).toBe(4);
+
+    // Countdown ticks per beat (500ms at 120bpm), not per second.
+    act(() => { vi.advanceTimersByTime(500); });
+    expect(result.current.countdown).toBe(3);
+    act(() => { vi.advanceTimersByTime(1500); });
+    expect(result.current.phase).toBe('attempt');
+  });
+
   it('a single-step lesson practices first, then counts down into the attempt', () => {
     const lesson = makeLesson('solo', 1);
     liveSelectedRef.current = { noteIdx: 0, qualIdx: 0 };
