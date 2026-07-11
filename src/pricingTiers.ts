@@ -41,7 +41,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Everything in Free',
       'Piano instrument unlocked',
       'Video recording & download, up to 3 minutes',
-      'Longer replays, no watermark',
+      'Replays up to 3 minutes, no watermark',
       'Chord looper, 8 slots',
       'Visual themes for the wheels & orbs',
     ],
@@ -55,6 +55,7 @@ export const PRICING_TIERS: PricingTier[] = [
     badge: 'Coming soon',
     features: [
       'Everything in Plus',
+      'Replays up to 5 minutes',
       'Continuous instant-replay recording',
       'Unlimited recording length',
       'Download audio (MP3 / WAV) & MIDI export',
