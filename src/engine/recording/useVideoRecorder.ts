@@ -10,7 +10,7 @@ export function useVideoRecorder(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   cameraVideoRef: RefObject<HTMLVideoElement | null>,
   engineRef: RefObject<AudioEngine | null>,
-  // Plan-gated (see src/entitlements.ts maxVideoRecordMs); Infinity on Studio.
+  // Plan-gated (see src/entitlements.ts maxVideoRecordMs).
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
 ) {
   const [state, setState] = useState<VideoRecorderState>('idle');

@@ -45,7 +45,7 @@ const PLAN_CARDS: { id: PlanId; name: string; price: string; perks: string[] }[]
     id: 'studio',
     name: 'Studio',
     price: '$3.99/wk',
-    perks: ['Everything in Plus', 'Unlimited recording length', 'Audio download (MP3 / WAV) & MIDI', 'Early access features'],
+    perks: ['Everything in Plus', 'Recordings & replays up to 5 min', 'Audio download (MP3 / WAV) & MIDI', 'Early access features'],
   },
 ];
 

@@ -13,7 +13,7 @@ const FEATURE_ROWS: { label: string; free: ReactNode | boolean; plus: ReactNode 
   { label: 'Instruments', free: 'Synth', plus: 'Synth + Piano', studio: 'Synth + Piano' },
   { label: 'Camera hand tracking', free: true, plus: true, studio: true },
   { label: 'Shareable replay links', free: '20s, watermarked', plus: '3 min, no watermark', studio: '5 min, no watermark' },
-  { label: 'Video recording & download', free: false, plus: 'Up to 3 minutes', studio: 'Unlimited length' },
+  { label: 'Video recording & download', free: false, plus: 'Up to 3 minutes', studio: 'Up to 5 minutes' },
   { label: 'Chord looper', free: false, plus: '8 slots', studio: 'Unlimited slots' },
   { label: 'Visual themes', free: false, plus: true, studio: true },
   { label: 'Continuous instant-replay recording', free: false, plus: false, studio: true },
