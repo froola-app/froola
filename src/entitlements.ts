@@ -9,8 +9,10 @@ export type EffectivePlan = 'free' | PlanId;
 export interface Entitlements {
   /** Piano sampler instrument (Plus+). Free is synth-only. */
   pianoUnlocked: boolean;
-  /** Video recording + download. All plans; free is capped short + watermarked. */
+  /** Video recording + download (Plus+). Free sees a locked teaser. */
   videoRecordUnlocked: boolean;
+  /** Shareable replay recording (Plus+). Free sees a locked teaser. */
+  replayRecordUnlocked: boolean;
   /** Canvas accent themes (Plus+). Free plays in the default froola look. */
   visualThemesUnlocked: boolean;
   /** WAV/MP3 session audio download + loop MIDI export (Studio). */
@@ -37,7 +39,8 @@ export interface Entitlements {
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   free: {
     pianoUnlocked: false,
-    videoRecordUnlocked: true,
+    videoRecordUnlocked: false,
+    replayRecordUnlocked: false,
     visualThemesUnlocked: false,
     audioDownloadUnlocked: false,
     instantReplayUnlocked: false,
@@ -51,6 +54,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   plus: {
     pianoUnlocked: true,
     videoRecordUnlocked: true,
+    replayRecordUnlocked: true,
     visualThemesUnlocked: true,
     audioDownloadUnlocked: false,
     instantReplayUnlocked: false,
@@ -64,6 +68,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   studio: {
     pianoUnlocked: true,
     videoRecordUnlocked: true,
+    replayRecordUnlocked: true,
     visualThemesUnlocked: true,
     audioDownloadUnlocked: true,
     instantReplayUnlocked: true,

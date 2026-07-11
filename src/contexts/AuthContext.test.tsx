@@ -139,7 +139,7 @@ describe('AuthContext (Supabase)', () => {
     await result.current.signInWithEmail('lela@example.com');
     expect(h.auth.signInWithOtp).toHaveBeenCalledWith({
       email: 'lela@example.com',
-      options: { emailRedirectTo: `${window.location.origin}/auth/popup` },
+      options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/auth/popup` },
     });
   });
 

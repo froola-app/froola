@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import type { PlanId } from '../billing';
+import { TRIAL_DAYS } from '../pricingTiers';
 import SmileAccent from './SmileAccent';
 
 const PLAN_NAMES: Record<PlanId, string> = { plus: 'Plus', studio: 'Studio' };
-const TRIAL_DAYS = 14;
 
 // Rainbow confetti weighted toward the brand oranges — festive, but the
 // froola color still leads the parade.
@@ -117,23 +118,27 @@ function JoyfulTitle() {
 }
 
 type CheckoutResultState =
-  | { kind: 'success'; plan: PlanId | null; firstCharge: string }
+  | { kind: 'success'; plan: PlanId | null; trial: boolean; firstCharge: string }
   | { kind: 'cancel' }
   | null;
 
-// Reads ?checkout=success|cancel (and &plan=) left by Stripe's redirect. Runs
-// once as the lazy useState initializer (rather than an effect) so the parsed
-// result — including the impure "now + trial" date computed for the success
-// card — is settled before first paint instead of causing a second render.
+// Reads ?checkout=success|cancel (and &plan=, &interval=) left by Stripe's
+// redirect. Runs once as the lazy useState initializer (rather than an
+// effect) so the parsed result — including the impure "now + trial" date
+// computed for the success card — is settled before first paint instead of
+// causing a second render.
 function parseCheckoutResult(): CheckoutResultState {
   const params = new URLSearchParams(window.location.search);
   const checkout = params.get('checkout');
   if (checkout !== 'success' && checkout !== 'cancel') return null;
   if (checkout === 'cancel') return { kind: 'cancel' };
   const plan = params.get('plan');
+  // Only monthly checkouts carry a trial (create-checkout-session.ts);
+  // weekly is charged immediately, so the trial copy would be a lie there.
+  const trial = params.get('interval') === 'month';
   const firstCharge = new Date(Date.now() + TRIAL_DAYS * 86_400_000)
     .toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
-  return { kind: 'success', plan: plan === 'plus' || plan === 'studio' ? plan : null, firstCharge };
+  return { kind: 'success', plan: plan === 'plus' || plan === 'studio' ? plan : null, trial, firstCharge };
 }
 
 /**
@@ -143,8 +148,24 @@ function parseCheckoutResult(): CheckoutResultState {
  */
 export default function CheckoutResult() {
   const navigate = useNavigate();
+  const { profile, refreshProfile } = useAuth();
   const [result, setResult] = useState<CheckoutResultState>(parseCheckoutResult);
   const ctaRef = useRef<HTMLButtonElement>(null);
+
+  // The Stripe webhook writes the new plan to profiles server-side; nothing
+  // pings this tab about it. Poll the profile until the paid plan lands (or
+  // give up after ~30s) so entitlements unlock without a manual reload.
+  const planLanded = !!profile && profile.plan !== 'free';
+  useEffect(() => {
+    if (result?.kind !== 'success' || planLanded) return;
+    void refreshProfile();
+    let tries = 0;
+    const t = setInterval(() => {
+      if (++tries > 15) { clearInterval(t); return; }
+      void refreshProfile();
+    }, 2000);
+    return () => clearInterval(t);
+  }, [result?.kind, planLanded, refreshProfile]);
 
   useEffect(() => {
     if (!result) return;
@@ -181,7 +202,7 @@ export default function CheckoutResult() {
   }
 
   const planName = result.plan ? PLAN_NAMES[result.plan] : null;
-  const { firstCharge } = result;
+  const { firstCharge, trial } = result;
 
   return (
     <div className="lp4__checkout-overlay" onClick={() => setResult(null)}>
@@ -200,8 +221,10 @@ export default function CheckoutResult() {
           {' '}Everything is unlocked and ready to play.
         </p>
         <p className="lp4__checkout-fine">
-          Your {TRIAL_DAYS} day free trial starts now. First charge on {firstCharge},
-          cancel anytime before then from your profile.
+          {trial
+            ? <>Your {TRIAL_DAYS} day free trial starts now. First charge on {firstCharge},
+                cancel anytime before then from your profile.</>
+            : <>Billed weekly — cancel anytime from your profile.</>}
         </p>
         <button ref={ctaRef} className="lp4__pricing-cta lp4__checkout-cta" onClick={() => navigate('/')}>
           Start playing

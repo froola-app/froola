@@ -69,7 +69,9 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
       // trial end without a second checkout step.
       ...(body.interval === 'month' ? { subscription_data: { trial_period_days: 5 } } : {}),
       payment_method_collection: 'always',
-      success_url: `${origin}/pricing?checkout=success&plan=${body.plan}`,
+      // interval rides along so the success card knows whether a trial
+      // applies (monthly only) — see CheckoutResult.tsx.
+      success_url: `${origin}/pricing?checkout=success&plan=${body.plan}&interval=${body.interval}`,
       cancel_url: `${origin}/pricing?checkout=cancel`,
     });
 

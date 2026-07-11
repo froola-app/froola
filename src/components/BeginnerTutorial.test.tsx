@@ -37,7 +37,7 @@ describe('BeginnerTutorial', () => {
     expect(screen.getByText('Hold your hands up')).toBeDefined();
   });
 
-  it('advances from step 1 when a hand signal is present', async () => {
+  it('advances from step 1 after the hand is present past the pacing guards', async () => {
     const signalRef = makeSignalRef([]);
     render(
       <BeginnerTutorial
@@ -47,20 +47,54 @@ describe('BeginnerTutorial', () => {
     );
     expect(screen.getByText('Hold your hands up')).toBeDefined();
 
-    // Trigger detection: the 100ms interval fires and sees a hand signal.
+    // Hand visible from the very first tick — the old bug: this used to
+    // advance within 100ms, so the tutorial "started on 2/4".
     signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
 
-    // Advance to t=150ms so the 100ms interval fires and sees the hand.
-    // This registers a 800ms flash-timeout (fires at t=900ms) and sets flashComplete.
-    await act(async () => { vi.advanceTimersByTime(150); });
+    // Well before MIN_STEP_MS (2000ms) the step must still be on screen.
+    await act(async () => { vi.advanceTimersByTime(1500); });
+    expect(screen.getByText('Hold your hands up')).toBeDefined();
+
+    // Past the 2s minimum + 600ms hold, the checkmark flash plays…
+    await act(async () => { vi.advanceTimersByTime(700); });
     expect(screen.getByText('✓')).toBeDefined();
 
-    // Advance to t=910ms: fires the 800ms timeout (t=900ms) but stops before
-    // the next interval tick (t=1000ms) so the stale-closure can't re-detect.
-    // act() flushes React updates so the new step renders before we assert.
-    await act(async () => { vi.advanceTimersByTime(760); });
-
+    // …and 800ms later (flash started at t=2000; stop at t=2850, before the
+    // t=2900 tick so the stale interval closure can't re-detect) step 2 renders.
+    await act(async () => { vi.advanceTimersByTime(650); });
     expect(screen.getByText('Touch the left circle')).toBeDefined();
+  });
+
+  it('does not advance when the hand only appears briefly', async () => {
+    const signalRef = makeSignalRef([]);
+    render(
+      <BeginnerTutorial
+        signalRef={signalRef}
+        selectedRef={makeSelectedRef()}
+      />
+    );
+    // Hand flickers in for 200ms then disappears.
+    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
+    await act(async () => { vi.advanceTimersByTime(200); });
+    signalRef.current = [];
+    await act(async () => { vi.advanceTimersByTime(3000); });
+    expect(screen.getByText('Hold your hands up')).toBeDefined();
+  });
+
+  it('keeps the skip button clickable during the checkmark flash', async () => {
+    const signalRef = makeSignalRef([]);
+    render(
+      <BeginnerTutorial
+        signalRef={signalRef}
+        selectedRef={makeSelectedRef()}
+      />
+    );
+    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
+    await act(async () => { vi.advanceTimersByTime(2200); });
+    expect(screen.getByText('✓')).toBeDefined();
+    act(() => { screen.getByText('Skip tutorial').click(); });
+    expect(localStorage.getItem('froola.tutorialSeen')).toBe('true');
+    expect(screen.queryByText('✓')).toBeNull();
   });
 
   it('sets localStorage flag and unmounts when skip is clicked', async () => {

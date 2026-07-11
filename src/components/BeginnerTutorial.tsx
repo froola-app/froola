@@ -8,6 +8,14 @@ import FroolaMascot from './FroolaMascot';
 
 const TUTORIAL_KEY = 'froola.tutorialSeen';
 
+// Pacing guards: a step never auto-advances before it's been readable for
+// MIN_STEP_MS, and its success condition must hold continuously for
+// HOLD_MS. Without these, a user whose hands were already up when the
+// tutorial mounted blew through step 1 in a single 100ms tick — the
+// tutorial appeared to start on "2 / 4" and raced itself off the screen.
+const MIN_STEP_MS = 2000;
+const HOLD_MS = 600;
+
 const CAMERA_STEPS = [
   {
     headline: 'Hold your hands up',
@@ -81,6 +89,9 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
   useEffect(() => {
     if (doneMessage || gone || step >= STEPS.length) return;
 
+    const shownAt = Date.now();
+    let heldSince: number | null = null;
+
     const id = setInterval(() => {
       if (advancingRef.current) return;
 
@@ -98,19 +109,27 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
       const left = signals.find(s => s.handId === 'left');
       const right = signals.find(s => s.handId === 'right');
 
-      let advance = false;
+      let met = false;
       if (step === 0) {
-        advance = signals.length > 0;
+        met = signals.some(s => s.present);
       } else if (step === 1) {
-        advance = !!left?.present && inRing(left.x, left.y, leftCx, leftCy);
+        met = !!left?.present && inRing(left.x, left.y, leftCx, leftCy);
       } else if (step === 2) {
         if (left?.present && inRing(left.x, left.y, leftCx, leftCy)) {
           visitedRef.current.add(selectedRef.current.noteIdx);
         }
-        advance = visitedRef.current.size >= 3;
+        met = visitedRef.current.size >= 3;
       } else if (step === 3) {
-        advance = !!right?.present && inRing(right.x, right.y, rightCx, rightCy);
+        met = !!right?.present && inRing(right.x, right.y, rightCx, rightCy);
       }
+
+      const now = Date.now();
+      if (!met) heldSince = null;
+      else if (heldSince === null) heldSince = now;
+
+      const advance = met &&
+        now - shownAt >= MIN_STEP_MS &&
+        heldSince !== null && now - heldSince >= HOLD_MS;
 
       if (advance) {
         advancingRef.current = true;
@@ -161,6 +180,9 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
           <FroolaMascot size={56} mood="happy" />
           <span className="tutorial-checkmark">✓</span>
         </div>
+        {/* Keep the skip target rendered so it can't dodge a click that
+            lands mid-flash. */}
+        <button className="tutorial-skip" onClick={skip}>Skip tutorial</button>
       </div>
     );
   }

@@ -43,9 +43,13 @@ export function EmailSignIn() {
         setStatus('sending');
         signInWithEmail(email)
           .then(() => setStatus('sent'))
-          .catch(() => {
+          .catch((err: unknown) => {
             setStatus('idle');
-            setError("Couldn't send the link. Try again.");
+            // Surface Supabase's actual reason (rate limit, signups
+            // disabled, SMTP failure…) — the generic line made every
+            // config problem look like a flaky network.
+            const detail = err instanceof Error && err.message ? ` (${err.message})` : '';
+            setError(`Couldn't send the link${detail ? detail : ' — try again'}.`);
           });
       }}
     >

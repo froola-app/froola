@@ -12,8 +12,9 @@ const PLUS_TIER = PRICING_TIERS.find(t => t.planId === 'plus')!;
 const FEATURE_ROWS: { label: string; free: ReactNode | boolean; plus: ReactNode | boolean; studio: ReactNode | boolean }[] = [
   { label: 'Instruments', free: 'Synth', plus: 'Synth + Piano', studio: 'Synth + Piano' },
   { label: 'Camera hand tracking', free: true, plus: true, studio: true },
-  { label: 'Recording & shareable replays', free: '20s, watermarked', plus: '3 min, no watermark', studio: '5 min, no watermark' },
-  { label: 'Chord looper', free: false, plus: '8 slots', studio: 'Unlimited slots' },
+  { label: 'Song lessons & drills', free: true, plus: true, studio: true },
+  { label: 'Recording & shareable replays', free: false, plus: '3 min, no watermark', studio: '5 min, no watermark' },
+  { label: 'Chord looper & arpeggiator', free: false, plus: '8 slots', studio: 'Unlimited slots' },
   { label: 'Visual themes', free: false, plus: true, studio: true },
   { label: 'Continuous instant-replay recording', free: false, plus: false, studio: true },
   { label: 'Audio & MIDI export', free: false, plus: false, studio: 'MP3 · WAV · MIDI' },

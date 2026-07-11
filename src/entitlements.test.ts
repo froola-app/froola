@@ -7,21 +7,21 @@ describe('entitlements', () => {
     expect(entitlementsFor(null).pianoUnlocked).toBe(false);
   });
 
-  it('locks piano and the arp, caps recording at 20s watermarked on free', () => {
+  it('locks piano, arp, and all recording on free', () => {
     const e = entitlementsFor({ plan: 'free', betaTester: false });
     expect(e.pianoUnlocked).toBe(false);
     expect(e.arpUnlocked).toBe(false);
     expect(e.replayWatermark).toBe(true);
-    // Replay links and video recording are one feature — same cap everywhere.
-    expect(e.videoRecordUnlocked).toBe(true);
-    expect(e.maxReplayRecordMs).toBe(20_000);
-    expect(e.maxVideoRecordMs).toBe(20_000);
+    // Recording is paid-only in every form (owner decision, 2026-07-11).
+    expect(e.videoRecordUnlocked).toBe(false);
+    expect(e.replayRecordUnlocked).toBe(false);
   });
 
   it('unlocks piano, arp, 3-minute video, and 3-minute replays on plus', () => {
     const e = entitlementsFor({ plan: 'plus', betaTester: false });
     expect(e.pianoUnlocked).toBe(true);
     expect(e.videoRecordUnlocked).toBe(true);
+    expect(e.replayRecordUnlocked).toBe(true);
     expect(e.arpUnlocked).toBe(true);
     expect(e.maxVideoRecordMs).toBe(180_000);
     expect(e.maxReplayRecordMs).toBe(180_000);
