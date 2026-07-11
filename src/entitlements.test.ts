@@ -24,9 +24,9 @@ describe('entitlements', () => {
     expect(e.maxReplayRecordMs).toBe(180_000);
   });
 
-  it('removes the video length cap and allows 5-minute replays on studio', () => {
+  it('allows 5-minute video and replays on studio', () => {
     const e = entitlementsFor({ plan: 'studio', betaTester: false });
-    expect(e.maxVideoRecordMs).toBe(Infinity);
+    expect(e.maxVideoRecordMs).toBe(300_000);
     expect(e.maxReplayRecordMs).toBe(300_000);
   });
 

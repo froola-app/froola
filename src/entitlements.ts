@@ -21,7 +21,7 @@ export interface Entitlements {
   replayWatermark: boolean;
   /** Hard stop for the shareable-replay recorder. */
   maxReplayRecordMs: number;
-  /** Hard stop for the video recorder. Infinity on Studio. */
+  /** Hard stop for the video recorder (3 min Plus, 5 min Studio). */
   maxVideoRecordMs: number;
   /** Chord looper (Plus+). Free doesn't get the feature at all. */
   loopUnlocked: boolean;
@@ -66,7 +66,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     instantReplayUnlocked: true,
     replayWatermark: false,
     maxReplayRecordMs: 300_000,
-    maxVideoRecordMs: Infinity,
+    maxVideoRecordMs: 300_000,
     loopUnlocked: true,
     loopSlots: Infinity,
     arpUnlocked: true,

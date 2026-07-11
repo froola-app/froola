@@ -55,9 +55,8 @@ export const PRICING_TIERS: PricingTier[] = [
     badge: 'Coming soon',
     features: [
       'Everything in Plus',
-      'Replays up to 5 minutes',
+      'Recordings & replays up to 5 minutes',
       'Continuous instant-replay recording',
-      'Unlimited recording length',
       'Download audio (MP3 / WAV) & MIDI export',
       'Unlimited loop & layer slots',
       'Early access to new features',
