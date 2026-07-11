@@ -128,6 +128,19 @@ describe('AudioEngine — play()', () => {
     expect(lastHz(4)).toBeCloseTo(midiToHz(79), 1)
   })
 
+  it('pads an inverted triad by doubling its lowest note first, then its highest', () => {
+    const engine = new AudioEngine()
+    // C major 1st inversion [64, 67, 72] — the old padding assumed index 2
+    // was the 5th, which is false after inversion.
+    engine.play({ ...CMD, voicing: [64, 67, 72] })
+    const lastHz = (idx: number) => {
+      const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.linearRampToValueAtTime.mock.calls
+      return calls[calls.length - 1][0]
+    }
+    expect(lastHz(3)).toBeCloseTo(midiToHz(76), 1) // lowest (64) + 12
+    expect(lastHz(4)).toBeCloseTo(midiToHz(84), 1) // highest (72) + 12
+  })
+
   // Regression: a 9th chord has 5 notes; it must not be truncated down to the
   // 7th's 4 notes — the 9th (top note) has to actually sound.
   it('sounds all five notes of a 9th chord, including the 9th', () => {
