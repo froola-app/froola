@@ -38,6 +38,21 @@ describe('useRecorder', () => {
     expect(d).toBeTruthy();
   });
 
+  it('auto-stops when elapsed reaches maxDurationMs', () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'performance'] });
+    try {
+      const { result } = renderHook(() => useRecorder(makeRef(), 'warm', 20_000));
+      act(() => { result.current.start(); });
+      act(() => { vi.advanceTimersByTime(19_900); });
+      expect(result.current.state).toBe('recording');
+      act(() => { vi.advanceTimersByTime(10_000); });
+      expect(result.current.state).toBe('done');
+      expect(result.current.elapsed).toBeLessThanOrEqual(20);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('can start again after done', () => {
     const { result } = renderHook(() => useRecorder(makeRef(), 'warm'));
     act(() => { result.current.start(); });

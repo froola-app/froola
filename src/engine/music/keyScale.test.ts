@@ -113,3 +113,34 @@ describe('diatonicChord — quality follows the scale degree', () => {
     expect(up).toEqual(base.map(m => m + 12));
   });
 });
+
+describe('diatonicChord — universal chord mode', () => {
+  it('applies fixed qualities regardless of the scale degree', () => {
+    // Degree 1 in C major is D minor diatonically; universal maj forces D major.
+    const c = diatonicChord(1, 0, 0, 'major', 0, 'universal');
+    expect(c.midis).toEqual([62, 66, 69]);
+    expect(c.label).toBe('D');
+  });
+
+  it('offers minor, dom7, maj7, min7, dim7, and aug on the wheel', () => {
+    expect(diatonicChord(0, 1, 0, 'major', 0, 'universal').midis).toEqual([60, 63, 67]); // Cm
+    expect(diatonicChord(0, 1, 0, 'major', 0, 'universal').label).toBe('Cm');
+    expect(diatonicChord(0, 2, 0, 'major', 0, 'universal').midis).toEqual([60, 64, 67, 70]); // C7
+    expect(diatonicChord(0, 3, 0, 'major', 0, 'universal').midis).toEqual([60, 64, 67, 71]); // Cmaj7
+    expect(diatonicChord(0, 4, 0, 'major', 0, 'universal').midis).toEqual([60, 63, 67, 70]); // Cm7
+    expect(diatonicChord(0, 5, 0, 'major', 0, 'universal').midis).toEqual([60, 63, 66, 69]); // C°7
+    expect(diatonicChord(0, 5, 0, 'major', 0, 'universal').label).toBe('C°7');
+    expect(diatonicChord(0, 6, 0, 'major', 0, 'universal').midis).toEqual([60, 64, 68]); // C+
+  });
+
+  it('universal roots still follow the key and scale', () => {
+    // Degree 2 in A minor (keyOffset 9) = C; universal min7 → Cm7.
+    const c = diatonicChord(2, 4, 9, 'minor', -1, 'universal');
+    expect(c.midis).toEqual([60, 63, 67, 70]);
+    expect(c.label).toBe('Cm7');
+  });
+
+  it('defaults to diatonic mode when no mode is given', () => {
+    expect(diatonicChord(1, 0, 0, 'major').midis).toEqual(diatonicChord(1, 0, 0, 'major', 0, 'diatonic').midis);
+  });
+});

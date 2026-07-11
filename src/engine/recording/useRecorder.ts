@@ -6,7 +6,9 @@ import { encode } from './codec';
 import { saveRecording } from './recordingStore';
 
 const VIBES = ['warm', 'bright', 'dark', 'electric'];
-const DEFAULT_MAX_DURATION_MS = 30_000;
+// Fallback when no plan-derived limit is passed: never exceed the free
+// tier's advertised 20s (src/entitlements.ts maxReplayRecordMs).
+const DEFAULT_MAX_DURATION_MS = 20_000;
 const INTERVAL_MS = 100;
 
 export type RecorderState = 'idle' | 'recording' | 'done';

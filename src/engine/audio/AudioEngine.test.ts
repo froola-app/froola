@@ -221,6 +221,38 @@ describe('AudioEngine — playNoteAt()', () => {
       expect(r.value.frequency.setValueAtTime).not.toHaveBeenCalled()
     })
   })
+
+  it('plucks the note — schedules a decay back toward 0 after the attack', () => {
+    const engine = new AudioEngine()
+    engine.playNoteAt(69, 5, 1) // 1s step
+    const decay = mockAudioContext.createGain.mock.results
+      .flatMap(r => r.value.gain.setTargetAtTime.mock.calls)
+      .find(([val, time]: [number, number]) => val === 0 && time > 5)
+    expect(decay).toBeDefined()
+  })
+})
+
+describe('AudioEngine — setPadDuck()', () => {
+  it('ducks the pad bus while the arp runs and restores it after', () => {
+    const engine = new AudioEngine()
+    const allRamps = () => mockAudioContext.createGain.mock.results
+      .flatMap(r => r.value.gain.linearRampToValueAtTime.mock.calls)
+
+    engine.setPadDuck(true)
+    expect(allRamps().some(([val]: [number]) => val > 0 && val < 0.5)).toBe(true)
+
+    engine.setPadDuck(false)
+    expect(allRamps().some(([val]: [number]) => val === 1)).toBe(true)
+  })
+
+  it('does not touch the melody lead gain', () => {
+    const engine = new AudioEngine()
+    engine.playNoteAt(60, 1, 0.5)
+    const melodyGain = mockAudioContext.createGain.mock.results.at(-1)!.value
+    const before = melodyGain.gain.linearRampToValueAtTime.mock.calls.length
+    engine.setPadDuck(true)
+    expect(melodyGain.gain.linearRampToValueAtTime.mock.calls.length).toBe(before)
+  })
 })
 
 describe('AudioEngine — getAnalyser()', () => {

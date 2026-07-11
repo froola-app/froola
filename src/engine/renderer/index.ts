@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { GestureSignal, MusicalCommand } from '../types';
 import { NOTES } from '../types';
-import { scaleNotes, diatonicChord, EXTENSIONS, type MusicConfig } from '../music/keyScale';
+import { scaleNotes, diatonicChord, chordSet, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
 import { getVisualTheme, type VisualTheme } from './themes';
@@ -351,8 +351,12 @@ export function useRenderer(
       // wheel can show the full chord name). selectedRef persists the last choice
       // across frames, which doubles as the hysteresis state.
       const prevSel = selectedRef.current;
+      // The right wheel's chord set follows the selected chord mode
+      // (diatonic extensions vs universal maj/min/7/… qualities).
+      const music = musicRef?.current ?? { keyOffset: 0, scale: 'major' as const };
+      const quals = chordSet(music.chordMode);
       const notePos = angleToSlicePos(leftOrbX, leftOrbY, leftCx, leftCy, NOTES.length);
-      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, rightCy, EXTENSIONS.length);
+      const qualPos = angleToSlicePos(rightOrbX, rightOrbY, rightCx, rightCy, quals.length);
       // Apply hysteresis while on the wheel; hold the last selection while the hand
       // is present but off-ring (e.g. crossing the centre hub between slices, where
       // atan2 is unstable); reset only when the hand disappears entirely.
@@ -362,15 +366,14 @@ export function useRenderer(
       // Hold the extension while the right hand is present-but-off-ring.
       // Otherwise (right hand gone) fall back to a plain triad.
       const qualIdx = rightInDial
-        ? stickySlice(qualPos, EXTENSIONS.length, prevSel.qualIdx)
+        ? stickySlice(qualPos, quals.length, prevSel.qualIdx)
         : (right?.present ? prevSel.qualIdx : 0);
       const bothActive = leftInDial && rightInDial;
 
       // Labels follow the selected key/scale. The note wheel shows the scale's
       // note names; the centre shows the actual diatonic chord (e.g. "Dm7").
-      const music = musicRef?.current ?? { keyOffset: 0, scale: 'major' as const };
       const noteLabels = scaleNotes(music.keyOffset, music.scale).map(n => n.label);
-      const chordName = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale).label;
+      const chordName = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale, 0, music.chordMode).label;
 
       // Ghost orb target slices — read before drawing the wheels so each one
       // can highlight its own ghost's slice, connecting the dashed ring to
@@ -391,13 +394,13 @@ export function useRenderer(
         theme.left.ghost,
       );
 
-      // Right wheel — chord extension (triad / 7th / sus / …)
+      // Right wheel — chord extension (triad / 7th / sus / …) or universal quality
       drawWheel(
         ctx, rightCx, rightCy, outerR,
-        EXTENSIONS.map(e => e.label),
+        quals.map(e => e.label),
         qualIdx, rightInDial,
-        (i) => extensionColor(i, EXTENSIONS.length, theme),
-        rightInDial ? EXTENSIONS[qualIdx].label : 'CHORD',
+        (i) => extensionColor(i, quals.length, theme),
+        rightInDial ? quals[qualIdx].label : 'CHORD',
         pal,
         rightGhost?.sliceIdx,
         theme.right.ghost,

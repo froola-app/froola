@@ -27,7 +27,12 @@ const TONIC_MIDI = 60;
 
 export type ScaleNote = { label: string; midi: number };
 
-export type MusicConfig = { keyOffset: number; scale: ScaleName };
+// What the right wheel offers: 'diatonic' = extensions on the degree's own
+// in-key quality (triad/6th/7th/…); 'universal' = fixed textbook qualities
+// (maj/min/7/maj7/m7/dim7/aug) applied to the selected root, key be damned.
+export type ChordMode = 'diatonic' | 'universal';
+
+export type MusicConfig = { keyOffset: number; scale: ScaleName; chordMode?: ChordMode };
 
 export const DEFAULT_MUSIC: MusicConfig = { keyOffset: 0, scale: 'major' };
 
@@ -107,6 +112,24 @@ export const EXTENSIONS: Extension[] = [
   { id: 'sus4',  label: 'sus4',  suffix: 'sus4', semitones: [0, 5, 7] },
 ];
 
+// 'universal' chord mode: the right wheel picks a fixed quality in semitones
+// from the selected root instead of a diatonic extension. Same 7-slice count
+// as EXTENSIONS so both modes share the wheel geometry.
+export const UNIVERSAL_CHORDS: Extension[] = [
+  { id: 'maj',  label: 'maj',  suffix: '',     semitones: [0, 4, 7] },
+  { id: 'min',  label: 'min',  suffix: 'm',    semitones: [0, 3, 7] },
+  { id: 'dom7', label: '7th',  suffix: '7',    semitones: [0, 4, 7, 10] },
+  { id: 'maj7', label: 'maj7', suffix: 'maj7', semitones: [0, 4, 7, 11] },
+  { id: 'min7', label: 'min7', suffix: 'm7',   semitones: [0, 3, 7, 10] },
+  { id: 'dim7', label: 'dim7', suffix: '°7',   semitones: [0, 3, 6, 9] },
+  { id: 'aug',  label: 'aug',  suffix: '+',    semitones: [0, 4, 8] },
+];
+
+/** The right wheel's chord set for a given mode. */
+export function chordSet(mode: ChordMode = 'diatonic'): Extension[] {
+  return mode === 'universal' ? UNIVERSAL_CHORDS : EXTENSIONS;
+}
+
 // Root MIDI of a scale degree (used by the melody lead).
 export function degreeRootMidi(degree: number, keyOffset: number, scale: ScaleName): number {
   const iv = SCALES[scale];
@@ -125,10 +148,12 @@ export function diatonicChord(
   keyOffset: number,
   scale: ScaleName,
   octave = 0,
+  mode: ChordMode = 'diatonic',
 ): Chord {
   const iv = SCALES[scale];
   const n = iv.length;
-  const ext = EXTENSIONS[((extIdx % EXTENSIONS.length) + EXTENSIONS.length) % EXTENSIONS.length];
+  const set = chordSet(mode);
+  const ext = set[((extIdx % set.length) + set.length) % set.length];
   const base = TONIC_MIDI + keyOffset + octave * 12;
   // Semitones of scale position p above the tonic, wrapping octaves past degree n-1.
   const tone = (p: number) => iv[((p % n) + n) % n] + 12 * Math.floor(p / n);
@@ -149,8 +174,9 @@ export function diatonicChord(
   if (third === 3 && fifth === 6) q = '°';
   else if (third === 4 && fifth === 8) q = '+';
   else if (third === 3) q = 'm';
-  const isSus = ext.id === 'sus2' || ext.id === 'sus4';
-  const label = isSus ? `${rootLabel}${ext.suffix}` : `${rootLabel}${q}${ext.suffix}`;
+  // Fixed-interval chords (sus + all universal qualities) carry their whole
+  // identity in the suffix — the degree's diatonic quality doesn't apply.
+  const label = ext.semitones ? `${rootLabel}${ext.suffix}` : `${rootLabel}${q}${ext.suffix}`;
 
   return { midis, label, rootLabel };
 }

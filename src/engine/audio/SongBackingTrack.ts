@@ -152,6 +152,12 @@ const ARRANGEMENTS: Record<string, Arrangement> = {
   },
 }
 
+/** Beats in one bar of `style`'s arrangement — how long a count-in lasts. */
+export function beatsPerBar(style: BackingStyle = 'pop'): number {
+  const arr = ARRANGEMENTS[style] ?? ARRANGEMENTS.pop
+  return Math.max(2, Math.round(arr.patternLen / arr.stepsPerBeat))
+}
+
 /** Collapse a lesson step's target recording into the chord sequence the
  *  backing track follows: bass root two octaves down plus the diatonic chord
  *  voicing an octave below the user's wheel register. */
@@ -210,6 +216,19 @@ export class SongBackingTrack {
     src.connect(this.audioGain)
     src.start()
     this.audioSource = src
+  }
+
+  /** One bar of audible metronome clicks at `bpm`, first beat accented, so
+   *  the user hears the tempo before they have to play to it. Clicks are
+   *  scheduled up front on the AudioContext clock; the bar ends exactly one
+   *  beat after the last click — the natural downbeat for what follows. */
+  countIn(bpm: number, beats = 4): void {
+    this.stop()
+    const beatSec = 60 / bpm
+    const start = this.ctx.currentTime + 0.05
+    for (let i = 0; i < beats; i++) {
+      this.playHat(start + i * beatSec, i === 0 ? 0.6 : 0.35, i === 0 ? 0.12 : 0.05)
+    }
   }
 
   /** Start (or restart) the arrangement. Loops past the end of the chord
