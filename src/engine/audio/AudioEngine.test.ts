@@ -114,15 +114,18 @@ describe('AudioEngine — play()', () => {
     expect(targetHz).toBeCloseTo(261.63, 1)
   })
 
-  it('pads a 3-note triad up to 5 voices by octave-doubling from the bottom', () => {
+  it('pads a 3-note triad up to 5 voices by doubling root then 5th (open voicing)', () => {
     const engine = new AudioEngine()
-    engine.play(CMD) // voicing [60, 64, 67] → 4th voice = 60 + 12 = 72, 5th voice = 64 + 12 = 76
+    // voicing [60, 64, 67] (root/3rd/5th) → 4th voice = root + 12 = 72,
+    // 5th voice = 5th + 12 = 79 — doubling the 5th (not the 3rd) keeps it from
+    // being buried under two roots and one 3rd.
+    engine.play(CMD)
     const lastHz = (idx: number) => {
       const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.linearRampToValueAtTime.mock.calls
       return calls[calls.length - 1][0]
     }
     expect(lastHz(3)).toBeCloseTo(midiToHz(72), 1)
-    expect(lastHz(4)).toBeCloseTo(midiToHz(76), 1)
+    expect(lastHz(4)).toBeCloseTo(midiToHz(79), 1)
   })
 
   // Regression: a 9th chord has 5 notes; it must not be truncated down to the
