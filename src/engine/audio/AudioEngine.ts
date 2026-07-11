@@ -14,6 +14,9 @@ type SampleNode = { stop(when?: number): void }
 const VOICES = 5                 // soundgo used 4; we use 5 so a 9th chord's top note isn't dropped
 const SYNTH_LOWPASS_HZ = 1800    // soundgo chordFilter cutoff
 const CHORD_GLIDE = 0.12         // soundgo o.frequency.rampTo(freq, 0.12)
+// Glide only when a voice moves a small interval; larger moves jump instantly
+// (a 120ms sweep across a big interval reads as an irritating glissando).
+const GLIDE_MAX_SEMITONES = 2
 const CHORD_GAIN_RAMP = 0.06     // soundgo chordGain.gain.rampTo(_, 0.06)
 const SYNTH_TOTAL_GAIN = 0.2     // soundgo targetChordGain cap
 const SYNTH_VOICE_GAIN = SYNTH_TOTAL_GAIN / VOICES
@@ -55,6 +58,9 @@ export class AudioEngine {
   private samplers: Partial<Record<'piano', Player>> = {}
   private samplerLoadPromises: Partial<Record<'piano', Promise<void>>> = {}
   private activeSampleNodes: SampleNode[] = []
+  // Last MIDI note each pad voice was sent — glide-vs-jump decisions measure
+  // distance against this (reading frequency.value mid-ramp is unreliable).
+  private lastVoiceMidi: (number | null)[] = Array<number | null>(VOICES).fill(null)
 
   constructor() {
     this.ctx = new AudioContext()
@@ -156,19 +162,22 @@ export class AudioEngine {
   // Always return exactly VOICES notes so every oscillator is driven each chord
   // (an undriven oscillator would keep sounding the previous chord's note). Short
   // chords are padded by octave-doubling — soundgo padded a triad to 4 voices the
-  // same way, by adding the root an octave up. Every chord shape here (triad,
-  // 6th/7th/9th, sus2/sus4) puts the 5th at voicing[2], so when a 2nd voice needs
-  // padding we double the 5th before the 3rd: doubling the root+5th ("open"
-  // voicing) reads clearly, while doubling the root+3rd instead leaves the 5th as
-  // the only tone with a single voice — on a C6 triad that made the 5th (G) get
-  // buried under two Cs and one E, so the chord read as an Am first inversion.
+  // same way. Voicings may arrive inverted (voice-leading), so padding can't
+  // assume any index holds a particular chord tone: double the lowest note an
+  // octave up first (reinforces the bass — reads as an open voicing), then the
+  // highest, then the inner notes low-to-high, wrapping up an extra octave per
+  // full cycle. For a root-position triad this yields the same root-then-5th
+  // doubling as before (doubling root+3rd instead buried the lone 5th — a C6
+  // triad read as an Am first inversion).
   private voicingFor(cmd: MusicalCommand): number[] {
-    const len = cmd.voicing.length
-    const out = cmd.voicing.slice(0, VOICES)
-    const fifthIdx = Math.min(2, len - 1)
-    const fillOrder = [0, fifthIdx, ...Array.from({ length: len }, (_, i) => i).filter(i => i !== 0 && i !== fifthIdx)]
-    for (let i = len; i < VOICES; i++) {
-      out.push(cmd.voicing[fillOrder[(i - len) % len]] + 12 * Math.floor(i / len))
+    const notes = [...cmd.voicing].sort((a, b) => a - b)
+    const out = notes.slice(0, VOICES)
+    const fillOrder = notes.length > 1
+      ? [notes[0], notes[notes.length - 1], ...notes.slice(1, -1)]
+      : notes
+    for (let i = notes.length; i < VOICES; i++) {
+      const k = i - notes.length
+      out.push(fillOrder[k % fillOrder.length] + 12 * (Math.floor(k / fillOrder.length) + 1))
     }
     return out
   }
@@ -220,6 +229,7 @@ export class AudioEngine {
       const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
+        this.lastVoiceMidi[i] = midi
         this.oscillators[i].frequency.cancelScheduledValues(now)
         this.oscillators[i].frequency.setValueAtTime(hz, now)
         this.voiceGains[i].gain.cancelScheduledValues(now)
@@ -233,9 +243,15 @@ export class AudioEngine {
     // chord pad: gentle per-voice gain, notes glide to pitch over CHORD_GLIDE.
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
+      const prev = this.lastVoiceMidi[i]
+      this.lastVoiceMidi[i] = midi
       this.oscillators[i].frequency.cancelScheduledValues(now)
-      this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
-      this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
+      if (prev !== null && Math.abs(midi - prev) <= GLIDE_MAX_SEMITONES) {
+        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
+        this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
+      } else {
+        this.oscillators[i].frequency.setValueAtTime(hz, now)
+      }
       this.voiceGains[i].gain.cancelScheduledValues(now)
       this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
       this.voiceGains[i].gain.linearRampToValueAtTime(SYNTH_VOICE_GAIN, now + CHORD_GAIN_RAMP)
@@ -263,6 +279,7 @@ export class AudioEngine {
       const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
+        this.lastVoiceMidi[i] = midi
         this.oscillators[i].frequency.cancelScheduledValues(when)
         this.oscillators[i].frequency.setValueAtTime(hz, when)
         this.voiceGains[i].gain.cancelScheduledValues(when)
@@ -275,6 +292,7 @@ export class AudioEngine {
     // Synth path
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
+      this.lastVoiceMidi[i] = midi
       this.oscillators[i].frequency.cancelScheduledValues(when)
       this.oscillators[i].frequency.setValueAtTime(hz, when)
       this.voiceGains[i].gain.cancelScheduledValues(when)

@@ -5,7 +5,7 @@ import type { GestureSignal, InstrumentMode, MusicalCommand } from './engine/typ
 import { useGestureInput, type InputMode } from './engine/input';
 import { useRenderer, type DialSelection } from './engine/renderer';
 import { wheelGeometry } from './engine/renderer/geometry';
-import { buildCommand, melodyMidi, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
+import { buildCommand, melodyMidi, applyVoiceLeading, DEFAULT_MUSIC, type MusicConfig } from './engine/music';
 import { AudioEngine } from './engine/audio';
 import type { Arpeggiator } from './engine/arp';
 
@@ -244,7 +244,12 @@ export function useCoordinator(
         const musicChanged = musicKey !== lastMusicKey;
         // Built every touching frame (cheap, pure) so a sustained arp always
         // knows the wheel's current chord, even on frames that don't re-attack.
-        const cmd = buildCommand(noteIdx, effectiveQualIdx, y, octave, music);
+        const built = buildCommand(noteIdx, effectiveQualIdx, y, octave, music);
+        // Voice-lead against the sounding chord so progressions connect
+        // smoothly. Re-anchor to root position after silence and on an
+        // explicit octave step (leading across ±12 would eat the step).
+        const prevVoicing = sounding && !octChanged && lastCmd ? lastCmd.voicing : null;
+        const cmd = { ...built, voicing: applyVoiceLeading(built.voicing, prevVoicing) };
         lastCmd = cmd;
 
         if (!sounding || selChanged || yChanged || octChanged || musicChanged) {

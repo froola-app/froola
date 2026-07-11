@@ -78,15 +78,6 @@ describe('AudioEngine — construction', () => {
 })
 
 describe('AudioEngine — play()', () => {
-  // soundgo glides notes to pitch (rampTo 0.12s) rather than jumping instantly.
-  it('glides frequency for all five pad oscillators', () => {
-    const engine = new AudioEngine()
-    engine.play(CMD)
-    mockAudioContext.createOscillator.mock.results.slice(0, 5).forEach(r => {
-      expect(r.value.frequency.linearRampToValueAtTime).toHaveBeenCalled()
-    })
-  })
-
   it('ramps gain for all voice gain nodes', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
@@ -96,20 +87,20 @@ describe('AudioEngine — play()', () => {
     expect(ramped.length).toBeGreaterThanOrEqual(4)
   })
 
-  it('glides to 440 Hz for MIDI 69 (A4)', () => {
+  it('sets 440 Hz for MIDI 69 (A4)', () => {
     const engine = new AudioEngine()
     engine.play({ ...CMD, voicing: [69, 73, 76] })
     const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const calls = firstOsc.frequency.linearRampToValueAtTime.mock.calls
+    const calls = firstOsc.frequency.setValueAtTime.mock.calls
     const targetHz = calls[calls.length - 1][0]
     expect(targetHz).toBeCloseTo(440, 1)
   })
 
-  it('glides to ~261.63 Hz for MIDI 60 (C4)', () => {
+  it('sets ~261.63 Hz for MIDI 60 (C4)', () => {
     const engine = new AudioEngine()
     engine.play(CMD)
     const firstOsc = mockAudioContext.createOscillator.mock.results[0].value
-    const calls = firstOsc.frequency.linearRampToValueAtTime.mock.calls
+    const calls = firstOsc.frequency.setValueAtTime.mock.calls
     const targetHz = calls[calls.length - 1][0]
     expect(targetHz).toBeCloseTo(261.63, 1)
   })
@@ -121,11 +112,58 @@ describe('AudioEngine — play()', () => {
     // being buried under two roots and one 3rd.
     engine.play(CMD)
     const lastHz = (idx: number) => {
-      const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.linearRampToValueAtTime.mock.calls
+      const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.setValueAtTime.mock.calls
       return calls[calls.length - 1][0]
     }
     expect(lastHz(3)).toBeCloseTo(midiToHz(72), 1)
     expect(lastHz(4)).toBeCloseTo(midiToHz(79), 1)
+  })
+
+  // Large pitch moves jump instantly — a 120ms sweep across a big interval
+  // reads as an irritating glissando. Small moves (≤2 semitones) keep the
+  // soundgo-style glide so the pad stays smooth.
+  it('jumps (no glide) on the first chord — no previous note to glide from', () => {
+    const engine = new AudioEngine()
+    engine.play(CMD)
+    mockAudioContext.createOscillator.mock.results.slice(0, 5).forEach(r => {
+      expect(r.value.frequency.linearRampToValueAtTime).not.toHaveBeenCalled()
+      const hz = r.value.frequency.setValueAtTime.mock.calls.at(-1)?.[0]
+      expect(hz).toBeGreaterThan(0)
+    })
+  })
+
+  it('glides voices that move ≤2 semitones, jumps voices that move more', () => {
+    const engine = new AudioEngine()
+    engine.play(CMD) // [60,64,67] (+padding 72,79)
+    // voice 0 60→62 (2 st, glide), voice 1 64→69 (5 st, jump)
+    engine.play({ ...CMD, voicing: [62, 69, 74] })
+    const osc = (i: number) => mockAudioContext.createOscillator.mock.results[i].value
+    expect(osc(0).frequency.linearRampToValueAtTime).toHaveBeenCalled()
+    expect(osc(0).frequency.linearRampToValueAtTime.mock.calls.at(-1)?.[0]).toBeCloseTo(midiToHz(62), 1)
+    expect(osc(1).frequency.linearRampToValueAtTime).not.toHaveBeenCalled()
+    expect(osc(1).frequency.setValueAtTime.mock.calls.at(-1)?.[0]).toBeCloseTo(midiToHz(69), 1)
+  })
+
+  it('re-sounding the identical chord still counts as a small move (glide path)', () => {
+    const engine = new AudioEngine()
+    engine.play(CMD)
+    engine.play(CMD)
+    const osc0 = mockAudioContext.createOscillator.mock.results[0].value
+    expect(osc0.frequency.linearRampToValueAtTime).toHaveBeenCalled()
+    expect(osc0.frequency.linearRampToValueAtTime.mock.calls.at(-1)?.[0]).toBeCloseTo(midiToHz(60), 1)
+  })
+
+  it('pads an inverted triad by doubling its lowest note first, then its highest', () => {
+    const engine = new AudioEngine()
+    // C major 1st inversion [64, 67, 72] — the old padding assumed index 2
+    // was the 5th, which is false after inversion.
+    engine.play({ ...CMD, voicing: [64, 67, 72] })
+    const lastHz = (idx: number) => {
+      const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.setValueAtTime.mock.calls
+      return calls[calls.length - 1][0]
+    }
+    expect(lastHz(3)).toBeCloseTo(midiToHz(76), 1) // lowest (64) + 12
+    expect(lastHz(4)).toBeCloseTo(midiToHz(84), 1) // highest (72) + 12
   })
 
   // Regression: a 9th chord has 5 notes; it must not be truncated down to the
@@ -135,7 +173,7 @@ describe('AudioEngine — play()', () => {
     const ninth = [60, 64, 67, 71, 74] // C E G B D — the 74 is the 9th
     engine.play({ ...CMD, voicing: ninth })
     const lastHz = (idx: number) => {
-      const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.linearRampToValueAtTime.mock.calls
+      const calls = mockAudioContext.createOscillator.mock.results[idx].value.frequency.setValueAtTime.mock.calls
       return calls[calls.length - 1][0]
     }
     ninth.forEach((midi, i) => expect(lastHz(i)).toBeCloseTo(midiToHz(midi), 1))
