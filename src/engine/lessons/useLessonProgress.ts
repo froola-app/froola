@@ -28,7 +28,6 @@ export function useLessonProgress(lessonId?: string) {
   }, [user, authReady]);
 
   const save = useCallback(async (result: LessonResult) => {
-    if (!authReady || !user || !supabase) return;
     const existing = allProgress[result.lessonId];
     const progress: LessonProgress = {
       bestScore: Math.max(result.totalScore, existing?.bestScore ?? 0),
@@ -36,6 +35,7 @@ export function useLessonProgress(lessonId?: string) {
       attempts: (existing?.attempts ?? 0) + 1,
     };
     setAllProgress(prev => ({ ...prev, [result.lessonId]: progress }));
+    if (!authReady || !user || !supabase) return;
     try {
       await supabase.from('lesson_progress').upsert({
         user_id: user.id,
