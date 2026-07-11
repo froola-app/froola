@@ -116,6 +116,20 @@ describe('Arpeggiator — playback', () => {
     ])
   })
 
+  it('passes the step duration to playNoteAt so notes can be plucked', () => {
+    const durations: (number | undefined)[] = []
+    const audio = { currentTime: 0 }
+    const arp = new Arpeggiator({
+      createClock: (cb: StepCallback, opts?: TempoClockOptions) => new TempoClock(audio, cb, opts),
+      playNoteAt: (_midi, _when, duration) => { durations.push(duration) },
+      silence: () => {},
+    })
+    arp.setChord([60])
+    arp.setRate(120) // 0.5s per step at 1 step/beat
+    arp.start()
+    expect(durations).toEqual([0.5])
+  })
+
   it('degrades gracefully for a single-note voicing (repeats the same note)', () => {
     const h = harness()
     h.arp.setChord([60])

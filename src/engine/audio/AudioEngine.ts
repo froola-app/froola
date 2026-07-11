@@ -32,6 +32,15 @@ const REVERB_SEND = 0.18
 // lowpass timbre as the pad, but louder than one pad voice so it reads on top.
 const MELODY_GAIN = 0.12
 
+// Arp notes run a little hotter than the melody lead and are plucked (decay
+// within the step) so the pattern reads rhythmically instead of as a drone.
+const ARP_GAIN = 0.17
+// While the arp runs, the pad ducks to this fraction — "arpeggiate the chord
+// instead of a static pad": the drone gets out of the arp's way but leaves a
+// quiet harmonic bed underneath.
+const ARP_PAD_DUCK = 0.25
+const PAD_DUCK_RAMP = 0.08
+
 export class AudioEngine {
   private ctx: AudioContext
   private oscillators: OscillatorNode[]
@@ -42,6 +51,7 @@ export class AudioEngine {
   private samplerGain: GainNode
   private melodyOsc: OscillatorNode
   private melodyGain: GainNode
+  private padBus: GainNode
   private samplers: Partial<Record<'piano', Player>> = {}
   private samplerLoadPromises: Partial<Record<'piano', Promise<void>>> = {}
   private activeSampleNodes: SampleNode[] = []
@@ -89,6 +99,12 @@ export class AudioEngine {
     this.synthFilter.connect(this.masterGain)
     this.synthFilter.connect(reverbSend)
 
+    // All pad voices sum into one bus so the whole pad can be ducked as a unit
+    // while the arp plays, without disturbing per-voice envelopes.
+    this.padBus = this.ctx.createGain()
+    this.padBus.gain.value = 1
+    this.padBus.connect(this.synthFilter)
+
     this.oscillators = []
     this.voiceGains = []
 
@@ -103,7 +119,7 @@ export class AudioEngine {
       panner.pan.value = VOICE_PAN[i]
       osc.connect(gain)
       gain.connect(panner)
-      panner.connect(this.synthFilter)
+      panner.connect(this.padBus)
       osc.start()
       this.oscillators.push(osc)
       this.voiceGains.push(gain)
@@ -280,14 +296,26 @@ export class AudioEngine {
 
   /** Schedule a single note at AudioContext time `when` on the melody lead
    *  voice. Used by the arpeggiator to step through a held chord's voicing
-   *  one note at a time. */
-  playNoteAt(midi: number, when: number): void {
+   *  one note at a time. `duration` (seconds until the next step) shapes a
+   *  pluck: attack, then decay inside the step so each note articulates. */
+  playNoteAt(midi: number, when: number, duration = 0.5): void {
     const hz = midiToHz(midi)
     this.melodyOsc.frequency.cancelScheduledValues(when)
     this.melodyOsc.frequency.setValueAtTime(hz, when)
     this.melodyGain.gain.cancelScheduledValues(when)
     this.melodyGain.gain.setValueAtTime(0, when)
-    this.melodyGain.gain.linearRampToValueAtTime(MELODY_GAIN, when + 0.012)
+    this.melodyGain.gain.linearRampToValueAtTime(ARP_GAIN, when + 0.012)
+    const decayTau = Math.min(0.35, Math.max(0.05, duration * 0.3))
+    this.melodyGain.gain.setTargetAtTime(0, when + 0.012, decayTau)
+  }
+
+  /** Duck (or restore) the whole chord pad. The arpeggiator ducks the pad
+   *  while it runs so its pattern isn't masked by the sustained drone. */
+  setPadDuck(ducked: boolean): void {
+    const now = this.ctx.currentTime
+    this.padBus.gain.cancelScheduledValues(now)
+    this.padBus.gain.setValueAtTime(this.padBus.gain.value, now)
+    this.padBus.gain.linearRampToValueAtTime(ducked ? ARP_PAD_DUCK : 1, now + PAD_DUCK_RAMP)
   }
 
   /** Fade the melody lead out (chord, if latched, keeps sounding). */

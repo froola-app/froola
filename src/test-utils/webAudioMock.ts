@@ -5,6 +5,7 @@ function makeParam() {
     value: 0,
     setValueAtTime: vi.fn().mockReturnThis(),
     linearRampToValueAtTime: vi.fn().mockReturnThis(),
+    setTargetAtTime: vi.fn().mockReturnThis(),
     cancelScheduledValues: vi.fn().mockReturnThis(),
   }
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import { storeInputMode, type InputMode } from '../engine/input';
-import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
+import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type ChordMode, type MusicConfig } from '../engine/music';
 import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
@@ -88,10 +88,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   useEffect(() => { octaveRef.current = octave; }, [octave]);
 
   // Key (tonic, 0–11 semitones above C) + scale select the 7 wheel notes.
+  // Chord mode picks what the right wheel offers: in-key extensions
+  // (triad/7th/sus…) or universal fixed qualities (maj/min/7/dim7…).
   const [keyOffset, setKeyOffset] = useState(0);
   const [scale, setScale] = useState<ScaleName>('major');
-  const musicRef = useRef<MusicConfig>({ keyOffset, scale });
-  useEffect(() => { musicRef.current = { keyOffset, scale }; }, [keyOffset, scale]);
+  const [chordMode, setChordMode] = useState<ChordMode>('diatonic');
+  const musicRef = useRef<MusicConfig>({ keyOffset, scale, chordMode });
+  useEffect(() => { musicRef.current = { keyOffset, scale, chordMode }; }, [keyOffset, scale, chordMode]);
 
   // Chord looper: drives the chord pad while the hand solos over it. The ref
   // lets the coordinator's hot loop know when the loop owns the pad.
@@ -261,8 +264,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   useEffect(() => {
     const a = new Arpeggiator({
       createClock: (cb, opts) => engineRef.current!.createClock(cb, opts),
-      playNoteAt: (midi, when) => engineRef.current!.playNoteAt(midi, when),
-      silence: () => engineRef.current!.silenceMelody(),
+      // Duck the sustained pad under the arp — the pattern is inaudible if the
+      // full-volume drone (the same pitches) keeps playing on top of it.
+      playNoteAt: (midi, when, duration) => {
+        const e = engineRef.current!;
+        e.setPadDuck(true);
+        e.playNoteAt(midi, when, duration);
+      },
+      silence: () => {
+        const e = engineRef.current!;
+        e.setPadDuck(false);
+        e.silenceMelody();
+      },
     });
     arpRef.current = a;
     return () => a.stop();
@@ -392,6 +405,16 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           {SCALE_NAMES.map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
+        </select>
+        <select
+          className="instrument-select"
+          value={chordMode}
+          onChange={e => setChordMode(e.target.value as ChordMode)}
+          aria-label="Chord mode"
+          title="in-key: extensions on the scale's own chords · universal: maj/min/7/dim7… on any root"
+        >
+          <option value="diatonic">in-key</option>
+          <option value="universal">universal</option>
         </select>
         {!isMobile && <div className="octave-control" role="group" aria-label="Octave">
           <button
