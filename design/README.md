@@ -1,11 +1,19 @@
 # Froola Design System
 
+_Note: this describes the original editorial light-mode design language. The
+shipped app now defaults to a dark liquid-glass theme (2026-07-08, see
+`docs/DECISIONS.md`); light mode is still available via manual toggle and
+still uses this palette. Treat this file as the light-theme/brand-identity
+spec, not the current default._
+
 ## Direction
 
 Editorial light mode. Single accent color. Typography does the heavy lifting.
 Target audience: Gen Z. Aesthetic reference: Teenage Engineering / Figma marketing.
 
 ## Color
+
+Canon is `tokens.json` — the table below is a convenience copy, keep it in sync.
 
 | Token | Value | Use |
 |-------|-------|-----|

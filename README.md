@@ -19,20 +19,29 @@ Froola uses [MediaPipe](https://mediapipe.dev/) to track your hands entirely on-
 
 ## Features
 
-### Free
-- Both instrument modes — **synth** and **piano**
-- Camera hand tracking (on-device, private)
-- Recordings up to 30 seconds
-- Shareable replay links
+Full tier breakdown lives in `docs/PRICING.md` (`src/entitlements.ts` and
+`src/pricingTiers.ts` are the source of truth for what's unlocked and priced).
 
-### Pro *(coming soon)*
-- Unlimited recordings
-- Audio download (MP3 / WAV)
-- Watermark-free share links
-- Additional instrument & sound packs
-- Loop & layer tracks
-- Custom visual themes
-- MIDI export
+### Free
+- Synth instrument
+- Camera hand tracking (on-device, private)
+- Shareable replay links, up to 20s (watermarked)
+
+### Plus — $1.99/wk or $4.99/mo
+- Everything in Free
+- Piano instrument unlocked
+- Video recording & download, up to 3 minutes
+- Longer replays, no watermark
+- Chord looper, 8 slots
+- Visual themes for the wheels & orbs
+
+### Studio — $3.99/wk or $8.99/mo *(coming soon)*
+- Everything in Plus
+- Continuous instant-replay recording
+- Unlimited recording length
+- Audio download (MP3 / WAV) & MIDI export
+- Unlimited loop & layer slots
+- Early access to new features
 
 ---
 
@@ -116,8 +125,9 @@ src/
 ├── coordinator.ts    # Wires input → music → audio → renderer
 └── supabase.ts       # Supabase client init
 docs/
-├── marketing.md      # Product strategy, free/paid tiers, growth ideas
-└── tasks/            # Engineering task specs
+├── DECISIONS.md      # Locked product/architecture decisions
+├── PRICING.md        # Pricing narrative (entitlements.ts + pricingTiers.ts are canon)
+└── marketing.md      # Growth ideas, camera-permission UX notes
 ```
 
 ---
@@ -128,7 +138,7 @@ New users go through a 3-step flow after signing in with Google:
 
 1. **User type** — casual, content creator, or music learner (stored in Supabase, personalizes future features)
 2. **Learning curve tips** — quick guide on how hand positions map to sound
-3. **Pricing overview** — what's free forever vs. what's in Pro
+3. **Pricing overview** — what's free forever vs. what's in Plus/Studio
 
 Returning users skip onboarding and go straight to the app. The `/replay` route is always public — share links work without a sign-in.
 
