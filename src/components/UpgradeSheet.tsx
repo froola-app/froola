@@ -39,7 +39,7 @@ const PLAN_CARDS: { id: PlanId; name: string; price: string; perks: string[] }[]
     id: 'plus',
     name: 'Plus',
     price: '$1.99/wk',
-    perks: ['Piano instrument', 'Video recording & download (3 min)', 'Chord looper', 'Visual themes', 'No watermark'],
+    perks: ['Piano instrument', 'Recordings & replays up to 3 min', 'No watermark', 'Chord looper', 'Visual themes'],
   },
   {
     id: 'studio',

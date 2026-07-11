@@ -9,7 +9,7 @@ export type EffectivePlan = 'free' | PlanId;
 export interface Entitlements {
   /** Piano sampler instrument (Plus+). Free is synth-only. */
   pianoUnlocked: boolean;
-  /** Video recording + download (Plus+). Free can only preview the button. */
+  /** Video recording + download. All plans; free is capped short + watermarked. */
   videoRecordUnlocked: boolean;
   /** Canvas accent themes (Plus+). Free plays in the default froola look. */
   visualThemesUnlocked: boolean;
@@ -17,9 +17,12 @@ export interface Entitlements {
   audioDownloadUnlocked: boolean;
   /** Always-on rolling replay buffer — "save the last 30s" (Studio). */
   instantReplayUnlocked: boolean;
-  /** Free replays carry a "made with froola" watermark on playback. */
+  /** Free recordings carry a "made with froola" watermark — on replay
+   *  playback and burned into downloaded videos. */
   replayWatermark: boolean;
-  /** Hard stop for the shareable-replay recorder. */
+  /** Hard stop for the shareable-replay recorder. Recording length and
+   *  replay length are one product concept: this always equals
+   *  maxVideoRecordMs (20s free / 3 min plus / 5 min studio). */
   maxReplayRecordMs: number;
   /** Hard stop for the video recorder (3 min Plus, 5 min Studio). */
   maxVideoRecordMs: number;
@@ -34,13 +37,13 @@ export interface Entitlements {
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   free: {
     pianoUnlocked: false,
-    videoRecordUnlocked: false,
+    videoRecordUnlocked: true,
     visualThemesUnlocked: false,
     audioDownloadUnlocked: false,
     instantReplayUnlocked: false,
     replayWatermark: true,
     maxReplayRecordMs: 20_000,
-    maxVideoRecordMs: 0,
+    maxVideoRecordMs: 20_000,
     loopUnlocked: false,
     loopSlots: 0,
     arpUnlocked: false,

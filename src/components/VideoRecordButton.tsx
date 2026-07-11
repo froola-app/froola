@@ -7,7 +7,9 @@ type Props = {
   cameraVideoRef: RefObject<HTMLVideoElement | null>;
   engineRef: RefObject<AudioEngine | null>;
   maxDurationMs: number;
-  /** Plan-gated (Plus+). Locked keeps the button visible as a teaser. */
+  /** Plan-gated: free downloads get "made with froola" burned in. */
+  watermark?: boolean;
+  /** Locked keeps the button visible as a teaser. */
   locked?: boolean;
   onLockedClick?: () => void;
 };
@@ -18,8 +20,8 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
 
-export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef, maxDurationMs, locked, onLockedClick }: Props) {
-  const { state, elapsed, start, stop } = useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs);
+export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef, maxDurationMs, watermark = false, locked, onLockedClick }: Props) {
+  const { state, elapsed, start, stop } = useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs, watermark);
 
   // Locked plans still see the control — it advertises what Plus unlocks and
   // opens the upgrade sheet instead of recording.

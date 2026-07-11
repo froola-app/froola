@@ -7,12 +7,15 @@ describe('entitlements', () => {
     expect(entitlementsFor(null).pianoUnlocked).toBe(false);
   });
 
-  it('locks piano, video recording, and the arp, caps replays at 20s on free', () => {
+  it('locks piano and the arp, caps recording at 20s watermarked on free', () => {
     const e = entitlementsFor({ plan: 'free', betaTester: false });
     expect(e.pianoUnlocked).toBe(false);
-    expect(e.videoRecordUnlocked).toBe(false);
     expect(e.arpUnlocked).toBe(false);
+    expect(e.replayWatermark).toBe(true);
+    // Replay links and video recording are one feature — same cap everywhere.
+    expect(e.videoRecordUnlocked).toBe(true);
     expect(e.maxReplayRecordMs).toBe(20_000);
+    expect(e.maxVideoRecordMs).toBe(20_000);
   });
 
   it('unlocks piano, arp, 3-minute video, and 3-minute replays on plus', () => {

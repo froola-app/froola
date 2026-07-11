@@ -12,6 +12,9 @@ export function useVideoRecorder(
   engineRef: RefObject<AudioEngine | null>,
   // Plan-gated (see src/entitlements.ts maxVideoRecordMs).
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
+  // Plan-gated (replayWatermark): free downloads get "made with froola"
+  // burned into the video frames.
+  watermark = false,
 ) {
   const [state, setState] = useState<VideoRecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -87,6 +90,16 @@ export function useVideoRecorder(
         ctx2d.restore();
       }
 
+      if (watermark) {
+        const fs = Math.max(14, Math.round(composite.height * 0.028));
+        ctx2d.font = `600 ${fs}px system-ui, -apple-system, sans-serif`;
+        ctx2d.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx2d.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx2d.shadowBlur = 4;
+        ctx2d.fillText('made with froola', 16, composite.height - 16);
+        ctx2d.shadowBlur = 0;
+      }
+
       animIdRef.current = requestAnimationFrame(drawFrame);
     }
     drawFrame();
@@ -136,7 +149,7 @@ export function useVideoRecorder(
       setElapsed(secs);
       if (secs * 1000 >= maxDurationMs) stop();
     }, 100);
-  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs]);
+  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs, watermark]);
 
   return { state, elapsed, start, stop };
 }
