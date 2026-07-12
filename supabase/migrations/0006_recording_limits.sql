@@ -16,14 +16,21 @@ CREATE OR REPLACE FUNCTION public.enforce_recording_cap()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE cap integer; held integer;
 BEGIN
+  -- Serialize per-user inserts so concurrent requests can't both pass the
+  -- count check below (transaction-scoped; released at commit/rollback).
+  PERFORM pg_advisory_xact_lock(hashtext(NEW.user_id::text));
+
   SELECT CASE
     WHEN p.beta_tester THEN NULL            -- studio-level: unlimited
     WHEN p.plan = 'studio' THEN NULL
     WHEN p.plan = 'plus' THEN 3
-    ELSE 1
+    ELSE 1                                  -- fail-safe default: unknown plans get the free cap
   END INTO cap
   FROM public.profiles p WHERE p.id = NEW.user_id;
-  IF cap IS NULL THEN RETURN NEW; END IF;   -- unlimited or no profile row read
+  IF NOT FOUND THEN
+    cap := 1;                               -- no profile row: fail closed to the free cap
+  END IF;
+  IF cap IS NULL THEN RETURN NEW; END IF;   -- unlimited plan
   SELECT count(*) INTO held FROM public.recordings WHERE user_id = NEW.user_id;
   IF held >= cap THEN
     RAISE EXCEPTION 'recording cap reached (% of %)', held, cap;
