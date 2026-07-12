@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { scaleNotes, diatonicChord, SCALES } from './keyScale';
+import {
+  scaleNotes,
+  diatonicChord,
+  SCALES,
+  wheelChord,
+  wheelNotes,
+  diatonicSlices,
+  type WheelSlice,
+  type CustomWheel,
+  type MusicConfig,
+} from './keyScale';
 
 describe('scaleNotes', () => {
   it('default C major reproduces the wheel (C4 ascending)', () => {
@@ -185,5 +195,64 @@ describe('sounded chord names', () => {
     expect(diatonicChord(5, 1, 0, 'major').label).toBe('Am6');
     expect(diatonicChord(0, 4, 0, 'major').label).toBe('Cadd9');
     expect(diatonicChord(0, 5, 0, 'major').label).toBe('Csus2');
+  });
+});
+
+describe('custom wheels', () => {
+  const III: WheelSlice = { interval: 4, quality: 'maj' };
+  const wheel: CustomWheel = {
+    id: 'w1',
+    name: 'pop',
+    slices: [
+      { interval: 0, quality: 'maj' },  // I
+      { interval: 2, quality: 'min' },  // ii
+      III,                              // III (the iii→III case)
+      { interval: 5, quality: 'maj' },  // IV
+      { interval: 7, quality: 'maj' },  // V
+      { interval: 9, quality: 'min' },  // vi
+      { interval: 10, quality: 'maj' }, // bVII (borrowed)
+    ],
+  };
+  const music: MusicConfig = { keyOffset: 0, scale: 'major', customWheel: wheel };
+
+  it('plays the custom triad on a slice (III in C = E major)', () => {
+    const chord = wheelChord(2, 0, music);
+    expect(chord.midis).toEqual([64, 68, 71]); // E G# B
+    expect(chord.label).toBe('E');
+  });
+
+  it('transposes with the key (III in D = F# major)', () => {
+    const chord = wheelChord(2, 0, { ...music, keyOffset: 2 });
+    expect(chord.midis).toEqual([66, 70, 73]); // F# A# C#
+    expect(chord.label).toBe('F#');
+  });
+
+  it('stacks extensions on the custom quality (7th on maj → dominant)', () => {
+    expect(wheelChord(2, 2, music).midis).toEqual([64, 68, 71, 74]); // E7
+    expect(wheelChord(2, 2, music).label).toBe('E7');
+    expect(wheelChord(1, 2, music).label).toBe('Dm7');
+  });
+
+  it('handles borrowed roots (bVII in C = Bb)', () => {
+    const chord = wheelChord(6, 0, music);
+    expect(chord.midis).toEqual([70, 74, 77]);
+    expect(chord.rootLabel).toBe('A#'); // sharp fallback spelling, matches KEYS
+  });
+
+  it('wheelNotes shows the custom roots; falls back to scaleNotes without a wheel', () => {
+    expect(wheelNotes(music).map(n => n.midi)).toEqual([60, 62, 64, 65, 67, 69, 70]);
+    expect(wheelNotes({ keyOffset: 0, scale: 'major' }).map(n => n.label))
+      .toEqual(scaleNotes(0, 'major').map(n => n.label));
+  });
+
+  it('universal chord mode ignores the custom wheel', () => {
+    const uni: MusicConfig = { ...music, chordMode: 'universal' };
+    expect(wheelChord(2, 0, uni).label).toBe(diatonicChord(2, 0, 0, 'major', 0, 'universal').label);
+  });
+
+  it('diatonicSlices reproduces the diatonic wheel', () => {
+    const slices = diatonicSlices('major');
+    expect(slices[2]).toEqual({ interval: 4, quality: 'min' }); // iii
+    expect(slices[6]).toEqual({ interval: 11, quality: 'dim' }); // vii°
   });
 });

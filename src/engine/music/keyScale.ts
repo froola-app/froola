@@ -33,7 +33,7 @@ export type ScaleNote = { label: string; midi: number };
 // (maj/min/7/maj7/m7/dim7/aug) applied to the selected root, key be damned.
 export type ChordMode = 'diatonic' | 'universal';
 
-export type MusicConfig = { keyOffset: number; scale: ScaleName; chordMode?: ChordMode };
+export type MusicConfig = { keyOffset: number; scale: ScaleName; chordMode?: ChordMode; customWheel?: CustomWheel };
 
 export const DEFAULT_MUSIC: MusicConfig = { keyOffset: 0, scale: 'major' };
 
@@ -125,6 +125,104 @@ export const UNIVERSAL_CHORDS: Extension[] = [
   { id: 'dim7', label: 'dim7', suffix: '°7',   semitones: [0, 3, 6, 9] },
   { id: 'aug',  label: 'aug',  suffix: '+',    semitones: [0, 4, 8] },
 ];
+
+// --- Custom wheels -----------------------------------------------------
+// A custom wheel replaces the left wheel's diatonic degrees with 7 owner-
+// chosen slices, each an interval above the tonic plus a triad quality —
+// so a wheel transposes with the key (III is "4 semitones up, major" in
+// every key). The right wheel still stacks extensions on top.
+
+export type TriadQuality = 'maj' | 'min' | 'dim' | 'aug';
+export type WheelSlice = { interval: number; quality: TriadQuality };
+export type CustomWheel = { id: string; name: string; slices: WheelSlice[] };
+
+const TRIAD_INTERVALS: Record<TriadQuality, { third: number; fifth: number }> = {
+  maj: { third: 4, fifth: 7 },
+  min: { third: 3, fifth: 7 },
+  dim: { third: 3, fifth: 6 },
+  aug: { third: 4, fifth: 8 },
+};
+
+// The seventh each quality takes when the right wheel asks for a 7th/9th:
+// major → dominant (the common-practice default), minor → m7, dim → m7♭5,
+// aug → maj7♯5. No scale to consult here — the wheel owns the harmony.
+const SEVENTH_FOR: Record<TriadQuality, number> = { maj: 10, min: 10, dim: 10, aug: 11 };
+
+/** Spell a chromatic interval above the tonic: naturals by letter, anything
+ *  else with the sharp spelling used app-wide (KEYS). */
+export function intervalLabel(keyOffset: number, interval: number): string {
+  const pc = ((keyOffset + interval) % 12 + 12) % 12;
+  return LETTERS.find(l => NATURAL_SEMITONE[l] === pc) ?? KEYS[pc];
+}
+
+export function customChord(
+  slice: WheelSlice,
+  extIdx: number,
+  keyOffset: number,
+  octave = 0,
+): Chord {
+  const ext = EXTENSIONS[((extIdx % EXTENSIONS.length) + EXTENSIONS.length) % EXTENSIONS.length];
+  const root = TONIC_MIDI + keyOffset + octave * 12 + slice.interval;
+  const { third, fifth } = TRIAD_INTERVALS[slice.quality];
+  const hasSeventh = !ext.semitones && ext.steps!.includes(6);
+  const seventh = hasSeventh ? SEVENTH_FOR[slice.quality] : null;
+
+  const midis = ext.semitones
+    ? ext.semitones.map(s => root + s)
+    : [
+        root,
+        root + third,
+        root + fifth,
+        ...(seventh !== null ? [root + seventh] : []),
+        ...(ext.addSemitones ?? []).map(s => root + s),
+      ];
+
+  const rootLabel = intervalLabel(keyOffset, slice.interval);
+  const label = ext.semitones
+    ? `${rootLabel}${ext.suffix}`
+    : hasSeventh
+      ? `${rootLabel}${soundedSuffix(third, fifth, seventh, ext.id === '9th' ? '9' : '7')}`
+      : `${rootLabel}${soundedSuffix(third, fifth, null)}${ext.suffix}`;
+
+  return { midis, label, rootLabel };
+}
+
+/** Left-wheel notes, custom-wheel aware. */
+export function wheelNotes(music: MusicConfig): ScaleNote[] {
+  if (music.customWheel) {
+    return music.customWheel.slices.map(s => ({
+      label: intervalLabel(music.keyOffset, s.interval),
+      midi: TONIC_MIDI + music.keyOffset + s.interval,
+    }));
+  }
+  return scaleNotes(music.keyOffset, music.scale);
+}
+
+/** The chord for a wheel selection, custom-wheel aware. Universal chord mode
+ *  already lets any root take any quality, so it bypasses the custom wheel. */
+export function wheelChord(noteIdx: number, qualIdx: number, music: MusicConfig, octave = 0): Chord {
+  const wheel = music.customWheel;
+  if (wheel && music.chordMode !== 'universal') {
+    const n = wheel.slices.length;
+    return customChord(wheel.slices[((noteIdx % n) + n) % n], qualIdx, music.keyOffset, octave);
+  }
+  return diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale, octave, music.chordMode);
+}
+
+/** The scale's own degrees as wheel slices — the editor's starting point. */
+export function diatonicSlices(scale: ScaleName): WheelSlice[] {
+  const iv = SCALES[scale];
+  return iv.map((interval, d) => {
+    const tone = (p: number) => iv[p % 7] + 12 * Math.floor(p / 7);
+    const third = tone(d + 2) - interval;
+    const fifth = tone(d + 4) - interval;
+    const quality: TriadQuality =
+      third === 3 && fifth === 6 ? 'dim'
+      : third === 4 && fifth === 8 ? 'aug'
+      : third === 3 ? 'min' : 'maj';
+    return { interval, quality };
+  });
+}
 
 /** The right wheel's chord set for a given mode. */
 export function chordSet(mode: ChordMode = 'diatonic'): Extension[] {
