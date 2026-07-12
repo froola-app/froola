@@ -44,7 +44,7 @@ beforeEach(() => {
 describe('RecordingsPanel', () => {
   it('renders the sign-in note when signed out', () => {
     mockUseAuth.mockReturnValue(authState({ user: null }));
-    render(<RecordingsPanel />);
+    render(<RecordingsPanel open />);
     expect(screen.getByText(/sign in to keep your recordings/i)).toBeDefined();
     expect(mockListRecordings).not.toHaveBeenCalled();
   });
@@ -56,7 +56,7 @@ describe('RecordingsPanel', () => {
     }));
     mockListRecordings.mockResolvedValue(ROWS);
 
-    render(<RecordingsPanel />);
+    render(<RecordingsPanel open />);
 
     await waitFor(() => {
       expect(screen.getByText(new Date(ROWS[0].createdAt).toLocaleDateString())).toBeDefined();
@@ -76,7 +76,7 @@ describe('RecordingsPanel', () => {
     }));
     mockListRecordings.mockResolvedValue(ROWS);
 
-    render(<RecordingsPanel />);
+    render(<RecordingsPanel open />);
     await waitFor(() => expect(screen.getAllByRole('button', { name: /copy link/i })).toHaveLength(2));
 
     fireEvent.click(screen.getAllByRole('button', { name: /copy link/i })[0]);
@@ -92,7 +92,7 @@ describe('RecordingsPanel', () => {
     mockListRecordings.mockResolvedValue(ROWS);
     mockDeleteRecording.mockResolvedValue(true);
 
-    render(<RecordingsPanel />);
+    render(<RecordingsPanel open />);
     await waitFor(() => expect(screen.getAllByRole('button', { name: /delete recording/i })).toHaveLength(2));
 
     fireEvent.click(screen.getAllByRole('button', { name: /delete recording/i })[0]);
@@ -112,10 +112,55 @@ describe('RecordingsPanel', () => {
     }));
     mockListRecordings.mockResolvedValue(ROWS);
 
-    render(<RecordingsPanel />);
+    render(<RecordingsPanel open />);
 
     await waitFor(() => {
       expect(screen.getByText('2 saved')).toBeDefined();
+    });
+  });
+
+  it('does not fetch recordings when the drawer is closed', () => {
+    mockUseAuth.mockReturnValue(authState({
+      user: { uid: 'u1', email: 'a@b.com', displayName: null } as never,
+      profile: { betaTester: false, plan: 'plus' } as never,
+    }));
+
+    render(<RecordingsPanel open={false} />);
+
+    expect(mockListRecordings).not.toHaveBeenCalled();
+  });
+
+  it('rounds durations without overflowing into a 60-second bucket', async () => {
+    mockUseAuth.mockReturnValue(authState({
+      user: { uid: 'u1', email: 'a@b.com', displayName: null } as never,
+      profile: { betaTester: false, plan: 'plus' } as never,
+    }));
+    mockListRecordings.mockResolvedValue([
+      { id: 'ccc3333333', createdAt: Date.now(), durationMs: 119_600 },
+      { id: 'ddd4444444', createdAt: Date.now(), durationMs: 120_000 },
+    ]);
+
+    render(<RecordingsPanel open />);
+
+    await waitFor(() => {
+      expect(screen.getByText('1:59')).toBeDefined();
+    });
+    expect(screen.getByText('2:00')).toBeDefined();
+  });
+
+  it('renders an em dash for a recording with no duration', async () => {
+    mockUseAuth.mockReturnValue(authState({
+      user: { uid: 'u1', email: 'a@b.com', displayName: null } as never,
+      profile: { betaTester: false, plan: 'plus' } as never,
+    }));
+    mockListRecordings.mockResolvedValue([
+      { id: 'eee5555555', createdAt: Date.now(), durationMs: null },
+    ]);
+
+    render(<RecordingsPanel open />);
+
+    await waitFor(() => {
+      expect(screen.getByText('—')).toBeDefined();
     });
   });
 });

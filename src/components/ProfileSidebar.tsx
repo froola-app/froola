@@ -211,7 +211,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Recordings</h3>
-            <RecordingsPanel />
+            <RecordingsPanel open={open} />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Settings</h3>

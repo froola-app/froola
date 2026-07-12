@@ -1,21 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
 import { listRecordings, deleteRecording, type RecordingMeta } from '../engine/recording/recordingStore';
 import { copyToClipboard } from '../utils/clipboard';
 
-const fmtDuration = (ms: number | null) =>
-  ms == null ? '' : `${Math.floor(ms / 60000)}:${String(Math.round(ms % 60000 / 1000)).padStart(2, '0')}`;
+const fmtDuration = (ms: number | null) => {
+  if (ms == null) return '—';
+  const total = Math.floor(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+};
 
-export default function RecordingsPanel() {
+export default function RecordingsPanel({ open }: { open: boolean }) {
   const { user, profile } = useAuth();
   const ent = entitlementsFor(profile);
   const [rows, setRows] = useState<RecordingMeta[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (user) void listRecordings().then(setRows);
-  }, [user]);
+    if (!open || !user) return;
+    let cancelled = false;
+    void listRecordings().then(rows => { if (!cancelled) setRows(rows); });
+    return () => { cancelled = true; };
+  }, [open, user]);
+
+  useEffect(() => () => { if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current); }, []);
 
   if (!user) return <p className="profile-drawer__note">Sign in to keep your recordings and share links.</p>;
 
@@ -34,7 +43,9 @@ export default function RecordingsPanel() {
           </div>
           <button className="profile-drawer__row-btn" onClick={() => {
             void copyToClipboard(`${window.location.origin}/replay?r=${r.id}`);
-            setCopiedId(r.id); setTimeout(() => setCopiedId(null), 1500);
+            setCopiedId(r.id);
+            if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+            copiedTimeoutRef.current = setTimeout(() => setCopiedId(null), 1500);
           }}>{copiedId === r.id ? 'Copied!' : 'Copy link'}</button>
           <button className="profile-drawer__row-btn" aria-label="Delete recording" onClick={() => {
             void deleteRecording(r.id).then(ok => { if (ok) setRows(rs => rs.filter(x => x.id !== r.id)); });
