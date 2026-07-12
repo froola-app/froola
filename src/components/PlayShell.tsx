@@ -20,6 +20,7 @@ import FroolaGuide from './FroolaGuide';
 import PlayWall from './PlayWall';
 import GlassDials from './GlassDials';
 import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
+import LockBadge from './LockBadge';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { usePlayWall } from '../hooks/usePlayWall';
@@ -413,7 +414,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           panel's spot that opens the upgrade sheet. */}
       {!isMobile && mode === 'camera' && !ent.loopUnlocked && (
         <button className="loop-teaser" onClick={() => setUpsell('loop')}>
-          Loops <span className="lock-chip">plus</span>
+          Loops <LockBadge />
         </button>
       )}
       {/* Mobile keeps only the two controls that shape which notes are on
@@ -522,7 +523,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           aria-label="Arpeggiator (Plus feature)"
           title="Plus turns a held chord into a rolling arpeggio pattern"
         >
-          arp <span className="lock-chip">plus</span>
+          arp <LockBadge />
         </button>)}
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}

@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 import type { DialSelection } from '../engine/renderer';
 import { useRecorder } from '../engine/recording/useRecorder';
 import { copyToClipboard } from '../utils/clipboard';
+import LockBadge from './LockBadge';
 
 type Props = {
   selectedRef: RefObject<DialSelection>;
@@ -24,7 +25,7 @@ export default function RecordButton({ selectedRef, vibe, maxDurationMs, waterma
   if (locked) {
     return (
       <button className="record-btn record-btn--idle" onClick={onLockedClick}>
-        <span className="rec-dot" /> Record <span className="lock-chip">plus</span>
+        <span className="rec-dot" /> Record <LockBadge />
       </button>
     );
   }
