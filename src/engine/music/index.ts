@@ -5,6 +5,7 @@ export {
   scaleNotes,
   diatonicChord,
   degreeRootMidi,
+  soundedSuffix,
   SCALES,
   SCALE_NAMES,
   KEYS,

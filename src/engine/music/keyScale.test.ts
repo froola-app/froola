@@ -144,3 +144,46 @@ describe('diatonicChord — universal chord mode', () => {
     expect(diatonicChord(1, 0, 0, 'major').midis).toEqual(diatonicChord(1, 0, 0, 'major', 0, 'diatonic').midis);
   });
 });
+
+describe('lydian', () => {
+  it('spells C lydian with a raised 4th', () => {
+    expect(scaleNotes(0, 'lydian').map(n => n.label)).toEqual(['C', 'D', 'E', 'F#', 'G', 'A', 'B']);
+  });
+
+  it('makes degree IV the diminished triad', () => {
+    // F#–A–C: lydian's raised 4th puts the diminished triad on IV
+    const chord = diatonicChord(3, 0, 0, 'lydian');
+    expect(chord.midis).toEqual([66, 69, 72]);
+    expect(chord.label).toBe('F#°');
+  });
+});
+
+describe('sounded chord names', () => {
+  // extIdx 2 = '7th', extIdx 3 = '9th' (EXTENSIONS order)
+  it('names the 7th chords of C major by their sounded quality', () => {
+    const labels = [0, 1, 2, 3, 4, 5, 6].map(d => diatonicChord(d, 2, 0, 'major').label);
+    expect(labels).toEqual(['Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'G7', 'Am7', 'Bm7♭5']);
+  });
+
+  it('names G in D major (degree IV) Gmaj7, not G7', () => {
+    expect(diatonicChord(3, 2, 2, 'major').label).toBe('Gmaj7');
+  });
+
+  it('names 9th chords by their sounded seventh', () => {
+    expect(diatonicChord(0, 3, 0, 'major').label).toBe('Cmaj9');
+    expect(diatonicChord(1, 3, 0, 'major').label).toBe('Dm9');
+    expect(diatonicChord(4, 3, 0, 'major').label).toBe('G9');
+  });
+
+  it('names minor-key 7ths correctly', () => {
+    expect(diatonicChord(0, 2, 0, 'minor').label).toBe('Cm7');   // i7
+    expect(diatonicChord(2, 2, 0, 'minor').label).toBe('Ebmaj7'); // III maj7
+  });
+
+  it('leaves triads, 6ths, add9 and sus labels unchanged', () => {
+    expect(diatonicChord(5, 0, 0, 'major').label).toBe('Am');
+    expect(diatonicChord(5, 1, 0, 'major').label).toBe('Am6');
+    expect(diatonicChord(0, 4, 0, 'major').label).toBe('Cadd9');
+    expect(diatonicChord(0, 5, 0, 'major').label).toBe('Csus2');
+  });
+});
