@@ -43,6 +43,8 @@ export type SavedLoop = {
 }
 
 const clampBpm = (bpm: number) => Math.max(MIN_BPM, Math.min(MAX_BPM, Math.round(bpm)))
+const clampBeatsPerSlot = (beats: number) =>
+  Math.max(MIN_BEATS_PER_SLOT, Math.min(MAX_BEATS_PER_SLOT, Math.round(beats)))
 
 export class ChordLooper {
   private deps: LooperDeps
@@ -108,10 +110,7 @@ export class ChordLooper {
   }
 
   setBeatsPerSlot(beats: number): void {
-    this.beatsPerSlot = Math.max(
-      MIN_BEATS_PER_SLOT,
-      Math.min(MAX_BEATS_PER_SLOT, Math.round(beats)),
-    )
+    this.beatsPerSlot = clampBeatsPerSlot(beats)
     this.emit()
   }
 
@@ -120,15 +119,12 @@ export class ChordLooper {
   }
 
   load(loop: Pick<SavedLoop, 'bpm' | 'beatsPerSlot' | 'slots'>): void {
-    if (this.playing) this.stop()
     this.bpm = clampBpm(loop.bpm)
-    this.beatsPerSlot = Math.max(
-      MIN_BEATS_PER_SLOT,
-      Math.min(MAX_BEATS_PER_SLOT, Math.round(loop.beatsPerSlot)),
-    )
+    this.beatsPerSlot = clampBeatsPerSlot(loop.beatsPerSlot)
     this.slots = loop.slots.slice(0, MAX_SLOTS)
     this.clock?.setBpm(this.bpm)
-    this.emit()
+    if (this.playing) this.stop()
+    else this.emit()
   }
 
   start(): void {
