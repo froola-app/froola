@@ -144,3 +144,16 @@ describe('diatonicChord — universal chord mode', () => {
     expect(diatonicChord(1, 0, 0, 'major').midis).toEqual(diatonicChord(1, 0, 0, 'major', 0, 'diatonic').midis);
   });
 });
+
+describe('lydian', () => {
+  it('spells C lydian with a raised 4th', () => {
+    expect(scaleNotes(0, 'lydian').map(n => n.label)).toEqual(['C', 'D', 'E', 'F#', 'G', 'A', 'B']);
+  });
+
+  it('makes degree IV the diminished triad', () => {
+    // F#–A–C: lydian's raised 4th puts the diminished triad on IV
+    const chord = diatonicChord(3, 0, 0, 'lydian');
+    expect(chord.midis).toEqual([66, 69, 72]);
+    expect(chord.label).toBe('F#°');
+  });
+});

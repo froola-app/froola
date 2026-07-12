@@ -1,7 +1,7 @@
 // Key + scale system for the note wheel. The wheel has 7 slices, so every scale
 // here is a 7-note (heptatonic) scale: slice index = scale degree.
 
-export type ScaleName = 'major' | 'minor' | 'dorian' | 'mixolydian';
+export type ScaleName = 'major' | 'minor' | 'dorian' | 'mixolydian' | 'lydian';
 
 // Semitone offsets of each degree from the tonic.
 export const SCALES: Record<ScaleName, number[]> = {
@@ -9,6 +9,7 @@ export const SCALES: Record<ScaleName, number[]> = {
   minor:      [0, 2, 3, 5, 7, 8, 10],
   dorian:     [0, 2, 3, 5, 7, 9, 10],
   mixolydian: [0, 2, 4, 5, 7, 9, 10],
+  lydian:     [0, 2, 4, 6, 7, 9, 11],
 };
 
 export const SCALE_NAMES = Object.keys(SCALES) as ScaleName[];
