@@ -139,6 +139,26 @@ export function degreeRootMidi(degree: number, keyOffset: number, scale: ScaleNa
   return TONIC_MIDI + keyOffset + iv[d];
 }
 
+// Suffix for the sounded chord. Triad quality comes from the third+fifth;
+// the seventh's own quality (11 = major, 10 = minor, 9 = diminished) picks
+// between maj7/7/m7/°7/m7♭5 instead of a one-size-fits-all "7". `n` is '9'
+// for ninth chords, which follow the same seventh logic (maj9/9/m9).
+export function soundedSuffix(
+  third: number,
+  fifth: number,
+  seventh: number | null,
+  n: '7' | '9' = '7',
+): string {
+  const dim = third === 3 && fifth === 6;
+  const aug = third === 4 && fifth === 8;
+  const min = !dim && third === 3;
+  if (seventh === null) return dim ? '°' : aug ? '+' : min ? 'm' : '';
+  if (dim) return seventh === 9 ? `°${n}` : `m${n}♭5`;
+  if (aug) return `maj${n}♯5`;
+  if (min) return seventh === 11 ? `m(maj${n})` : `m${n}`;
+  return seventh === 11 ? `maj${n}` : n;
+}
+
 export type Chord = { midis: number[]; label: string; rootLabel: string };
 
 // Build the diatonic chord for `degree` + `extIdx` in the given key/scale.
@@ -171,13 +191,15 @@ export function diatonicChord(
   const rootLabel = spellDegree(keyOffset, scale, degreeInScale, ((keyOffset + iv[degreeInScale]) % 12 + 12) % 12);
   const third = tone(degree + 2) - tone(degree);
   const fifth = tone(degree + 4) - tone(degree);
-  let q = '';
-  if (third === 3 && fifth === 6) q = '°';
-  else if (third === 4 && fifth === 8) q = '+';
-  else if (third === 3) q = 'm';
+  const hasSeventh = !ext.semitones && ext.steps!.includes(6);
+  const seventh = hasSeventh ? tone(degree + 6) - tone(degree) : null;
   // Fixed-interval chords (sus + all universal qualities) carry their whole
   // identity in the suffix — the degree's diatonic quality doesn't apply.
-  const label = ext.semitones ? `${rootLabel}${ext.suffix}` : `${rootLabel}${q}${ext.suffix}`;
+  const label = ext.semitones
+    ? `${rootLabel}${ext.suffix}`
+    : hasSeventh
+      ? `${rootLabel}${soundedSuffix(third, fifth, seventh, ext.id === '9th' ? '9' : '7')}`
+      : `${rootLabel}${soundedSuffix(third, fifth, null)}${ext.suffix}`;
 
   return { midis, label, rootLabel };
 }
