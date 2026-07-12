@@ -103,6 +103,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const [customWheels, setCustomWheels] = useState<CustomWheel[]>([]);
   const [activeWheelId, setActiveWheelId] = useState<string | null>(null);
   const [wheelEditor, setWheelEditor] = useState<'closed' | 'new' | 'edit'>('closed');
+  // Same downgrade rule as piano above: losing the entitlement mid-session
+  // (subscription lapses, sign-out) must not leave a gated wheel active.
+  // Adjusted during render — a pure state correction (see prevPianoUnlocked).
+  const [prevWheelsUnlocked, setPrevWheelsUnlocked] = useState(ent.customWheelsUnlocked);
+  if (prevWheelsUnlocked !== ent.customWheelsUnlocked) {
+    setPrevWheelsUnlocked(ent.customWheelsUnlocked);
+    if (!ent.customWheelsUnlocked) {
+      setActiveWheelId(null);
+      setCustomWheels([]);
+      setWheelEditor('closed');
+    }
+  }
   const activeWheel = customWheels.find(w => w.id === activeWheelId) ?? null;
 
   const musicRef = useRef<MusicConfig>({ keyOffset, scale, chordMode, customWheel: activeWheel ?? undefined });

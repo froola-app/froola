@@ -26,10 +26,22 @@ export default function WheelEditor({ keyOffset, scale, initial, onSave, onDelet
     setSlices(s => s.map((sl, j) => (j === i ? { ...sl, ...patch } : sl)));
 
   return (
-    <div className="wheel-editor" role="dialog" aria-label="Custom wheel editor">
+    <div className="upsheet-overlay" onClick={onClose} role="presentation">
+      <div
+        className="upsheet wheel-editor"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Custom wheel editor"
+        onClick={e => e.stopPropagation()}
+      >
       <label>
         wheel name
-        <input value={name} onChange={e => setName(e.target.value)} aria-label="wheel name" />
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          aria-label="wheel name"
+          maxLength={40}
+        />
       </label>
       {slices.map((slice, i) => (
         <div key={i} className="wheel-editor-row">
@@ -56,6 +68,7 @@ export default function WheelEditor({ keyOffset, scale, initial, onSave, onDelet
         <button onClick={() => onSave(name.trim() || 'my wheel', slices, initial?.id)}>save</button>
         {initial && <button onClick={() => onDelete(initial.id)}>delete</button>}
         <button onClick={onClose}>cancel</button>
+      </div>
       </div>
     </div>
   );

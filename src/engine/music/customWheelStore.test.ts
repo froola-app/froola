@@ -59,6 +59,20 @@ describe('customWheelStore', () => {
       expect(h.from).toHaveBeenCalledWith('custom_wheels');
     });
 
+    it('drops malformed rows so bad jsonb never reaches the rAF loop', async () => {
+      const good = { id: 'w1', name: 'Good Wheel', slices };
+      const rows = [
+        good,
+        { id: 'w2', name: 'short', slices: slices.slice(0, 6) },              // only 6 slices
+        { id: 'w3', name: 'not-array', slices: { interval: 0 } },             // slices not an array
+        { id: 'w4', name: 'bad-interval', slices: slices.map(s => ({ ...s, interval: 'five' })) },
+        { id: 'w5', name: 'bad-quality', slices: slices.map(s => ({ ...s, quality: 'sus' })) },
+        { id: 'w6', name: 'null-slice', slices: [...slices.slice(0, 6), null] },
+      ];
+      h.from.mockReturnValue(makeBuilder({ data: rows, error: null }));
+      await expect(listWheels()).resolves.toEqual([good]);
+    });
+
     it('resolves to [] on query error', async () => {
       h.from.mockReturnValue(makeBuilder({ data: null, error: { message: 'boom' } }));
       await expect(listWheels()).resolves.toEqual([]);

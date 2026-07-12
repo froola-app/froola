@@ -1,9 +1,9 @@
 import type { MusicalCommand } from '../types';
-import { wheelChord, wheelNotes, degreeRootMidi, DEFAULT_MUSIC, chordSet, type MusicConfig } from './keyScale';
+import { activeWheel, wheelChord, wheelNotes, degreeRootMidi, DEFAULT_MUSIC, chordSet, type MusicConfig } from './keyScale';
 
 // Melody note for the latch solo — the selected slice's root, one octave above the pad.
 export function melodyMidi(noteIdx: number, music: MusicConfig = DEFAULT_MUSIC): number {
-  if (music.customWheel) {
+  if (activeWheel(music)) {
     const notes = wheelNotes(music);
     return notes[((noteIdx % notes.length) + notes.length) % notes.length].midi + 12;
   }

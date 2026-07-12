@@ -54,5 +54,12 @@ describe('buildCommand — chord mode', () => {
     expect(buildCommand(2, 0, 0.5, 0, music).chord).toBe('E');
     expect(buildCommand(2, 0, 0.5, 0, music).voicing).toEqual([64, 68, 71]);
     expect(melodyMidi(2, music)).toBe(76); // E root + 12
+
+    // Universal chord mode bypasses the custom wheel everywhere — melody
+    // follows the scale degree, matching what wheelChord actually sounds.
+    const uni: MusicConfig = { ...music, chordMode: 'universal' };
+    // Slice 6 is a borrowed bVII (Bb, 82 with the wheel); the scale degree is B (83).
+    expect(melodyMidi(6, music)).toBe(82);
+    expect(melodyMidi(6, uni)).toBe(83);
   });
 });

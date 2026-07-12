@@ -250,6 +250,21 @@ describe('custom wheels', () => {
     expect(wheelChord(2, 0, uni).label).toBe(diatonicChord(2, 0, 0, 'major', 0, 'universal').label);
   });
 
+  it('universal chord mode: wheelNotes falls back to scale labels so the HUD matches the sounded chords', () => {
+    const uni: MusicConfig = { ...music, chordMode: 'universal' };
+    expect(wheelNotes(uni)).toEqual(scaleNotes(0, 'major'));
+  });
+
+  it('aug slice + 7th extension yields maj7♯5 (root, M3, ♯5, maj7)', () => {
+    const augWheel: CustomWheel = {
+      ...wheel,
+      slices: wheel.slices.map((s, i) => (i === 2 ? { interval: 4, quality: 'aug' as const } : s)),
+    };
+    const chord = wheelChord(2, 2, { ...music, customWheel: augWheel }); // extIdx 2 = 7th
+    expect(chord.midis).toEqual([64, 68, 72, 75]); // E, G#, B#(C), D#
+    expect(chord.label.endsWith('maj7♯5')).toBe(true);
+  });
+
   it('diatonicSlices reproduces the diatonic wheel', () => {
     const slices = diatonicSlices('major');
     expect(slices[2]).toEqual({ interval: 4, quality: 'min' }); // iii

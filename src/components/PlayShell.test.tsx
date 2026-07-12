@@ -197,4 +197,40 @@ describe('PlayShell — custom wheel selector gating', () => {
     render(<PlayShell />);
     expect(mockListWheels).toHaveBeenCalled();
   });
+
+  it('downgrade mid-session clears the active custom wheel and the loaded list', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    const plusAuth = {
+      user: { uid: 'u1' } as never,
+      profile: { plan: 'plus', betaTester: false } as never,
+      loading: false,
+      authReady: true,
+      signInWithGoogle: vi.fn(),
+      signInWithEmail: vi.fn(),
+      signOutUser: vi.fn(),
+      completeOnboarding: vi.fn(),
+    };
+    mockUseAuth.mockReturnValue(plusAuth);
+    const wheel = {
+      id: 'w1',
+      name: 'My Wheel',
+      slices: Array.from({ length: 7 }, (_, i) => ({ interval: i, quality: 'maj' as const })),
+    };
+    mockListWheels.mockResolvedValue([wheel]);
+    const { rerender } = render(<PlayShell />);
+
+    const select = screen.getByLabelText('Wheel') as HTMLSelectElement;
+    expect(await screen.findByText('My Wheel')).toBeInTheDocument();
+    fireEvent.change(select, { target: { value: 'w1' } });
+    expect(select.value).toBe('w1');
+
+    // Plan lapses / sign-out: entitlements flip and the gated wheel must go.
+    mockUseAuth.mockReturnValue({ ...plusAuth, user: null, profile: null });
+    rerender(<PlayShell />);
+
+    expect(select.value).toBe('');
+    expect(screen.queryByText('My Wheel')).not.toBeInTheDocument();
+  });
 });

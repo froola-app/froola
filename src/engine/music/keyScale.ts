@@ -187,10 +187,18 @@ export function customChord(
   return { midis, label, rootLabel };
 }
 
+/** The custom wheel in effect, if any. Universal chord mode already lets any
+ *  root take any quality, so it bypasses the custom wheel entirely — labels,
+ *  chords, and melody must all agree on that, so they all route through here. */
+export function activeWheel(music: MusicConfig): CustomWheel | undefined {
+  return music.chordMode === 'universal' ? undefined : music.customWheel;
+}
+
 /** Left-wheel notes, custom-wheel aware. */
 export function wheelNotes(music: MusicConfig): ScaleNote[] {
-  if (music.customWheel) {
-    return music.customWheel.slices.map(s => ({
+  const wheel = activeWheel(music);
+  if (wheel) {
+    return wheel.slices.map(s => ({
       label: intervalLabel(music.keyOffset, s.interval),
       midi: TONIC_MIDI + music.keyOffset + s.interval,
     }));
@@ -198,11 +206,10 @@ export function wheelNotes(music: MusicConfig): ScaleNote[] {
   return scaleNotes(music.keyOffset, music.scale);
 }
 
-/** The chord for a wheel selection, custom-wheel aware. Universal chord mode
- *  already lets any root take any quality, so it bypasses the custom wheel. */
+/** The chord for a wheel selection, custom-wheel aware. */
 export function wheelChord(noteIdx: number, qualIdx: number, music: MusicConfig, octave = 0): Chord {
-  const wheel = music.customWheel;
-  if (wheel && music.chordMode !== 'universal') {
+  const wheel = activeWheel(music);
+  if (wheel) {
     const n = wheel.slices.length;
     return customChord(wheel.slices[((noteIdx % n) + n) % n], qualIdx, music.keyOffset, octave);
   }

@@ -13,6 +13,7 @@ export {
   UNIVERSAL_CHORDS,
   chordSet,
   DEFAULT_MUSIC,
+  activeWheel,
   wheelNotes,
   wheelChord,
   customChord,
