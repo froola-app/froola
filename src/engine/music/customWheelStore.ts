@@ -28,8 +28,13 @@ export async function saveWheel(
   if (!supabase) return null;
   try {
     if (id) {
-      const { error } = await supabase.from('custom_wheels').update({ name, slices }).eq('id', id);
-      return error ? null : { id, name, slices };
+      const { data, error } = await supabase
+        .from('custom_wheels')
+        .update({ name, slices })
+        .eq('id', id)
+        .select('id')
+        .single();
+      return error || !data ? null : { id, name, slices };
     }
     const { data: s } = await supabase.auth.getSession();
     const userId = s.session?.user.id;

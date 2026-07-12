@@ -93,7 +93,7 @@ describe('customWheelStore', () => {
     });
 
     it('with id: updates name+slices for that id', async () => {
-      const updateBuilder = makeBuilder({ error: null });
+      const updateBuilder = makeBuilder({ data: { id: 'w1' }, error: null });
       h.from.mockReturnValue(updateBuilder);
       const result = await saveWheel('Renamed', slices, 'w1');
 
@@ -105,6 +105,13 @@ describe('customWheelStore', () => {
 
     it('with id: resolves null on update error', async () => {
       const updateBuilder = makeBuilder({ error: { message: 'boom' } });
+      h.from.mockReturnValue(updateBuilder);
+      const result = await saveWheel('Renamed', slices, 'w1');
+      expect(result).toBeNull();
+    });
+
+    it('with id: resolves null when update matches no row (RLS/ownership mismatch)', async () => {
+      const updateBuilder = makeBuilder({ data: null, error: { code: 'PGRST116' } });
       h.from.mockReturnValue(updateBuilder);
       const result = await saveWheel('Renamed', slices, 'w1');
       expect(result).toBeNull();
