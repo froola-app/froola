@@ -160,6 +160,25 @@ describe('recordingStore', () => {
       expect(id).toHaveLength(10);
     });
 
+    it('with multiple rows at cap, deletes oldest and inserts', async () => {
+      // Seed with 5 rows in newest-first order (matching listRecordings behavior)
+      mock.setRows([
+        { id: 'AAAAAAAAAA', created_at: 5000, duration_ms: 1000 },
+        { id: 'BBBBBBBBBB', created_at: 4000, duration_ms: 2000 },
+        { id: 'CCCCCCCCCC', created_at: 3000, duration_ms: 1500 },
+        { id: 'DDDDDDDDDD', created_at: 2000, duration_ms: 2500 },
+        { id: 'EEEEEEEEEE', created_at: 1000, duration_ms: 1800 },
+      ]);
+      // Cap is 3: keep 2 newest, evict 3 oldest
+      const id = await saveRecordingCapped('payload', 9_000, 3);
+      // Should delete the 3 oldest (indices 2, 3, 4 in newest-first list)
+      expect(new Set(mock.deletedIds)).toEqual(
+        new Set(['CCCCCCCCCC', 'DDDDDDDDDD', 'EEEEEEEEEE']),
+      );
+      expect(mock.inserted).toMatchObject({ duration_ms: 9_000, data: 'payload' });
+      expect(id).toHaveLength(10);
+    });
+
     it('aborts (returns null, no insert) if the delete fails', async () => {
       mock.setRows([{ id: 'OLDOLDOLD1', created_at: 1, duration_ms: 5000 }]);
       mock.setDeleteFails(true);
