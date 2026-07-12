@@ -37,4 +37,11 @@ describe('entitlements', () => {
     expect(effectivePlan({ plan: 'free', betaTester: true })).toBe('studio');
     expect(entitlementsFor({ plan: 'free', betaTester: true }).pianoUnlocked).toBe(true);
   });
+
+  it('gates custom wheels to plus and studio', () => {
+    expect(entitlementsFor(null).customWheelsUnlocked).toBe(false);
+    expect(entitlementsFor({ plan: 'plus', betaTester: false }).customWheelsUnlocked).toBe(true);
+    expect(entitlementsFor({ plan: 'studio', betaTester: false }).customWheelsUnlocked).toBe(true);
+    expect(entitlementsFor({ plan: 'free', betaTester: true }).customWheelsUnlocked).toBe(true); // beta → studio
+  });
 });

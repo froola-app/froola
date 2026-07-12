@@ -34,6 +34,8 @@ export interface Entitlements {
   loopSlots: number;
   /** Arpeggiator (Plus+). Free doesn't get the feature at all. */
   arpUnlocked: boolean;
+  /** Custom chord wheels — user-defined root+quality per slice (Plus+). */
+  customWheelsUnlocked: boolean;
 }
 
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
@@ -50,6 +52,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     loopUnlocked: false,
     loopSlots: 0,
     arpUnlocked: false,
+    customWheelsUnlocked: false,
   },
   plus: {
     pianoUnlocked: true,
@@ -64,6 +67,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     loopUnlocked: true,
     loopSlots: 8,
     arpUnlocked: true,
+    customWheelsUnlocked: true,
   },
   studio: {
     pianoUnlocked: true,
@@ -78,6 +82,7 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     loopUnlocked: true,
     loopSlots: Infinity,
     arpUnlocked: true,
+    customWheelsUnlocked: true,
   },
 };
 
