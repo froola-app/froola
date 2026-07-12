@@ -57,4 +57,12 @@ describe('encodeMp3', () => {
     encodeMp3(buffer);
     expect(encodeBuffer).toHaveBeenCalledWith(expect.any(Int16Array), expect.any(Int16Array));
   });
+
+  it('chunks samples into 1152-frame calls to encodeBuffer', () => {
+    const buffer = makeBuffer(1, 2000);
+    encodeMp3(buffer);
+    expect(encodeBuffer).toHaveBeenCalledTimes(2);
+    const firstArg = encodeBuffer.mock.calls[0][0] as Int16Array;
+    expect(firstArg.length).toBe(1152);
+  });
 });

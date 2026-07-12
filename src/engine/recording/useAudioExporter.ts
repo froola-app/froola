@@ -44,7 +44,17 @@ export function useAudioExporter(
     stopAudioRef.current = stopAudio;
 
     chunksRef.current = [];
-    const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : undefined;
+    let recorder: MediaRecorder;
+    try {
+      recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    } catch (err) {
+      console.error('[audioExporter] MediaRecorder construction failed', err);
+      stopAudioRef.current?.();
+      stopAudioRef.current = null;
+      setState('idle');
+      return;
+    }
     recorderRef.current = recorder;
 
     recorder.ondataavailable = e => {
@@ -55,20 +65,25 @@ export function useAudioExporter(
       cleanup();
       setState('encoding');
       void (async () => {
-        const webmBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const arrayBuffer = await webmBlob.arrayBuffer();
-        const audioBuffer = await engine.decodeAudio(arrayBuffer);
-        const mp3Blob = encodeMp3(audioBuffer);
-        const url = URL.createObjectURL(mp3Blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'froola-session.mp3';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        setState('idle');
-        setElapsed(0);
+        try {
+          const webmBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const arrayBuffer = await webmBlob.arrayBuffer();
+          const audioBuffer = await engine.decodeAudio(arrayBuffer);
+          const mp3Blob = encodeMp3(audioBuffer);
+          const url = URL.createObjectURL(mp3Blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'froola-session.mp3';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+          console.error('[audioExporter] export failed', err);
+        } finally {
+          setState('idle');
+          setElapsed(0);
+        }
       })();
     };
 

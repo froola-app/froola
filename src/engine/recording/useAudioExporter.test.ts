@@ -16,9 +16,10 @@ beforeEach(() => {
 // mirrors the bits useAudioExporter touches (start/stop, ondataavailable/onstop).
 class FakeMediaRecorder {
   static instances: FakeMediaRecorder[] = [];
+  static isTypeSupported = vi.fn(() => true);
   ondataavailable: ((e: { data: Blob }) => void) | null = null;
   onstop: (() => void) | null = null;
-  constructor(public stream: MediaStream, public opts: MediaRecorderOptions) {
+  constructor(public stream: MediaStream, public opts?: MediaRecorderOptions) {
     FakeMediaRecorder.instances.push(this);
   }
   start = vi.fn();
@@ -40,6 +41,7 @@ function makeEngineRef(): RefObject<AudioEngine | null> {
 describe('useAudioExporter', () => {
   beforeEach(() => {
     FakeMediaRecorder.instances = [];
+    FakeMediaRecorder.isTypeSupported = vi.fn(() => true);
     vi.stubGlobal('MediaRecorder', FakeMediaRecorder);
     vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:mock'), revokeObjectURL: vi.fn() });
   });
@@ -58,6 +60,7 @@ describe('useAudioExporter', () => {
 
   it('transitions recording -> encoding -> idle on stop(), calling encodeMp3', async () => {
     const engineRef = makeEngineRef();
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const { result } = renderHook(() => useAudioExporter(engineRef));
     act(() => { result.current.start(); });
     act(() => { result.current.stop(); });
@@ -67,6 +70,47 @@ describe('useAudioExporter', () => {
     expect(engineRef.current!.decodeAudio).toHaveBeenCalledOnce();
     expect(encodeMp3).toHaveBeenCalledOnce();
     expect(result.current.state).toBe('idle');
+    expect(clickSpy).toHaveBeenCalledOnce();
+    clickSpy.mockRestore();
+  });
+
+  it('downloads with the froola-session.mp3 filename', async () => {
+    const engineRef = makeEngineRef();
+    let downloadedName = '';
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloadedName = this.download;
+    });
+    const { result } = renderHook(() => useAudioExporter(engineRef));
+    act(() => { result.current.start(); });
+    act(() => { result.current.stop(); });
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+    expect(downloadedName).toBe('froola-session.mp3');
+    expect(clickSpy).toHaveBeenCalledOnce();
+    clickSpy.mockRestore();
+  });
+
+  it('falls back to no mimeType option when audio/webm is unsupported', () => {
+    FakeMediaRecorder.isTypeSupported = vi.fn(() => false);
+    const engineRef = makeEngineRef();
+    const { result } = renderHook(() => useAudioExporter(engineRef));
+    expect(() => act(() => { result.current.start(); })).not.toThrow();
+    expect(result.current.state).toBe('recording');
+    const instance = FakeMediaRecorder.instances[FakeMediaRecorder.instances.length - 1];
+    expect(instance.opts).toBeUndefined();
+  });
+
+  it('returns to idle if decodeAudio rejects', async () => {
+    const engineRef = makeEngineRef();
+    (engineRef.current!.decodeAudio as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('decode failed'));
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useAudioExporter(engineRef));
+    act(() => { result.current.start(); });
+    act(() => { result.current.stop(); });
+    expect(result.current.state).toBe('encoding');
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
+    expect(result.current.state).toBe('idle');
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   it('auto-stops when elapsed reaches maxDurationMs', () => {
