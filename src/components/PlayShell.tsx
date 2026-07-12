@@ -389,6 +389,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         vibe={vibe}
         maxDurationMs={ent.maxReplayRecordMs}
         watermark={ent.replayWatermark}
+        maxSavedRecordings={ent.maxSavedRecordings}
         locked={!ent.replayRecordUnlocked}
         onLockedClick={() => setUpsell('recordings')}
       />

@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { RecordingSample, Recording } from '../types';
 import type { DialSelection } from '../renderer';
 import { encode } from './codec';
-import { saveRecording } from './recordingStore';
+import { saveRecordingCapped } from './recordingStore';
 
 const VIBES = ['warm', 'bright', 'dark', 'electric'];
 // Fallback when no plan-derived limit is passed: never exceed the free
@@ -23,6 +23,9 @@ export function useRecorder(
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
   // Plan-gated (replayWatermark): free replays play back watermarked.
   watermark: boolean = true,
+  // Plan-gated (ent.maxSavedRecordings): caps how many saved rows a user
+  // may hold; saveRecordingCapped evicts oldest to stay within it.
+  maxSavedRecordings: number = Infinity,
 ) {
   const [state, setState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -63,12 +66,12 @@ export function useRecorder(
     setShareUrl(window.location.origin + '/replay?d=' + encoded);
     setState('done');
     const take = takeRef.current;
-    void saveRecording(encoded).then(id => {
+    void saveRecordingCapped(encoded, recording.totalMs, maxSavedRecordings).then(id => {
       if (id && takeRef.current === take) {
         setShareUrl(window.location.origin + '/replay?r=' + id);
       }
     });
-  }, []);
+  }, [maxSavedRecordings]);
 
   const start = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
