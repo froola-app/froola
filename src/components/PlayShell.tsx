@@ -12,6 +12,7 @@ import ShareButton from './ShareButton';
 import FeedbackButton from './FeedbackButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
+import AudioExportButton from './AudioExportButton';
 import ProfileButton from './ProfileButton';
 import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
@@ -401,6 +402,12 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         watermark={ent.exportWatermark}
         locked={!ent.videoRecordUnlocked}
         onLockedClick={() => setUpsell('video')}
+      />
+      <AudioExportButton
+        engineRef={engineRef}
+        maxDurationMs={ent.maxVideoRecordMs}
+        locked={!ent.audioExportUnlocked}
+        onLockedClick={() => setUpsell('mp3')}
       />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <FeedbackButton />

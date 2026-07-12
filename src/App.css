@@ -830,6 +830,13 @@ body {
   background: #7c3aed;
 }
 
+/* Audio export progress bar stacks above both, in case a video/replay take
+   is also running */
+.record-progress--audio {
+  bottom: 6px;
+  background: #059669;
+}
+
 /* ── Video record button ───────────────────────────────────── */
 
 .vid-record-btn {
@@ -892,6 +899,71 @@ body {
 
 .vid-record-btn--recording .rec-dot--live {
   background: #a78bfa;
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Audio export button ───────────────────────────────────── */
+
+.audio-export-btn {
+  position: fixed;
+  top: 8.5rem;
+  left: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  z-index: 20;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.audio-export-btn:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
+}
+
+.audio-export-btn--idle {
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
+}
+
+.audio-export-btn--idle:hover {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
+}
+
+.audio-export-btn--encoding {
+  color: var(--lg-top-ink-dim);
+  background: var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
+  cursor: wait;
+}
+
+.audio-export-btn--recording {
+  color: #ffffff;
+  background: rgba(5, 150, 105, 0.72);
+  border-color: rgba(52, 211, 153, 0.65);
+}
+
+.audio-export-btn--recording .rec-dot--live {
+  background: #34d399;
   border-color: rgba(255, 255, 255, 0.85);
 }
 
@@ -4878,7 +4950,7 @@ body {
 /* Saturation stays modest (130%) — the old 200% pulled the scene's color
    (usually skin tone) into every pill, which is what made the HUD look
    randomly tinted. The fill is opaque enough to carry the material now. */
-.share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
+.share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
 .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint,
 .instrument-select {
@@ -4886,7 +4958,7 @@ body {
   -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
-.share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
+.share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
 .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
@@ -4903,7 +4975,7 @@ body {
 
 /* the rim: a 1px gradient ring just inside the hairline border,
    painted via the two-layer mask trick (fill minus content box) */
-.share-btn::before, .record-btn::before, .vid-record-btn::before,
+.share-btn::before, .record-btn::before, .vid-record-btn::before, .audio-export-btn::before,
 .learn-nav-btn::before, .feedback-btn::before, .profile-btn::before, .octave-control::before,
 .arp-btn::before, .loop-controls::before, .loop-slot::before,
 .tutorial-skip::before, .nod-hint::before {
@@ -4928,13 +5000,13 @@ body {
 
 /* motion: hover floats, press squishes — the spring curve in the
    grouped transition above gives the release its bounce */
-.share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled),
+.share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled), .audio-export-btn:hover:not(:disabled),
 .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover,
 .tutorial-skip:hover {
   transform: translateY(-1px);
 }
 
-.share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled),
+.share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled), .audio-export-btn:active:not(:disabled),
 .learn-nav-btn:active, .feedback-btn:active, .profile-btn:active, .arp-btn:active,
 .tutorial-skip:active {
   transform: scale(0.95);
@@ -4950,12 +5022,12 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
+  .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
   .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
   .octave-btn, .loop-btn, .permission-btn-primary, .permission-btn-secondary {
     transition-property: color, background, border-color, box-shadow;
   }
-  .share-btn:hover, .record-btn:hover, .vid-record-btn:hover,
+  .share-btn:hover, .record-btn:hover, .vid-record-btn:hover, .audio-export-btn:hover,
   .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover,
   .tutorial-skip:hover, .permission-btn-primary:hover, .permission-btn-secondary:hover {
     transform: none;

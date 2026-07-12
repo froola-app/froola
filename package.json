@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@mediapipe/tasks-vision": "^0.10.35",
     "@supabase/supabase-js": "^2.45.4",
     "react": "^19.2.6",
