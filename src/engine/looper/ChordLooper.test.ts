@@ -206,3 +206,29 @@ describe('ChordLooper — playback', () => {
     expect(h.looper.playing).toBe(false)
   })
 })
+
+describe('ChordLooper — slot serialization', () => {
+  it('round-trips slots through getSlots/load', () => {
+    const h1 = harness()
+    h1.looper.add(cmd('Cmaj7'))
+    h1.looper.add(cmd('Am'))
+    h1.looper.setBpm(120)
+    h1.looper.setBeatsPerSlot(2)
+
+    const h2 = harness()
+    h2.looper.load({ bpm: h1.looper.getBpm(), beatsPerSlot: h1.looper.getBeatsPerSlot(), slots: h1.looper.getSlots() })
+    expect(h2.looper.getState().slots).toEqual(['Cmaj7', 'Am'])
+    expect(h2.looper.getBpm()).toBe(120)
+    expect(h2.looper.getBeatsPerSlot()).toBe(2)
+  })
+
+  it('load stops playback and truncates past MAX_SLOTS', () => {
+    const h = harness()
+    h.looper.add(cmd('C'))
+    h.looper.start()
+    const nine = Array.from({ length: 9 }, (_, i) => cmd(`X${i}`))
+    h.looper.load({ bpm: 90, beatsPerSlot: 4, slots: nine })
+    expect(h.looper.playing).toBe(false)
+    expect(h.looper.getState().slots).toHaveLength(8) // MAX_SLOTS
+  })
+})
