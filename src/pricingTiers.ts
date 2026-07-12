@@ -30,6 +30,8 @@ export const PRICING_TIERS: PricingTier[] = [
       'Synth instrument',
       'Camera hand tracking',
       'Every song lesson & drill',
+      'One 20-second shareable recording (watermarked)',
+      'Dark mode',
     ],
   },
   {
@@ -40,8 +42,11 @@ export const PRICING_TIERS: PricingTier[] = [
     features: [
       'Everything in Free',
       'Piano instrument unlocked',
-      'Record & share replays and videos, up to 3 minutes',
+      '3 recordings up to 3 minutes, no watermark',
+      'MP3 & MP4 export',
       'Chord looper (8 slots) & arpeggiator',
+      'Import your own lyrics + chords',
+      'My Song — save one song with its loops',
       'Visual themes for the wheels & orbs',
     ],
   },
@@ -59,6 +64,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Download audio (MP3 / WAV) & MIDI export',
       'Unlimited loop & layer slots',
       'Early access to new features',
+      'Unlimited recordings & lyric imports',
     ],
   },
 ];
