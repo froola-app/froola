@@ -9,6 +9,7 @@ import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
 import { GoogleButton, EmailSignIn } from './AuthMethods';
+import RecordingsPanel from './RecordingsPanel';
 
 const PLAN_LABEL: Record<string, string> = { free: 'Free', plus: 'Plus', studio: 'Studio' };
 
@@ -207,6 +208,10 @@ export default function ProfileSidebar({ open, onClose, play }: {
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Account</h3>
             <ProfilePanel onClose={onClose} />
+          </section>
+          <section className="profile-drawer__section">
+            <h3 className="profile-drawer__section-title">Recordings</h3>
+            <RecordingsPanel />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Settings</h3>

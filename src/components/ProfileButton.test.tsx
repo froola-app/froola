@@ -81,7 +81,10 @@ describe('ProfileButton', () => {
   it('a custom profile photo overrides the Google one', () => {
     mockUseAuth.mockReturnValue(authState({
       user: user({ avatarUrl: 'https://lh3.example.com/g.jpg' }),
-      profile: { userType: 'casual', onboardingComplete: true, avatarUrl: 'https://cdn.froola/custom.png' },
+      profile: {
+        userType: 'casual', onboardingComplete: true, avatarUrl: 'https://cdn.froola/custom.png',
+        plan: 'free', betaTester: false,
+      },
     }));
     render(<ProfileButton />);
     const img = document.querySelector('img.avatar__img') as HTMLImageElement;
