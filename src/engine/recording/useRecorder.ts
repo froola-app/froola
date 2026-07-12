@@ -30,6 +30,11 @@ export function useRecorder(
   const [state, setState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  // Bumped once the save from stop() settles (resolve or reject) — lets
+  // consumers (e.g. RecordButton's held-count refresh) know when it's safe
+  // to re-read persisted state, since `state` flips to 'done' synchronously
+  // before the async save lands.
+  const [saveTick, setSaveTick] = useState(0);
 
   const samplesRef = useRef<RecordingSample[]>([]);
   const startTimeRef = useRef(0);
@@ -66,11 +71,16 @@ export function useRecorder(
     setShareUrl(window.location.origin + '/replay?d=' + encoded);
     setState('done');
     const take = takeRef.current;
-    void saveRecordingCapped(encoded, recording.totalMs, maxSavedRecordings).then(id => {
-      if (id && takeRef.current === take) {
-        setShareUrl(window.location.origin + '/replay?r=' + id);
-      }
-    });
+    void saveRecordingCapped(encoded, recording.totalMs, maxSavedRecordings)
+      .then(id => {
+        if (id && takeRef.current === take) {
+          setShareUrl(window.location.origin + '/replay?r=' + id);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setSaveTick(t => t + 1);
+      });
   }, [maxSavedRecordings]);
 
   const start = useCallback(() => {
@@ -110,5 +120,5 @@ export function useRecorder(
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
-  return { state, elapsed, shareUrl, start, stop };
+  return { state, elapsed, shareUrl, start, stop, saveTick };
 }

@@ -73,6 +73,22 @@ describe('useRecorder', () => {
     }
   });
 
+  it('increments saveTick only after the save promise resolves', async () => {
+    let resolveSave!: (id: string | null) => void;
+    vi.mocked(saveRecordingCapped).mockReturnValueOnce(
+      new Promise(resolve => { resolveSave = resolve; })
+    );
+    const { result } = renderHook(() => useRecorder(makeRef(), 'warm'));
+    act(() => { result.current.start(); });
+    act(() => { result.current.stop(); });
+    expect(result.current.saveTick).toBe(0);
+    await act(async () => {
+      resolveSave(null);
+      await Promise.resolve();
+    });
+    expect(result.current.saveTick).toBe(1);
+  });
+
   it('can start again after done', () => {
     const { result } = renderHook(() => useRecorder(makeRef(), 'warm'));
     act(() => { result.current.start(); });

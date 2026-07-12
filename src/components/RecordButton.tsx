@@ -21,19 +21,22 @@ type Props = {
 };
 
 export default function RecordButton({ selectedRef, vibe, maxDurationMs, watermark = true, maxSavedRecordings, locked, onLockedClick }: Props) {
-  const { state, elapsed, shareUrl, start, stop } = useRecorder(selectedRef, vibe, maxDurationMs, watermark, maxSavedRecordings);
+  const { state, elapsed, shareUrl, start, stop, saveTick } = useRecorder(selectedRef, vibe, maxDurationMs, watermark, maxSavedRecordings);
   const [copied, setCopied] = useState(false);
   const [held, setHeld] = useState(0);
 
+  // Refreshes on mount and again whenever a save settles (saveTick bumps
+  // after stop()'s async save resolves/rejects) — `state` flips to 'done'
+  // synchronously before the save lands, so keying off state alone would
+  // usually read the pre-save count.
   useEffect(() => {
-    void listRecordings().then(rs => setHeld(rs.length));
-  }, []);
-
-  useEffect(() => {
-    if (state === 'done') {
-      void listRecordings().then(rs => setHeld(rs.length));
-    }
-  }, [state]);
+    if (locked) return;
+    let alive = true;
+    void listRecordings().then(rs => {
+      if (alive) setHeld(rs.length);
+    });
+    return () => { alive = false; };
+  }, [saveTick, locked]);
 
   function handleStart() {
     if (held >= maxSavedRecordings &&

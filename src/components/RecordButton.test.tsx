@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef } from 'react';
 import RecordButton from './RecordButton';
-import { listRecordings } from '../engine/recording/recordingStore';
+import { listRecordings, saveRecordingCapped } from '../engine/recording/recordingStore';
 
 vi.mock('../engine/recording/recordingStore', () => ({
   listRecordings: vi.fn().mockResolvedValue([]),
@@ -100,6 +100,43 @@ describe('RecordButton', () => {
     await userEvent.click(screen.getByRole('button', { name: /rec/i }));
     expect(confirmSpy).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /stop/i })).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('re-fetches held count once the save settles, so the next Record click confirms', async () => {
+    let resolveSave!: (id: string | null) => void;
+    vi.mocked(saveRecordingCapped).mockReturnValueOnce(
+      new Promise(resolve => { resolveSave = resolve; })
+    );
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const { unmount } = render(<Harness maxSavedRecordings={1} />);
+    await waitFor(() => expect(listRecordings).toHaveBeenCalledTimes(1));
+
+    await userEvent.click(screen.getByRole('button', { name: /rec/i }));
+    await userEvent.click(screen.getByRole('button', { name: /stop/i }));
+
+    // Save hasn't settled yet — held count should still reflect the
+    // pre-save state, so listRecordings shouldn't have been re-fetched.
+    expect(listRecordings).toHaveBeenCalledTimes(1);
+
+    vi.mocked(listRecordings).mockResolvedValue([
+      { id: 'a', createdAt: 1, durationMs: 1000 },
+    ]);
+    resolveSave('new-id');
+    await waitFor(() => expect(listRecordings).toHaveBeenCalledTimes(2));
+
+    // Re-mount to return to idle (this RecordButton instance has no
+    // in-place "record again" affordance in 'done' state) and confirm the
+    // now-settled held count of 1 correctly triggers the replace confirm
+    // on the very next Record click, instead of the stale pre-save count.
+    unmount();
+    render(<Harness maxSavedRecordings={1} />);
+    await waitFor(() => expect(listRecordings).toHaveBeenCalledTimes(3));
+
+    await userEvent.click(screen.getByRole('button', { name: /rec/i }));
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.stringContaining('old link will stop working')
+    );
     confirmSpy.mockRestore();
   });
 });
