@@ -7,6 +7,7 @@ import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } fr
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
+import FeedbackButton from './FeedbackButton';
 import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
 import ProfileButton from './ProfileButton';
@@ -368,6 +369,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         onLockedClick={() => setUpsell('video')}
       />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
+      <FeedbackButton />
       <ProfileButton
         play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
       />
