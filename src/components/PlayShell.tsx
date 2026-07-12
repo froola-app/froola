@@ -2,7 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import { storeInputMode, type InputMode } from '../engine/input';
-import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type ChordMode, type MusicConfig } from '../engine/music';
+import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type ChordMode, type MusicConfig, type CustomWheel } from '../engine/music';
+import { listWheels, saveWheel, deleteWheel } from '../engine/music/customWheelStore';
+import WheelEditor from './WheelEditor';
 import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
@@ -94,8 +96,26 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const [keyOffset, setKeyOffset] = useState(0);
   const [scale, setScale] = useState<ScaleName>('major');
   const [chordMode, setChordMode] = useState<ChordMode>('diatonic');
-  const musicRef = useRef<MusicConfig>({ keyOffset, scale, chordMode });
-  useEffect(() => { musicRef.current = { keyOffset, scale, chordMode }; }, [keyOffset, scale, chordMode]);
+
+  // Custom chord wheels (Plus+): user-defined root+quality per slice,
+  // swapped in for the diatonic wheel in free play only (lessons use their
+  // own shell and never read this musicRef — see the grep note in the PR).
+  const [customWheels, setCustomWheels] = useState<CustomWheel[]>([]);
+  const [activeWheelId, setActiveWheelId] = useState<string | null>(null);
+  const [wheelEditor, setWheelEditor] = useState<'closed' | 'new' | 'edit'>('closed');
+  const activeWheel = customWheels.find(w => w.id === activeWheelId) ?? null;
+
+  const musicRef = useRef<MusicConfig>({ keyOffset, scale, chordMode, customWheel: activeWheel ?? undefined });
+  useEffect(() => {
+    musicRef.current = { keyOffset, scale, chordMode, customWheel: activeWheel ?? undefined };
+  }, [keyOffset, scale, chordMode, activeWheel]);
+
+  useEffect(() => {
+    if (!ent.customWheelsUnlocked) return;
+    let cancelled = false;
+    listWheels().then(ws => { if (!cancelled) setCustomWheels(ws); });
+    return () => { cancelled = true; };
+  }, [ent.customWheelsUnlocked]);
 
   // Chord looper: drives the chord pad while the hand solos over it. The ref
   // lets the coordinator's hot loop know when the loop owns the pad.
@@ -437,6 +457,24 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           <option value="diatonic">in-key</option>
           <option value="universal">universal</option>
         </select>
+        <select
+          className="instrument-select"
+          value={activeWheelId ?? ''}
+          aria-label="Wheel"
+          onChange={e => {
+            const v = e.target.value;
+            if (!ent.customWheelsUnlocked && v !== '') { setUpsell('wheels'); return; }
+            if (v === '__new') { setWheelEditor('new'); return; }
+            setActiveWheelId(v || null);
+          }}
+        >
+          <option value="">in-key wheel</option>
+          {customWheels.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          <option value="__new">{ent.customWheelsUnlocked ? '+ new wheel…' : '🔒 custom wheels · plus'}</option>
+        </select>
+        {activeWheel && ent.customWheelsUnlocked && (
+          <button className="octave-btn" onClick={() => setWheelEditor('edit')} aria-label="Edit wheel">✎</button>
+        )}
         {!isMobile && <div className="octave-control" role="group" aria-label="Octave">
           <button
             className="octave-btn"
@@ -476,6 +514,28 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         </button>)}
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
+      {wheelEditor !== 'closed' && (
+        <WheelEditor
+          keyOffset={keyOffset}
+          scale={scale}
+          initial={wheelEditor === 'edit' ? activeWheel : null}
+          onClose={() => setWheelEditor('closed')}
+          onSave={async (name, slices, id) => {
+            const saved = await saveWheel(name, slices, id);
+            if (saved) {
+              setCustomWheels(ws => id ? ws.map(w => (w.id === id ? saved : w)) : [...ws, saved]);
+              setActiveWheelId(saved.id);
+            }
+            setWheelEditor('closed');
+          }}
+          onDelete={async id => {
+            await deleteWheel(id);
+            setCustomWheels(ws => ws.filter(w => w.id !== id));
+            setActiveWheelId(null);
+            setWheelEditor('closed');
+          }}
+        />
+      )}
       {gated && <PlayWall />}
     </>
   );
