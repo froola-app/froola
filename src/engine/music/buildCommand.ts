@@ -1,8 +1,12 @@
 import type { MusicalCommand } from '../types';
-import { diatonicChord, degreeRootMidi, DEFAULT_MUSIC, chordSet, type MusicConfig } from './keyScale';
+import { activeWheel, wheelChord, wheelNotes, degreeRootMidi, DEFAULT_MUSIC, chordSet, type MusicConfig } from './keyScale';
 
-// Melody note for the latch solo — the degree's root, one octave above the pad.
+// Melody note for the latch solo — the selected slice's root, one octave above the pad.
 export function melodyMidi(noteIdx: number, music: MusicConfig = DEFAULT_MUSIC): number {
+  if (activeWheel(music)) {
+    const notes = wheelNotes(music);
+    return notes[((noteIdx % notes.length) + notes.length) % notes.length].midi + 12;
+  }
   return degreeRootMidi(noteIdx, music.keyOffset, music.scale) + 12;
 }
 
@@ -13,10 +17,10 @@ export function buildCommand(
   octave = 0,
   music: MusicConfig = DEFAULT_MUSIC,
 ): MusicalCommand {
-  // The left wheel picks the scale degree (chord root + its diatonic quality);
+  // The left wheel picks the slice (diatonic degree, or a custom-wheel chord);
   // the right wheel picks an extension on top — or, in universal chord mode,
   // a fixed quality (maj/min/7/…) applied straight to the root.
-  const chord = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale, octave, music.chordMode);
+  const chord = wheelChord(noteIdx, qualIdx, music, octave);
   const set = chordSet(music.chordMode);
   return {
     chord: chord.label,

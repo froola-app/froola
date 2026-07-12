@@ -9,7 +9,7 @@ import { useTheme } from '../useTheme';
 // sells that feature, not a generic plan grid.
 export type LockedFeature =
   | 'piano' | 'video' | 'replay-length' | 'themes'
-  | 'recordings' | 'loop' | 'arp';
+  | 'recordings' | 'loop' | 'arp' | 'wheels';
 
 const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recommend: PlanId }> = {
   piano: {
@@ -45,6 +45,11 @@ const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recomme
   arp: {
     title: 'Set your chords in motion.',
     body: 'The arpeggiator turns a held chord into a rolling, rhythmic pattern — instant texture under everything you play.',
+    recommend: 'plus',
+  },
+  wheels: {
+    title: 'Build your own wheel.',
+    body: 'Any root, any quality on every slice — Plus lets you swap iii for III, borrow bVII, and make the wheel play your progression.',
     recommend: 'plus',
   },
 };

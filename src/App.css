@@ -5183,3 +5183,64 @@ body {
   cursor: pointer;
 }
 .upsheet__link--dim { color: var(--lg-top-ink-dim); text-decoration: none; }
+
+/* Modifier on .upsheet: the wheel editor reuses the upgrade sheet's glass
+   panel styles and only narrows the width. */
+.wheel-editor {
+  width: min(26rem, 100%);
+}
+
+.wheel-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--lg-top-ink-dim);
+  margin-bottom: 1rem;
+}
+
+.wheel-editor input,
+.wheel-editor select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--lg-top-ink);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+}
+
+.wheel-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+}
+
+.wheel-editor-slice {
+  width: 1.4rem;
+  font-size: 0.78rem;
+  color: var(--lg-top-ink-dim);
+  text-align: center;
+}
+
+.wheel-editor-row select { flex: 1; }
+
+.wheel-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+.wheel-editor-actions button {
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--lg-top-ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+.wheel-editor-actions button:hover { background: rgba(255, 255, 255, 0.10); }

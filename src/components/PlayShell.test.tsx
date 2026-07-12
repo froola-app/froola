@@ -1,20 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as rtlRender } from '@testing-library/react';
+import { render as rtlRender, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PlayShell from './PlayShell';
 import { useCoordinator } from '../coordinator';
 import { usePlayWall } from '../hooks/usePlayWall';
 import { useAuth } from '../contexts/AuthContext';
+import { listWheels } from '../engine/music/customWheelStore';
 
 const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: MemoryRouter });
 
 vi.mock('../coordinator', () => ({ useCoordinator: vi.fn() }));
 vi.mock('../hooks/usePlayWall', () => ({ usePlayWall: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../engine/music/customWheelStore', () => ({
+  listWheels: vi.fn().mockResolvedValue([]),
+  saveWheel: vi.fn(),
+  deleteWheel: vi.fn(),
+}));
 
 const mockUseCoordinator = vi.mocked(useCoordinator);
 const mockUsePlayWall = vi.mocked(usePlayWall);
 const mockUseAuth = vi.mocked(useAuth);
+const mockListWheels = vi.mocked(listWheels);
 
 function fakeEngine() {
   return {
@@ -120,5 +127,110 @@ describe('PlayShell — play wall wiring', () => {
     await vi.waitFor(() => {
       expect(container.querySelector('.play-wall')).not.toBeNull();
     });
+  });
+});
+
+describe('PlayShell — custom wheel selector gating', () => {
+  it('free plan: choosing the locked wheel option opens the upgrade sheet and stays on the default wheel', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    // default beforeEach mock already has profile: null (free)
+    render(<PlayShell />);
+
+    const select = screen.getByLabelText('Wheel') as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(screen.getByText('🔒 custom wheels · plus')).toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: '__new' } });
+
+    expect(await screen.findByText('Build your own wheel.')).toBeInTheDocument();
+    expect(select.value).toBe('');
+  });
+
+  it('does not fetch saved wheels for a free plan', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    render(<PlayShell />);
+    expect(mockListWheels).not.toHaveBeenCalled();
+  });
+
+  it('plus plan: selecting "New wheel…" opens the WheelEditor dialog', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({
+      user: { uid: 'u1' } as never,
+      profile: { plan: 'plus', betaTester: false } as never,
+      loading: false,
+      authReady: true,
+      signInWithGoogle: vi.fn(),
+      signInWithEmail: vi.fn(),
+      signOutUser: vi.fn(),
+      completeOnboarding: vi.fn(),
+    });
+    render(<PlayShell />);
+
+    const select = screen.getByLabelText('Wheel') as HTMLSelectElement;
+    expect(screen.getByText('+ new wheel…')).toBeInTheDocument();
+
+    fireEvent.change(select, { target: { value: '__new' } });
+
+    expect(screen.getByRole('dialog', { name: 'Custom wheel editor' })).toBeInTheDocument();
+  });
+
+  it('plus plan: loads saved wheels on mount', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({
+      user: { uid: 'u1' } as never,
+      profile: { plan: 'plus', betaTester: false } as never,
+      loading: false,
+      authReady: true,
+      signInWithGoogle: vi.fn(),
+      signInWithEmail: vi.fn(),
+      signOutUser: vi.fn(),
+      completeOnboarding: vi.fn(),
+    });
+    render(<PlayShell />);
+    expect(mockListWheels).toHaveBeenCalled();
+  });
+
+  it('downgrade mid-session clears the active custom wheel and the loaded list', async () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    const plusAuth = {
+      user: { uid: 'u1' } as never,
+      profile: { plan: 'plus', betaTester: false } as never,
+      loading: false,
+      authReady: true,
+      signInWithGoogle: vi.fn(),
+      signInWithEmail: vi.fn(),
+      signOutUser: vi.fn(),
+      completeOnboarding: vi.fn(),
+    };
+    mockUseAuth.mockReturnValue(plusAuth);
+    const wheel = {
+      id: 'w1',
+      name: 'My Wheel',
+      slices: Array.from({ length: 7 }, (_, i) => ({ interval: i, quality: 'maj' as const })),
+    };
+    mockListWheels.mockResolvedValue([wheel]);
+    const { rerender } = render(<PlayShell />);
+
+    const select = screen.getByLabelText('Wheel') as HTMLSelectElement;
+    expect(await screen.findByText('My Wheel')).toBeInTheDocument();
+    fireEvent.change(select, { target: { value: 'w1' } });
+    expect(select.value).toBe('w1');
+
+    // Plan lapses / sign-out: entitlements flip and the gated wheel must go.
+    mockUseAuth.mockReturnValue({ ...plusAuth, user: null, profile: null });
+    rerender(<PlayShell />);
+
+    expect(select.value).toBe('');
+    expect(screen.queryByText('My Wheel')).not.toBeInTheDocument();
   });
 });

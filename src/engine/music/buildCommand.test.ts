@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { melodyMidi } from './buildCommand';
+import { melodyMidi, buildCommand } from './buildCommand';
 import { NOTES } from '../types';
+import type { MusicConfig } from './keyScale';
 
 describe('melodyMidi', () => {
   it('plays the wheel note one octave above the chord register', () => {
@@ -37,5 +38,28 @@ describe('buildCommand — chord mode', () => {
     const cmd = buildCommand(1, 0, 0.5, 0, { keyOffset: 0, scale: 'major' });
     expect(cmd.chord).toBe('Dm');
     expect(cmd.chordQuality).toBe('triad');
+  });
+
+  it('buildCommand and melodyMidi honor the custom wheel', () => {
+    const music: MusicConfig = {
+      keyOffset: 0,
+      scale: 'major',
+      customWheel: { id: 'w', name: 'w', slices: [
+        { interval: 0, quality: 'maj' }, { interval: 2, quality: 'min' },
+        { interval: 4, quality: 'maj' }, { interval: 5, quality: 'maj' },
+        { interval: 7, quality: 'maj' }, { interval: 9, quality: 'min' },
+        { interval: 10, quality: 'maj' },
+      ]},
+    };
+    expect(buildCommand(2, 0, 0.5, 0, music).chord).toBe('E');
+    expect(buildCommand(2, 0, 0.5, 0, music).voicing).toEqual([64, 68, 71]);
+    expect(melodyMidi(2, music)).toBe(76); // E root + 12
+
+    // Universal chord mode bypasses the custom wheel everywhere — melody
+    // follows the scale degree, matching what wheelChord actually sounds.
+    const uni: MusicConfig = { ...music, chordMode: 'universal' };
+    // Slice 6 is a borrowed bVII (Bb, 82 with the wheel); the scale degree is B (83).
+    expect(melodyMidi(6, music)).toBe(82);
+    expect(melodyMidi(6, uni)).toBe(83);
   });
 });

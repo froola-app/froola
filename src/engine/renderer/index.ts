@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { GestureSignal, MusicalCommand } from '../types';
 import { NOTES } from '../types';
-import { scaleNotes, diatonicChord, chordSet, type MusicConfig } from '../music/keyScale';
+import { wheelNotes, wheelChord, chordSet, type MusicConfig } from '../music/keyScale';
 import { ParticleSystem } from './particles';
 import { wheelGeometry } from './geometry';
 import { getVisualTheme, type VisualTheme } from './themes';
@@ -372,8 +372,8 @@ export function useRenderer(
 
       // Labels follow the selected key/scale. The note wheel shows the scale's
       // note names; the centre shows the actual diatonic chord (e.g. "Dm7").
-      const noteLabels = scaleNotes(music.keyOffset, music.scale).map(n => n.label);
-      const chordName = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale, 0, music.chordMode).label;
+      const noteLabels = wheelNotes(music).map(n => n.label);
+      const chordName = wheelChord(noteIdx, qualIdx, music).label;
 
       // Ghost orb target slices — read before drawing the wheels so each one
       // can highlight its own ghost's slice, connecting the dashed ring to
