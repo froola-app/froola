@@ -17,11 +17,18 @@ vi.mock('../engine/music/customWheelStore', () => ({
   saveWheel: vi.fn(),
   deleteWheel: vi.fn(),
 }));
+vi.mock('./VideoRecordButton', () => ({
+  default: vi.fn(() => <div data-testid="video-record-button" />),
+}));
 
 const mockUseCoordinator = vi.mocked(useCoordinator);
 const mockUsePlayWall = vi.mocked(usePlayWall);
 const mockUseAuth = vi.mocked(useAuth);
 const mockListWheels = vi.mocked(listWheels);
+
+// Import the mock to check props passed to it
+import VideoRecordButton from './VideoRecordButton';
+const mockVideoRecordButton = vi.mocked(VideoRecordButton);
 
 function fakeEngine() {
   return {
@@ -232,5 +239,47 @@ describe('PlayShell — custom wheel selector gating', () => {
 
     expect(select.value).toBe('');
     expect(screen.queryByText('My Wheel')).not.toBeInTheDocument();
+  });
+});
+
+describe('PlayShell — MP4 export watermark by plan', () => {
+  it('plus plan: video record button receives watermark true (burned into exports)', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({
+      user: { uid: 'u1' } as never,
+      profile: { plan: 'plus', betaTester: false } as never,
+      loading: false,
+      authReady: true,
+      signInWithGoogle: vi.fn(),
+      signInWithEmail: vi.fn(),
+      signOutUser: vi.fn(),
+      completeOnboarding: vi.fn(),
+    });
+    render(<PlayShell />);
+
+    const lastCall = mockVideoRecordButton.mock.calls[mockVideoRecordButton.mock.calls.length - 1];
+    expect(lastCall[0].watermark).toBe(true);
+  });
+
+  it('studio plan: video record button receives watermark false (clean exports)', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseAuth.mockReturnValue({
+      user: { uid: 'u1' } as never,
+      profile: { plan: 'studio', betaTester: false } as never,
+      loading: false,
+      authReady: true,
+      signInWithGoogle: vi.fn(),
+      signInWithEmail: vi.fn(),
+      signOutUser: vi.fn(),
+      completeOnboarding: vi.fn(),
+    });
+    render(<PlayShell />);
+
+    const lastCall = mockVideoRecordButton.mock.calls[mockVideoRecordButton.mock.calls.length - 1];
+    expect(lastCall[0].watermark).toBe(false);
   });
 });

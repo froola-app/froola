@@ -398,7 +398,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         cameraVideoRef={cameraVideoRef}
         engineRef={engineRef}
         maxDurationMs={ent.maxVideoRecordMs}
-        watermark={ent.replayWatermark}
+        watermark={ent.exportWatermark}
         locked={!ent.videoRecordUnlocked}
         onLockedClick={() => setUpsell('video')}
       />
