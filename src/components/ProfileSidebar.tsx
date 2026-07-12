@@ -4,7 +4,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, type Theme } from '../useTheme';
 import { openBillingPortal } from '../billing';
-import { effectivePlan } from '../entitlements';
+import { effectivePlan, entitlementsFor } from '../entitlements';
+import {
+  listVideoRecordings,
+  deleteVideoRecording,
+  watchUrl,
+  type VideoRecording,
+} from '../engine/recording/videoRecordingStore';
+import { copyToClipboard } from '../utils/clipboard';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
@@ -136,6 +143,100 @@ function ProfilePanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function formatDuration(ms: number): string {
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+}
+
+function RecordingRow({ rec, onDeleted }: { rec: VideoRecording; onDeleted: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const date = new Date(rec.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return (
+    <div className="profile-drawer__row">
+      <div className="profile-drawer__row-text">
+        <p className="profile-drawer__row-label">
+          <a href={watchUrl(rec.id)} target="_blank" rel="noreferrer">{formatDuration(rec.durationMs)} take</a>
+        </p>
+        <p className="profile-drawer__row-hint">{date}</p>
+      </div>
+      <button
+        className="profile-drawer__row-btn"
+        onClick={async () => {
+          await copyToClipboard(watchUrl(rec.id));
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        }}
+      >
+        {copied ? 'Copied!' : 'Copy link'}
+      </button>
+      <button
+        className="profile-drawer__row-btn"
+        disabled={deleting}
+        onClick={async () => {
+          setDeleting(true);
+          const ok = await deleteVideoRecording(rec);
+          if (ok) onDeleted(); else setDeleting(false);
+        }}
+        aria-label="Delete recording"
+      >
+        {deleting ? '…' : 'Delete'}
+      </button>
+    </div>
+  );
+}
+
+function RecordingsPanel({ open }: { open: boolean }) {
+  const { user, authReady, profile } = useAuth();
+  const ent = entitlementsFor(profile);
+  // null = fetch failed / unavailable, undefined = fetching.
+  const [recordings, setRecordings] = useState<VideoRecording[] | null | undefined>(undefined);
+
+  // Refetch on every open — the record button on /play saves without going
+  // through this drawer, so a cached list would lie. Until the refresh lands
+  // the previous list stays up (stale-while-revalidate), which is why there's
+  // no synchronous reset here.
+  useEffect(() => {
+    if (!open || !user) return;
+    let cancelled = false;
+    void listVideoRecordings().then(list => { if (!cancelled) setRecordings(list); });
+    return () => { cancelled = true; };
+  }, [open, user]);
+
+  if (!authReady || !user) {
+    return (
+      <p className="profile-drawer__note">
+        Sign in to keep your recordings and share links here.
+      </p>
+    );
+  }
+  if (recordings === undefined) return <p className="profile-drawer__note">Loading…</p>;
+  if (recordings === null) return <p className="profile-drawer__note">Couldn&apos;t load recordings. Try again in a moment.</p>;
+
+  const quota = Number.isFinite(ent.maxRecordings)
+    ? `${recordings.length} of ${ent.maxRecordings} slot${ent.maxRecordings === 1 ? '' : 's'} used`
+    : `${recordings.length} recording${recordings.length === 1 ? '' : 's'}`;
+
+  return (
+    <>
+      <p className="profile-drawer__note">{quota}</p>
+      {recordings.length === 0 && (
+        <p className="profile-drawer__note">
+          Nothing yet — hit Record on the play screen and your take lands here
+          with a share link.
+        </p>
+      )}
+      {recordings.map(rec => (
+        <RecordingRow
+          key={rec.id}
+          rec={rec}
+          onDeleted={() => setRecordings(list => (list ?? []).filter(r => r.id !== rec.id))}
+        />
+      ))}
+    </>
+  );
+}
+
 function SettingsPanel({ play, onClose, theme, onToggleTheme }: {
   play?: PlayActions;
   onClose: () => void;
@@ -207,6 +308,10 @@ export default function ProfileSidebar({ open, onClose, play }: {
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Account</h3>
             <ProfilePanel onClose={onClose} />
+          </section>
+          <section className="profile-drawer__section">
+            <h3 className="profile-drawer__section-title">Recordings</h3>
+            <RecordingsPanel open={open} />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Settings</h3>

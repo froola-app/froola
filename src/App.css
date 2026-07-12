@@ -855,6 +855,79 @@ body {
   border-color: rgba(255, 255, 255, 0.85);
 }
 
+/* post-record result: share/download pill + a small dismiss, sitting where
+   the record button lives. The pill drops position:fixed inside the group. */
+.vid-record-result {
+  position: fixed;
+  top: 3.5rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 20;
+}
+
+.vid-record-result .vid-record-btn {
+  position: static;
+}
+
+.vid-record-btn--done {
+  color: #fbbf24;
+  background: rgba(17, 17, 17, 0.72);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.vid-record-btn--done:hover {
+  background: rgba(34, 26, 8, 0.88);
+  color: #fcd34d;
+}
+
+.vid-record-dismiss {
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--lg-top-stroke);
+  background: var(--lg-top-fill);
+  color: var(--lg-top-ink);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+}
+
+/* ── Watch page (shared recording playback) ────────────────── */
+
+.watch-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0A0E1A;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.watch-video {
+  width: min(92vw, 960px);
+  max-height: 70vh;
+  border-radius: 16px;
+  background: #000;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.watch-note {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1rem;
+  max-width: 32rem;
+  text-align: center;
+}
+
+.watch-brand {
+  display: inline-flex;
+}
+
 /* ── Replay playback controls ──────────────────────────────── */
 
 .replay-controls {

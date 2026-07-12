@@ -29,7 +29,7 @@ export const PRICING_TIERS: PricingTier[] = [
     features: [
       'Synth instrument',
       'Camera hand tracking',
-      'Shareable replay links, up to 20s (watermarked)',
+      '1 video recording, up to 20s, with shareable link (watermarked)',
     ],
   },
   {
@@ -40,8 +40,8 @@ export const PRICING_TIERS: PricingTier[] = [
     features: [
       'Everything in Free',
       'Piano instrument unlocked',
-      'Video recording & download, up to 3 minutes',
-      'Longer replays, no watermark',
+      'Up to 3 recordings, 3 minutes each, no watermark',
+      'MP3 / MP4 export (watermarked)',
       'Chord looper, 8 slots',
       'Visual themes for the wheels & orbs',
     ],
@@ -55,9 +55,9 @@ export const PRICING_TIERS: PricingTier[] = [
     badge: 'Coming soon',
     features: [
       'Everything in Plus',
-      'Continuous instant-replay recording',
-      'Unlimited recording length',
-      'Download audio (MP3 / WAV) & MIDI export',
+      'Unlimited recordings, up to 5 minutes each',
+      'MP3 / MP4 export, no watermark',
+      'Camera-only recording (hide the dials)',
       'Unlimited loop & layer slots',
       'Early access to new features',
     ],

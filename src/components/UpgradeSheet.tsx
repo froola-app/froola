@@ -7,7 +7,7 @@ import { useTheme } from '../useTheme';
 
 // The feature the user just reached for — drives the headline so the sheet
 // sells that feature, not a generic plan grid.
-export type LockedFeature = 'piano' | 'video' | 'replay-length' | 'themes';
+export type LockedFeature = 'piano' | 'recording-slots' | 'themes';
 
 const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recommend: PlanId }> = {
   piano: {
@@ -15,19 +15,14 @@ const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recomme
     body: 'A real sampled grand under your hands — Plus swaps the synth for the full piano, any time you want it.',
     recommend: 'plus',
   },
-  video: {
-    title: 'Keep what you just played.',
-    body: 'Record your session as a video — your hands, your sound, ready to download and share anywhere.',
+  'recording-slots': {
+    title: 'Twenty seconds went fast.',
+    body: 'Plus keeps 3 recordings of up to 3 minutes each, with no watermark. Studio keeps them all.',
     recommend: 'plus',
   },
   themes: {
     title: 'Re-ink your instrument.',
     body: 'Ember, neon, ocean, mono — Plus recolors the wheels and orbs to match your mood. Same pro instrument, your palette.',
-    recommend: 'plus',
-  },
-  'replay-length': {
-    title: 'Twenty seconds went fast.',
-    body: 'Plus extends your replays and drops the watermark. Studio never asks you to stop.',
     recommend: 'plus',
   },
 };
@@ -39,13 +34,13 @@ const PLAN_CARDS: { id: PlanId; name: string; price: string; perks: string[] }[]
     id: 'plus',
     name: 'Plus',
     price: '$1.99/wk',
-    perks: ['Piano instrument', 'Video recording & download (3 min)', 'Chord looper', 'Visual themes', 'No watermark'],
+    perks: ['Piano instrument', '3 recordings, 3 min each, no watermark', 'MP3 / MP4 export', 'Chord looper', 'Visual themes'],
   },
   {
     id: 'studio',
     name: 'Studio',
     price: '$3.99/wk',
-    perks: ['Everything in Plus', 'Unlimited recording length', 'Audio download (MP3 / WAV) & MIDI', 'Early access features'],
+    perks: ['Everything in Plus', 'Unlimited recordings, 5 min each', 'Clean exports, camera-only mode', 'Early access features'],
   },
 ];
 

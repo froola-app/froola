@@ -7,7 +7,6 @@ import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } fr
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
-import RecordButton from './RecordButton';
 import VideoRecordButton from './VideoRecordButton';
 import ProfileButton from './ProfileButton';
 import LoopPanel from './LoopPanel';
@@ -134,7 +133,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const gatedRef = useRef(false);
-  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+  const { mode, requestCamera, cameraError, selectedRef, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
 
   // No explainer screen to click through — ask for the camera the moment
   // the page loads. Only fires once: after a denial, mode reverts to
@@ -333,14 +332,13 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
       <ShareButton />
-      <RecordButton selectedRef={selectedRef} vibe={vibe} maxDurationMs={ent.maxReplayRecordMs} watermark={ent.replayWatermark} />
       <VideoRecordButton
         canvasRef={canvasRef}
         cameraVideoRef={cameraVideoRef}
         engineRef={engineRef}
         maxDurationMs={ent.maxVideoRecordMs}
-        locked={!ent.videoRecordUnlocked}
-        onLockedClick={() => setUpsell('video')}
+        watermark={ent.recordingWatermark}
+        maxRecordings={ent.maxRecordings}
       />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <ProfileButton

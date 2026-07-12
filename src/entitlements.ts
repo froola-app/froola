@@ -6,23 +6,28 @@ import type { PlanId } from './pricingTiers.ts';
 // it can't be self-granted from the browser.
 export type EffectivePlan = 'free' | PlanId;
 
+// Recordings are video-only (dials + the player's camera + mic) — the camera
+// is always in frame by design; there is no dials-only capture on any plan.
+// Quotas and length caps are mirrored server-side in 0005_video_recordings.sql.
 export interface Entitlements {
   /** Piano sampler instrument (Plus+). Free is synth-only. */
   pianoUnlocked: boolean;
-  /** Video recording + download (Plus+). Free can only preview the button. */
-  videoRecordUnlocked: boolean;
   /** Canvas accent themes (Plus+). Free plays in the default froola look. */
   visualThemesUnlocked: boolean;
-  /** WAV/MP3 session audio download + loop MIDI export (Studio). */
-  audioDownloadUnlocked: boolean;
-  /** Always-on rolling replay buffer — "save the last 30s" (Studio). */
-  instantReplayUnlocked: boolean;
-  /** Free replays carry a "made with froola" watermark on playback. */
-  replayWatermark: boolean;
-  /** Hard stop for the shareable-replay recorder. */
-  maxReplayRecordMs: number;
-  /** Hard stop for the video recorder. Infinity on Studio. */
+  /** Stored recordings the plan may keep (1 / 3 / Infinity). Recording at
+      the cap replaces the oldest on free; paid plans manage slots manually. */
+  maxRecordings: number;
+  /** Hard stop for the video recorder (20s / 3min / 5min). */
   maxVideoRecordMs: number;
+  /** Free recordings get a big corner watermark burned in at record time. */
+  recordingWatermark: boolean;
+  /** MP3/MP4 export of a stored recording (Plus+). */
+  exportUnlocked: boolean;
+  /** Plus exports carry the watermark; Studio exports are clean. */
+  exportWatermark: boolean;
+  /** Studio: record the camera full-frame without the dials layer. The
+      camera itself can never be hidden. */
+  hideDialsUnlocked: boolean;
   /** Chord looper (Plus+). Free doesn't get the feature at all. */
   loopUnlocked: boolean;
   /** Chord-loop slots the UI lets the user fill (engine caps at MAX_SLOTS). */
@@ -34,39 +39,39 @@ export interface Entitlements {
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   free: {
     pianoUnlocked: false,
-    videoRecordUnlocked: false,
     visualThemesUnlocked: false,
-    audioDownloadUnlocked: false,
-    instantReplayUnlocked: false,
-    replayWatermark: true,
-    maxReplayRecordMs: 20_000,
-    maxVideoRecordMs: 0,
+    maxRecordings: 1,
+    maxVideoRecordMs: 20_000,
+    recordingWatermark: true,
+    exportUnlocked: false,
+    exportWatermark: true,
+    hideDialsUnlocked: false,
     loopUnlocked: false,
     loopSlots: 0,
     arpUnlocked: false,
   },
   plus: {
     pianoUnlocked: true,
-    videoRecordUnlocked: true,
     visualThemesUnlocked: true,
-    audioDownloadUnlocked: false,
-    instantReplayUnlocked: false,
-    replayWatermark: false,
-    maxReplayRecordMs: 30_000,
+    maxRecordings: 3,
     maxVideoRecordMs: 180_000,
+    recordingWatermark: false,
+    exportUnlocked: true,
+    exportWatermark: true,
+    hideDialsUnlocked: false,
     loopUnlocked: true,
     loopSlots: 8,
     arpUnlocked: true,
   },
   studio: {
     pianoUnlocked: true,
-    videoRecordUnlocked: true,
     visualThemesUnlocked: true,
-    audioDownloadUnlocked: true,
-    instantReplayUnlocked: true,
-    replayWatermark: false,
-    maxReplayRecordMs: 30_000,
-    maxVideoRecordMs: Infinity,
+    maxRecordings: Infinity,
+    maxVideoRecordMs: 300_000,
+    recordingWatermark: false,
+    exportUnlocked: true,
+    exportWatermark: false,
+    hideDialsUnlocked: true,
     loopUnlocked: true,
     loopSlots: Infinity,
     arpUnlocked: true,

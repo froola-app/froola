@@ -8,7 +8,9 @@ import './App.css';
 // `/` is the marketing page; the instrument and everything else off the
 // critical path load on demand.
 const PlayShell = lazy(() => import('./components/PlayShell'));
+// Legacy gesture-replay links keep playing; new recordings share /watch.
 const ReplayShell = lazy(() => import('./components/ReplayShell'));
+const WatchShell = lazy(() => import('./components/WatchShell'));
 const AuthPopup = lazy(() => import('./components/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
 const PricingPage = lazy(() => import('./components/PricingPage'));
@@ -36,6 +38,7 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/play" element={<PlayShell initialInput={storedInputMode() ?? 'asking'} />} />
         <Route path="/replay" element={<ReplayShell />} />
+        <Route path="/watch" element={<WatchShell />} />
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
@@ -61,6 +64,7 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/play" element={<PlayShell initialInput={storedInputMode() ?? 'asking'} />} />
       <Route path="/replay" element={<ReplayShell />} />
+      <Route path="/watch" element={<WatchShell />} />
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
