@@ -1,5 +1,5 @@
 import { MIN_BPM, MAX_BPM } from '../engine/audio';
-import { MAX_SLOTS, type ChordLooper, type LooperState } from '../engine/looper';
+import { MAX_SLOTS, type ChordLooper, type LooperState, type SavedLoop } from '../engine/looper';
 
 // Chord looper controls: capture the current chord into slots, then play the
 // progression back in tempo and solo over it with the free hand.
@@ -8,16 +8,35 @@ export default function LoopPanel({
   state,
   onAddChord,
   maxSlots = MAX_SLOTS,
+  armed,
+  onToggleArm,
+  savedLoops,
+  onSaveLoop,
+  onLoadLoop,
+  onDeleteLoop,
 }: {
   looper: ChordLooper;
   state: LooperState;
   onAddChord: () => void;
   /** Plan-gated slot cap (see src/entitlements.ts); engine caps at MAX_SLOTS. */
   maxSlots?: number;
+  /** Whether record-arm auto-capture is active. */
+  armed: boolean;
+  onToggleArm: () => void;
+  savedLoops: SavedLoop[];
+  onSaveLoop: (name: string) => void;
+  onLoadLoop: (loop: SavedLoop) => void;
+  onDeleteLoop: (name: string) => void;
 }) {
   const { slots, playing, bpm, beatsPerSlot, currentSlot } = state;
   const full = slots.length >= Math.min(maxSlots, MAX_SLOTS);
   const empty = slots.length === 0;
+
+  function handleSaveLoop() {
+    const name = window.prompt('Name this loop');
+    if (!name) return;
+    onSaveLoop(name);
+  }
 
   return (
     <div className="loop-panel" role="group" aria-label="Chord looper">
@@ -37,6 +56,14 @@ export default function LoopPanel({
       </div>
 
       <div className="loop-controls">
+        <button
+          className={`loop-btn loop-btn--arm${armed ? ' is-armed' : ''}`}
+          onClick={onToggleArm}
+          aria-pressed={armed}
+          title={armed ? 'Disarm record-arm capture' : 'Arm: auto-capture each fist lock'}
+        >
+          {armed ? '■ armed' : '● arm'}
+        </button>
         <button
           className="loop-btn"
           onClick={onAddChord}
@@ -88,6 +115,24 @@ export default function LoopPanel({
         >
           {playing ? '■ stop' : '▶ play'}
         </button>
+
+        <button
+          className="loop-btn"
+          onClick={handleSaveLoop}
+          disabled={empty}
+        >
+          Save loop…
+        </button>
+      </div>
+
+      <div className="loop-saved" aria-label="Saved loops">
+        {savedLoops.map(loop => (
+          <div className="loop-saved-row" key={loop.name}>
+            <span className="loop-saved-name">{loop.name}</span>
+            <button className="loop-btn" onClick={() => onLoadLoop(loop)}>Load</button>
+            <button className="loop-btn" onClick={() => onDeleteLoop(loop.name)}>Delete</button>
+          </div>
+        ))}
       </div>
     </div>
   );

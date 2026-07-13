@@ -5,7 +5,7 @@ import { storeInputMode, type InputMode } from '../engine/input';
 import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type ChordMode, type MusicConfig, type CustomWheel } from '../engine/music';
 import { listWheels, saveWheel, deleteWheel } from '../engine/music/customWheelStore';
 import WheelEditor from './WheelEditor';
-import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } from '../engine/looper';
+import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, listLoops, saveLoop, deleteLoop, type LooperState, type SavedLoop } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
 import ShareButton from './ShareButton';
@@ -172,7 +172,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   }, [changeOctave]);
 
   const gatedRef = useRef(false);
-  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef, sustainedRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
 
   // No explainer screen to click through — ask for the camera the moment
   // the page loads. Only fires once: after a denial, mode reverts to
@@ -337,6 +337,51 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     looper.add(buildCommand(noteIdx, qualIdx, 0.5, octaveRef.current, musicRef.current));
   }, [looper, selectedRef, loopState.slots.length, ent.loopSlots]);
 
+  // Record-arm: while armed, poll the sustained-fist ref and capture the
+  // current chord on each rising edge (fresh fist lock), so a player can lock
+  // in a whole progression hands-free instead of reaching for "+ chord" each
+  // time. Auto-disarms once the loop fills to the plan's slot cap.
+  const [loopArmed, setLoopArmed] = useState(false);
+  const prevSustainedRef = useRef(false);
+  const toggleLoopArm = useCallback(() => {
+    setLoopArmed(v => {
+      prevSustainedRef.current = false;
+      return !v;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!loopArmed || !looper) return;
+    const id = setInterval(() => {
+      const sustained = sustainedRef.current;
+      if (sustained && !prevSustainedRef.current) addCurrentChord();
+      prevSustainedRef.current = sustained;
+    }, 100);
+    return () => clearInterval(id);
+  }, [loopArmed, looper, addCurrentChord, sustainedRef]);
+
+  useEffect(() => {
+    if (loopArmed && loopState.slots.length >= ent.loopSlots) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- disarming is a derived correction to external loop-fill state, same pattern as the arp downgrade guard above
+      setLoopArmed(false);
+    }
+  }, [loopArmed, loopState.slots.length, ent.loopSlots]);
+
+  // Saved-loop library: read once on mount, refreshed after save/delete.
+  const [savedLoops, setSavedLoops] = useState<SavedLoop[]>(() => listLoops());
+  const handleSaveLoop = useCallback((name: string) => {
+    if (!looper) return;
+    saveLoop({ name, bpm: loopState.bpm, beatsPerSlot: loopState.beatsPerSlot, slots: looper.getSlots(), savedAt: Date.now() });
+    setSavedLoops(listLoops());
+  }, [looper, loopState.bpm, loopState.beatsPerSlot]);
+  const handleLoadLoop = useCallback((loop: SavedLoop) => {
+    looper?.load(loop);
+  }, [looper]);
+  const handleDeleteLoop = useCallback((name: string) => {
+    deleteLoop(name);
+    setSavedLoops(listLoops());
+  }, []);
+
   // Enter is a quick shortcut for "+ chord" (ignored while a control is focused).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -416,7 +461,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       />
       </>}
       {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
-        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
+        <LoopPanel
+          looper={looper}
+          state={loopState}
+          onAddChord={addCurrentChord}
+          maxSlots={ent.loopSlots}
+          armed={loopArmed}
+          onToggleArm={toggleLoopArm}
+          savedLoops={savedLoops}
+          onSaveLoop={handleSaveLoop}
+          onLoadLoop={handleLoadLoop}
+          onDeleteLoop={handleDeleteLoop}
+        />
       )}
       {/* Free plans see where the looper lives — a teaser pill in the
           panel's spot that opens the upgrade sheet. */}
