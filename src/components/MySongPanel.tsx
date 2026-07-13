@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
@@ -28,9 +28,26 @@ export default function MySongPanel({
   const [song, setSong] = useState<MySong | null>(null);
   const [title, setTitle] = useState('');
   const [source, setSource] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const panelRef = useRef<HTMLElement>(null);
+
+  const sheet = useMemo(() => (song ? parseSheet(song.sheetSource) : null), [song]);
 
   useEffect(() => {
     if (!open) return;
+    panelRef.current?.focus();
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- also kicks off the getMySong() fetch below, a real synchronization effect
+    setLoading(true);
+    setError(null);
     let cancelled = false;
     void getMySong().then(s => {
       if (cancelled) return;
@@ -41,26 +58,35 @@ export default function MySongPanel({
   }, [open]);
 
   async function handleImport() {
-    if (!title.trim() || !source.trim()) return;
-    const ok = await saveMySong({ title, sheetSource: source, loops: [] });
+    const trimmedTitle = title.trim();
+    const trimmedSource = source.trim();
+    if (!trimmedTitle || !trimmedSource) return;
+    setError(null);
+    const ok = await saveMySong({ title: trimmedTitle, sheetSource: trimmedSource, loops: [] });
     if (ok) {
-      setSong({ title, sheetSource: source, loops: [], updatedAt: Date.now() });
+      setSong({ title: trimmedTitle, sheetSource: trimmedSource, loops: [], updatedAt: Date.now() });
       setTitle('');
       setSource('');
+    } else {
+      setError("Couldn't save — check your connection and sign-in.");
     }
   }
 
   async function handleStoreLoops() {
     if (!song) return;
+    setError(null);
     const loops = listLoops();
     const ok = await saveMySong({ title: song.title, sheetSource: song.sheetSource, loops });
     if (ok) setSong({ ...song, loops, updatedAt: Date.now() });
+    else setError("Couldn't save — check your connection and sign-in.");
   }
 
   async function handleDelete() {
     if (!window.confirm('Delete your song? This frees your one import.')) return;
+    setError(null);
     const ok = await deleteMySong();
     if (ok) setSong(null);
+    else setError("Couldn't delete — try again.");
   }
 
   return createPortal(
@@ -71,6 +97,7 @@ export default function MySongPanel({
         aria-hidden="true"
       />
       <aside
+        ref={panelRef}
         className={'profile-drawer my-song-panel' + (open ? ' is-open' : '')}
         data-theme={theme}
         role="dialog"
@@ -91,13 +118,14 @@ export default function MySongPanel({
           </div>
         </header>
         <div className="profile-drawer__panel">
+          {error && <p className="profile-drawer__row-hint my-song-error">{error}</p>}
           {loading ? (
             <p className="profile-drawer__note">Loading…</p>
           ) : song ? (
             <>
               <section className="profile-drawer__section">
                 <h3 className="profile-drawer__section-title">{song.title}</h3>
-                <SheetOverlay sheet={parseSheet(song.sheetSource)} />
+                {sheet && <SheetOverlay sheet={sheet} />}
               </section>
               <section className="profile-drawer__section">
                 <h3 className="profile-drawer__section-title">Stored loops</h3>

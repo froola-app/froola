@@ -617,7 +617,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         </button>)}
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
-      {ent.mySongUnlocked && (
+      {ent.mySongUnlocked && mySongOpen && (
         <MySongPanel
           open={mySongOpen}
           onClose={() => setMySongOpen(false)}

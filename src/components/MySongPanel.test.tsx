@@ -165,4 +165,62 @@ describe('MySongPanel', () => {
     render(<MySongPanel open={false} onClose={vi.fn()} onLoadLoop={vi.fn()} />);
     expect(mockGetMySong).not.toHaveBeenCalled();
   });
+
+  it('calls onClose when Escape is pressed', async () => {
+    mockGetMySong.mockResolvedValue(SAVED_SONG);
+    const onClose = vi.fn();
+    render(<MySongPanel open onClose={onClose} onLoadLoop={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('My Tune')).toBeDefined());
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('shows an error and keeps the import form filled when saveMySong fails', async () => {
+    mockGetMySong.mockResolvedValue(null);
+    mockSaveMySong.mockResolvedValue(false);
+    render(<MySongPanel open onClose={vi.fn()} onLoadLoop={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByPlaceholderText(/title/i)).toBeDefined());
+    fireEvent.change(screen.getByPlaceholderText(/title/i), { target: { value: 'My Tune' } });
+    fireEvent.change(screen.getByPlaceholderText(/lyrics/i), { target: { value: SHEET_SOURCE } });
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/couldn't save/i)).toBeDefined();
+    });
+    expect(screen.getByPlaceholderText(/title/i)).toHaveProperty('value', 'My Tune');
+    expect(screen.getByPlaceholderText(/lyrics/i)).toHaveProperty('value', SHEET_SOURCE);
+  });
+
+  it('shows an error when handleDelete fails', async () => {
+    mockGetMySong.mockResolvedValue(SAVED_SONG);
+    mockDeleteMySong.mockResolvedValue(false);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<MySongPanel open onClose={vi.fn()} onLoadLoop={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByText('My Tune')).toBeDefined());
+    fireEvent.click(screen.getByRole('button', { name: /delete song/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/couldn't delete/i)).toBeDefined();
+    });
+    expect(screen.getByText('My Tune')).toBeDefined();
+  });
+
+  it('trims title and source before saving', async () => {
+    mockGetMySong.mockResolvedValue(null);
+    mockSaveMySong.mockResolvedValue(true);
+    render(<MySongPanel open onClose={vi.fn()} onLoadLoop={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByPlaceholderText(/title/i)).toBeDefined());
+    fireEvent.change(screen.getByPlaceholderText(/title/i), { target: { value: '  My Tune  ' } });
+    fireEvent.change(screen.getByPlaceholderText(/lyrics/i), { target: { value: `  ${SHEET_SOURCE}  ` } });
+    fireEvent.click(screen.getByRole('button', { name: /import/i }));
+
+    await waitFor(() => {
+      expect(mockSaveMySong).toHaveBeenCalledWith({ title: 'My Tune', sheetSource: SHEET_SOURCE, loops: [] });
+    });
+  });
 });

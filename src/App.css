@@ -4857,6 +4857,10 @@ body {
 .my-song-delete {
   color: var(--pd-error);
 }
+.my-song-error {
+  color: var(--pd-error);
+  white-space: normal;
+}
 
 .sheet-overlay {
   max-height: 60vh;
