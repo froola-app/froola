@@ -7,3 +7,4 @@ export {
   type LooperDeps,
   type SavedLoop,
 } from './ChordLooper'
+export { listLoops, saveLoop, deleteLoop } from './loopLibrary'
