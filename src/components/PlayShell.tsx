@@ -163,11 +163,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
 
-  // Arrow keys are a quick shortcut for the on-screen octave stepper.
+  // Arrow keys are a quick shortcut for the on-screen octave stepper
+  // (ignored while a control is focused, e.g. arrow keys moving the cursor
+  // in the My Song textarea).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowUp')        { e.preventDefault(); changeOctave(1); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); changeOctave(-1); }
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+        t.tagName === 'BUTTON' || t.isContentEditable)) return;
+      e.preventDefault();
+      if (e.key === 'ArrowUp') changeOctave(1);
+      else changeOctave(-1);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);

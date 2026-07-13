@@ -72,9 +72,10 @@ const PLANS: Record<PlanId, { name: string; price: string; perks: string[]; alt:
     price: '$1.99/wk',
     perks: [
       'Piano instrument',
-      'Record & share replays and videos, up to 3 min',
-      'No watermark',
+      '3 recordings up to 3 minutes, no watermark',
+      'MP3 & MP4 export',
       'Chord looper & arpeggiator',
+      'My Song — save one song with its loops',
       'Visual themes',
     ],
     alt: 'everything here, longer recordings & no caps on loops',
