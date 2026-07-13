@@ -760,6 +760,19 @@ body {
   -webkit-user-select: none;
 }
 
+/* HUD pills: buttons default to UA letter-spacing (normal) while link-styled
+   pills inherit the body's 0.18px — pin one explicit value so all pills track
+   identically. */
+.record-btn,
+.vid-record-btn,
+.audio-export-btn,
+.learn-nav-btn,
+.share-btn,
+.feedback-btn,
+.loop-teaser {
+  letter-spacing: 0.18px;
+}
+
 .record-btn {
   position: fixed;
   top: 1rem;
