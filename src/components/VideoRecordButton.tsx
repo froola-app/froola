@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import type { AudioEngine } from '../engine/audio/AudioEngine';
 import { useVideoRecorder } from '../engine/recording/useVideoRecorder';
+import LockBadge from './LockBadge';
 
 type Props = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -28,7 +29,7 @@ export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef
   if (locked) {
     return (
       <button className="vid-record-btn vid-record-btn--idle" onClick={onLockedClick}>
-        <span className="rec-dot" /> Record video <span className="lock-chip">plus</span>
+        <span className="rec-dot" /> Record video <LockBadge />
       </button>
     );
   }

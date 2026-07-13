@@ -17,8 +17,9 @@ export function newRecordingId(): string {
   return Array.from(bytes, b => ID_ALPHABET[b % ID_ALPHABET.length]).join('');
 }
 
-/** Stores the payload; resolves to the new short id, or null on any failure. */
-export async function saveRecording(encoded: string): Promise<string | null> {
+export type RecordingMeta = { id: string; createdAt: number; durationMs: number | null };
+
+async function saveRecordingRow(encoded: string, durationMs?: number): Promise<string | null> {
   if (!supabase) return null;
   try {
     const { data } = await supabase.auth.getSession();
@@ -30,11 +31,68 @@ export async function saveRecording(encoded: string): Promise<string | null> {
       user_id: userId,
       data: encoded,
       created_at: Date.now(),
+      duration_ms: durationMs ?? null,
     });
     return error ? null : id;
   } catch {
     return null;
   }
+}
+
+/** Stores the payload; resolves to the new short id, or null on any failure. */
+export async function saveRecording(encoded: string): Promise<string | null> {
+  return saveRecordingRow(encoded);
+}
+
+/** The caller's own recordings, newest first. [] on any failure. */
+export async function listRecordings(): Promise<RecordingMeta[]> {
+  if (!supabase) return [];
+  try {
+    const { data: s } = await supabase.auth.getSession();
+    const userId = s.session?.user.id;
+    if (!userId) return [];
+    const { data, error } = await supabase
+      .from('recordings')
+      .select('id, created_at, duration_ms')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map(r => ({ id: r.id, createdAt: r.created_at, durationMs: r.duration_ms ?? null }));
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteRecording(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { data: s } = await supabase.auth.getSession();
+    const userId = s.session?.user.id;
+    if (!userId) return false;
+    const { error } = await supabase.from('recordings').delete().eq('id', id).eq('user_id', userId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Saves within the plan's slot cap: evicts oldest rows first (their share
+ *  links die — the UI confirms before recording starts). Never exceeds the
+ *  cap client-side; the 0006 trigger backstops server-side. */
+export async function saveRecordingCapped(
+  encoded: string,
+  durationMs: number,
+  cap: number,
+): Promise<string | null> {
+  if (!supabase) return null;
+  if (Number.isFinite(cap)) {
+    const held = await listRecordings();
+    const evict = held.slice(cap - 1); // newest-first: keep cap-1, evict the rest
+    for (const r of evict) {
+      if (!(await deleteRecording(r.id))) return null; // never insert past cap
+    }
+  }
+  return saveRecordingRow(encoded, durationMs);
 }
 
 /** Resolves to the stored payload, or null if unknown/unreachable. */

@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { RecordingSample, Recording } from '../types';
 import type { DialSelection } from '../renderer';
 import { encode } from './codec';
-import { saveRecording } from './recordingStore';
+import { saveRecordingCapped } from './recordingStore';
 
 const VIBES = ['warm', 'bright', 'dark', 'electric'];
 // Fallback when no plan-derived limit is passed: never exceed the free
@@ -23,10 +23,18 @@ export function useRecorder(
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
   // Plan-gated (replayWatermark): free replays play back watermarked.
   watermark: boolean = true,
+  // Plan-gated (ent.maxSavedRecordings): caps how many saved rows a user
+  // may hold; saveRecordingCapped evicts oldest to stay within it.
+  maxSavedRecordings: number = Infinity,
 ) {
   const [state, setState] = useState<RecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  // Bumped once the save from stop() settles (resolve or reject) — lets
+  // consumers (e.g. RecordButton's held-count refresh) know when it's safe
+  // to re-read persisted state, since `state` flips to 'done' synchronously
+  // before the async save lands.
+  const [saveTick, setSaveTick] = useState(0);
 
   const samplesRef = useRef<RecordingSample[]>([]);
   const startTimeRef = useRef(0);
@@ -63,12 +71,17 @@ export function useRecorder(
     setShareUrl(window.location.origin + '/replay?d=' + encoded);
     setState('done');
     const take = takeRef.current;
-    void saveRecording(encoded).then(id => {
-      if (id && takeRef.current === take) {
-        setShareUrl(window.location.origin + '/replay?r=' + id);
-      }
-    });
-  }, []);
+    void saveRecordingCapped(encoded, recording.totalMs, maxSavedRecordings)
+      .then(id => {
+        if (id && takeRef.current === take) {
+          setShareUrl(window.location.origin + '/replay?r=' + id);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setSaveTick(t => t + 1);
+      });
+  }, [maxSavedRecordings]);
 
   const start = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -107,5 +120,5 @@ export function useRecorder(
     if (intervalRef.current) clearInterval(intervalRef.current);
   }, []);
 
-  return { state, elapsed, shareUrl, start, stop };
+  return { state, elapsed, shareUrl, start, stop, saveTick };
 }
