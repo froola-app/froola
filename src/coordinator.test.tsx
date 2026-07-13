@@ -74,6 +74,19 @@ describe('useCoordinator — gated audio unlock', () => {
   });
 });
 
+describe('useCoordinator — returned refs', () => {
+  it('returns a sustainedRef the hot loop writes into', () => {
+    const { result } = renderHook(() => {
+      const canvasRef = useRef<HTMLCanvasElement | null>(null);
+      const modeRef = useRef<InstrumentMode>('synth');
+      return useCoordinator(canvasRef, modeRef, 'asking');
+    });
+
+    expect(result.current.sustainedRef).toBeDefined();
+    expect(result.current.sustainedRef.current).toBe(false);
+  });
+});
+
 describe('useCoordinator — gated hot loop', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['requestAnimationFrame'] });
