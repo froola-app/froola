@@ -119,4 +119,11 @@ describe('LoopPanel', () => {
 
     expect(props.onDeleteLoop).toHaveBeenCalledWith('My Loop');
   });
+
+  it('sets a title on the saved-loop name so a truncated name is still readable on hover', () => {
+    const props = baseProps();
+    render(<LoopPanel {...props} savedLoops={SAVED} />);
+
+    expect(screen.getByText('My Loop')).toHaveAttribute('title', 'My Loop');
+  });
 });

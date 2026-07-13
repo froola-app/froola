@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as rtlRender, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render as rtlRender, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PlayShell from './PlayShell';
 import { useCoordinator } from '../coordinator';
@@ -44,7 +44,7 @@ function fakeEngine() {
   };
 }
 
-function coordinatorState(engine: ReturnType<typeof fakeEngine>) {
+function coordinatorState(engine: ReturnType<typeof fakeEngine>, sustainedRef: { current: boolean } = { current: false }) {
   return {
     mode: 'camera' as const,
     requestCamera: vi.fn(),
@@ -55,8 +55,20 @@ function coordinatorState(engine: ReturnType<typeof fakeEngine>) {
     cameraVideoRef: { current: null },
     engineRef: { current: engine },
     signalRef: { current: [] },
+    sustainedRef,
   };
 }
+
+const plusAuthState = {
+  user: { uid: 'u1' } as never,
+  profile: { plan: 'plus', betaTester: false } as never,
+  loading: false,
+  authReady: true,
+  signInWithGoogle: vi.fn(),
+  signInWithEmail: vi.fn(),
+  signOutUser: vi.fn(),
+  completeOnboarding: vi.fn(),
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -281,5 +293,85 @@ describe('PlayShell — MP4 export watermark by plan', () => {
 
     const lastCall = mockVideoRecordButton.mock.calls[mockVideoRecordButton.mock.calls.length - 1];
     expect(lastCall[0].watermark).toBe(false);
+  });
+});
+
+describe('PlayShell — record-arm rising-edge capture', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function armButton() {
+    return screen.getByRole('button', { name: /arm/i });
+  }
+
+  function slotCount() {
+    return document.querySelectorAll('.loop-slot').length;
+  }
+
+  it('does not capture when arming while the fist is already sustained', () => {
+    const engine = fakeEngine();
+    const sustainedRef = { current: true };
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine, sustainedRef));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseAuth.mockReturnValue(plusAuthState);
+    render(<PlayShell />);
+
+    fireEvent.click(armButton());
+    act(() => { vi.advanceTimersByTime(500); });
+
+    expect(slotCount()).toBe(0);
+  });
+
+  it('captures exactly once per rising edge while armed', () => {
+    const engine = fakeEngine();
+    const sustainedRef = { current: false };
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine, sustainedRef));
+    mockUsePlayWall.mockReturnValue(false);
+    mockUseAuth.mockReturnValue(plusAuthState);
+    render(<PlayShell />);
+
+    fireEvent.click(armButton());
+
+    // Rising edge: false -> true captures once.
+    sustainedRef.current = true;
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(slotCount()).toBe(1);
+
+    // Still held: no further capture.
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(slotCount()).toBe(1);
+
+    // Release then squeeze again: a second rising edge captures again.
+    sustainedRef.current = false;
+    act(() => { vi.advanceTimersByTime(100); });
+    sustainedRef.current = true;
+    act(() => { vi.advanceTimersByTime(100); });
+    expect(slotCount()).toBe(2);
+  });
+
+  it('auto-disarms once the loop fills to the plan slot cap', () => {
+    const engine = fakeEngine();
+    const sustainedRef = { current: false };
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine, sustainedRef));
+    mockUsePlayWall.mockReturnValue(false);
+    // Plus plan caps at 8 loop slots (see src/entitlements.ts).
+    mockUseAuth.mockReturnValue(plusAuthState);
+    render(<PlayShell />);
+
+    fireEvent.click(armButton());
+    expect(armButton().getAttribute('aria-pressed')).toBe('true');
+
+    const addChordButton = screen.getByRole('button', { name: /\+ chord/i });
+    for (let i = 0; i < 8; i++) {
+      fireEvent.click(addChordButton);
+    }
+
+    expect(slotCount()).toBe(8);
+    expect(armButton().getAttribute('aria-pressed')).toBe('false');
   });
 });

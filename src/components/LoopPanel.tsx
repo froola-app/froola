@@ -128,7 +128,7 @@ export default function LoopPanel({
       <div className="loop-saved" aria-label="Saved loops">
         {savedLoops.map(loop => (
           <div className="loop-saved-row" key={loop.name}>
-            <span className="loop-saved-name">{loop.name}</span>
+            <span className="loop-saved-name" title={loop.name}>{loop.name}</span>
             <button className="loop-btn" onClick={() => onLoadLoop(loop)}>Load</button>
             <button className="loop-btn" onClick={() => onDeleteLoop(loop.name)}>Delete</button>
           </div>

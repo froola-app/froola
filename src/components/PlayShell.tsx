@@ -345,11 +345,20 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const prevSustainedRef = useRef(false);
   const toggleLoopArm = useCallback(() => {
     setLoopArmed(v => {
-      prevSustainedRef.current = false;
+      // Seed with the live sustained value (not a hardcoded false) so a fist
+      // already held at the moment of arming isn't mistaken for a fresh
+      // rising edge on the first poll tick — only a *new* squeeze after
+      // arming should capture.
+      prevSustainedRef.current = sustainedRef.current;
       return !v;
     });
-  }, []);
+  }, [sustainedRef]);
 
+  // addCurrentChord's identity changes on every capture (it closes over
+  // loopState.slots.length), so this effect tears down and restarts the
+  // interval each time a chord lands. That's harmless by design: the
+  // rising-edge state lives in prevSustainedRef, not in this effect's
+  // closure, so a restart never causes a double-capture or a missed edge.
   useEffect(() => {
     if (!loopArmed || !looper) return;
     const id = setInterval(() => {
