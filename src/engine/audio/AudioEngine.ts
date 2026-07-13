@@ -413,6 +413,19 @@ export class AudioEngine {
     }
   }
 
+  // Creates a MediaStream of the instrument output alone — no mic — for
+  // audio-only export (mp3). Mirrors createRecordingStream minus the mic tap.
+  createInstrumentStream(): { stream: MediaStream; stop: () => void } {
+    const dest = this.ctx.createMediaStreamDestination()
+    this.analyser.connect(dest)
+    return {
+      stream: dest.stream,
+      stop: () => {
+        try { this.analyser.disconnect(dest) } catch { /* ok */ }
+      },
+    }
+  }
+
   resume(): void {
     this.ctx.resume()
   }

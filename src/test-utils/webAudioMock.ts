@@ -43,6 +43,14 @@ function makeBiquadFilter() {
   return { ...makeNode(), type: 'lowpass', frequency: makeParam(), Q: makeParam() }
 }
 
+function makeMediaStreamDestination() {
+  return { ...makeNode(), stream: { getAudioTracks: () => [], getTracks: () => [] } }
+}
+
+function makeMediaStreamSource() {
+  return makeNode()
+}
+
 function makeCompressor() {
   return {
     ...makeNode(),
@@ -67,6 +75,9 @@ const mockAudioContext = {
   createConvolver: vi.fn().mockImplementation(makeConvolver),
   createBuffer: vi.fn().mockImplementation(makeBuffer),
   createDynamicsCompressor: vi.fn().mockImplementation(makeCompressor),
+  createMediaStreamDestination: vi.fn().mockImplementation(makeMediaStreamDestination),
+  createMediaStreamSource: vi.fn().mockImplementation(makeMediaStreamSource),
+  decodeAudioData: vi.fn().mockImplementation(() => Promise.resolve(makeBuffer(2, 0))),
   resume: vi.fn().mockResolvedValue(undefined),
   suspend: vi.fn().mockResolvedValue(undefined),
 }
