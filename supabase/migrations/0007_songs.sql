@@ -18,5 +18,5 @@ ALTER TABLE public.songs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "songs_select_own" ON public.songs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "songs_insert_own" ON public.songs FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "songs_update_own" ON public.songs FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "songs_update_own" ON public.songs FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "songs_delete_own" ON public.songs FOR DELETE USING (auth.uid() = user_id);
