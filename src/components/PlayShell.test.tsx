@@ -149,6 +149,35 @@ describe('PlayShell — play wall wiring', () => {
   });
 });
 
+describe('PlayShell — octave keydown guard', () => {
+  it('ignores ArrowUp/ArrowDown while a text field is focused (e.g. the My Song textarea)', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    render(<PlayShell />);
+
+    const textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+
+    fireEvent.keyDown(textarea, { key: 'ArrowUp' });
+
+    expect(screen.getByText('oct 0')).toBeInTheDocument();
+
+    document.body.removeChild(textarea);
+  });
+
+  it('changes the octave on ArrowUp/ArrowDown when no control is focused', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    render(<PlayShell />);
+
+    fireEvent.keyDown(document.body, { key: 'ArrowUp' });
+
+    expect(screen.getByText('oct +1')).toBeInTheDocument();
+  });
+});
+
 describe('PlayShell — custom wheel selector gating', () => {
   it('free plan: choosing the locked wheel option opens the upgrade sheet and stays on the default wheel', async () => {
     const engine = fakeEngine();
