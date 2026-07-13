@@ -7,8 +7,14 @@ export type SongSheet = { lines: SheetLine[] };
 const CHORD = /^[A-G][#b]?(m|maj|min|dim|aug|sus)?\d*(\/[A-G][#b]?)?$/;
 const INLINE = /\[([^\]]+)\]/;
 
+// A single bare letter (no suffix/accidental) is ambiguous with a one-word
+// lyric line ("A", "I", "E"-as-exclamation, etc.) — never treat it as a
+// chord header, even though it matches CHORD.
+const BARE_LETTER = /^[A-G]$/;
+
 const isChordLine = (line: string) => {
   const words = line.trim().split(/\s+/);
+  if (words.length === 1 && BARE_LETTER.test(words[0])) return false;
   return words.length > 0 && words.every(w => CHORD.test(w));
 };
 
