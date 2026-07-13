@@ -36,13 +36,25 @@ export interface Entitlements {
   arpUnlocked: boolean;
   /** Custom chord wheels — user-defined root+quality per slice (Plus+). */
   customWheelsUnlocked: boolean;
+  /** How many saved replay recordings the account may hold (1 / 3 / ∞).
+   *  Saving at the cap replaces the oldest — its share link dies. */
+  maxSavedRecordings: number;
+  /** MP3 session export (Plus+). */
+  audioExportUnlocked: boolean;
+  /** Downloaded MP4s carry the burned-in watermark (free + plus; Studio
+   *  exports clean). Distinct from replayWatermark, which is playback-only. */
+  exportWatermark: boolean;
+  /** Paste-in lyrics + chords song sheet (Plus+). */
+  lyricsImportUnlocked: boolean;
+  /** One persistent saved song: sheet + stored loops (Plus+). */
+  mySongUnlocked: boolean;
 }
 
 const BY_PLAN: Record<EffectivePlan, Entitlements> = {
   free: {
     pianoUnlocked: false,
     videoRecordUnlocked: false,
-    replayRecordUnlocked: false,
+    replayRecordUnlocked: true,
     visualThemesUnlocked: false,
     audioDownloadUnlocked: false,
     instantReplayUnlocked: false,
@@ -53,6 +65,11 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     loopSlots: 0,
     arpUnlocked: false,
     customWheelsUnlocked: false,
+    maxSavedRecordings: 1,
+    audioExportUnlocked: false,
+    exportWatermark: true,
+    lyricsImportUnlocked: false,
+    mySongUnlocked: false,
   },
   plus: {
     pianoUnlocked: true,
@@ -68,6 +85,11 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     loopSlots: 8,
     arpUnlocked: true,
     customWheelsUnlocked: true,
+    maxSavedRecordings: 3,
+    audioExportUnlocked: true,
+    exportWatermark: true,
+    lyricsImportUnlocked: true,
+    mySongUnlocked: true,
   },
   studio: {
     pianoUnlocked: true,
@@ -83,6 +105,11 @@ const BY_PLAN: Record<EffectivePlan, Entitlements> = {
     loopSlots: Infinity,
     arpUnlocked: true,
     customWheelsUnlocked: true,
+    maxSavedRecordings: Infinity,
+    audioExportUnlocked: true,
+    exportWatermark: false,
+    lyricsImportUnlocked: true,
+    mySongUnlocked: true,
   },
 };
 
