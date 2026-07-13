@@ -9,7 +9,7 @@ import { useTheme } from '../useTheme';
 // sells that feature, not a generic plan grid.
 export type LockedFeature =
   | 'piano' | 'video' | 'replay-length' | 'themes'
-  | 'recordings' | 'loop' | 'arp' | 'wheels' | 'mp3';
+  | 'recordings' | 'loop' | 'arp' | 'wheels' | 'mp3' | 'my-song';
 
 const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recommend: PlanId }> = {
   piano: {
@@ -55,6 +55,11 @@ const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recomme
   mp3: {
     title: 'Take the audio with you.',
     body: 'Export what you just played as an MP3 — Plus unlocks the download, no video required.',
+    recommend: 'plus',
+  },
+  'my-song': {
+    title: 'Your song, saved.',
+    body: 'Paste your lyrics and chords, keep your loops with them, and pick up right where you left off — one saved song on Plus.',
     recommend: 'plus',
   },
 };

@@ -22,6 +22,7 @@ import PlayWall from './PlayWall';
 import GlassDials from './GlassDials';
 import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import LockBadge from './LockBadge';
+import MySongPanel from './MySongPanel';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { usePlayWall } from '../hooks/usePlayWall';
@@ -67,6 +68,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   // Which locked feature the user just reached for, if any — opens the
   // in-context upgrade sheet instead of bouncing them to /pricing.
   const [upsell, setUpsell] = useState<LockedFeature | null>(null);
+  const [mySongOpen, setMySongOpen] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
@@ -598,8 +600,30 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         >
           arp <LockBadge />
         </button>)}
+        {!isMobile && (ent.mySongUnlocked ? <button
+          className="octave-btn my-song-btn"
+          onClick={() => setMySongOpen(true)}
+          aria-label="My Song"
+          title="Your saved lyrics+chords sheet and stored loops"
+        >
+          My Song
+        </button> : <button
+          className="octave-btn my-song-btn"
+          onClick={() => setUpsell('my-song')}
+          aria-label="My Song (Plus feature)"
+          title="Plus keeps one saved song: your lyrics+chords and stored loops"
+        >
+          My Song <LockBadge />
+        </button>)}
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
+      {ent.mySongUnlocked && (
+        <MySongPanel
+          open={mySongOpen}
+          onClose={() => setMySongOpen(false)}
+          onLoadLoop={loop => looper?.load(loop)}
+        />
+      )}
       {wheelEditor !== 'closed' && (
         <WheelEditor
           keyOffset={keyOffset}
