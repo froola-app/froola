@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import type { RefObject } from 'react';
 import type { AudioEngine } from '../audio/AudioEngine';
 import { encodeMp3 } from './mp3';
+import { saveMp3 } from './mp3Store';
 
 export type AudioExporterState = 'idle' | 'recording' | 'encoding';
 
@@ -15,6 +16,7 @@ export function useAudioExporter(
 ) {
   const [state, setState] = useState<AudioExporterState>('idle');
   const [elapsed, setElapsed] = useState(0);
+  const [saveTick, setSaveTick] = useState(0);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -62,6 +64,7 @@ export function useAudioExporter(
     };
 
     recorder.onstop = () => {
+      const durationMs = Math.round(performance.now() - startTimeRef.current);
       cleanup();
       setState('encoding');
       void (async () => {
@@ -70,19 +73,15 @@ export function useAudioExporter(
           const arrayBuffer = await webmBlob.arrayBuffer();
           const audioBuffer = await engine.decodeAudio(arrayBuffer);
           const mp3Blob = encodeMp3(audioBuffer);
-          const url = URL.createObjectURL(mp3Blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'froola-session.mp3';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          // Saved locally, surfaced in the profile sidebar's MP3 exports panel —
+          // no auto-download (owner decision, 2026-07-13 spec).
+          await saveMp3(mp3Blob, durationMs);
         } catch (err) {
           console.error('[audioExporter] export failed', err);
         } finally {
           setState('idle');
           setElapsed(0);
+          setSaveTick(t => t + 1);
         }
       })();
     };
@@ -98,5 +97,5 @@ export function useAudioExporter(
     }, 100);
   }, [state, engineRef, cleanup, stop, maxDurationMs]);
 
-  return { state, elapsed, start, stop };
+  return { state, elapsed, start, stop, saveTick };
 }

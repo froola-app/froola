@@ -3,9 +3,14 @@ import type { RefObject } from 'react';
 import type { AudioEngine } from '../audio/AudioEngine';
 import { useAudioExporter } from './useAudioExporter';
 import { encodeMp3 } from './mp3';
+import { saveMp3 } from './mp3Store';
 
 vi.mock('./mp3', () => ({
   encodeMp3: vi.fn(() => new Blob(['mp3-bytes'], { type: 'audio/mpeg' })),
+}));
+
+vi.mock('./mp3Store', () => ({
+  saveMp3: vi.fn().mockResolvedValue('mp3-id-1'),
 }));
 
 beforeEach(() => {
@@ -58,7 +63,7 @@ describe('useAudioExporter', () => {
     expect(result.current.state).toBe('recording');
   });
 
-  it('transitions recording -> encoding -> idle on stop(), calling encodeMp3', async () => {
+  it('transitions recording -> encoding -> idle on stop(), saving via mp3Store', async () => {
     const engineRef = makeEngineRef();
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
     const { result } = renderHook(() => useAudioExporter(engineRef));
@@ -69,24 +74,21 @@ describe('useAudioExporter', () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(engineRef.current!.decodeAudio).toHaveBeenCalledOnce();
     expect(encodeMp3).toHaveBeenCalledOnce();
+    expect(saveMp3).toHaveBeenCalledOnce();
+    expect(saveMp3).toHaveBeenCalledWith(expect.any(Blob), expect.any(Number));
     expect(result.current.state).toBe('idle');
-    expect(clickSpy).toHaveBeenCalledOnce();
+    expect(clickSpy).not.toHaveBeenCalled(); // no more auto-download
     clickSpy.mockRestore();
   });
 
-  it('downloads with the froola-session.mp3 filename', async () => {
+  it('bumps saveTick once the save settles', async () => {
     const engineRef = makeEngineRef();
-    let downloadedName = '';
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      downloadedName = this.download;
-    });
     const { result } = renderHook(() => useAudioExporter(engineRef));
+    expect(result.current.saveTick).toBe(0);
     act(() => { result.current.start(); });
     act(() => { result.current.stop(); });
     await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
-    expect(downloadedName).toBe('froola-session.mp3');
-    expect(clickSpy).toHaveBeenCalledOnce();
-    clickSpy.mockRestore();
+    expect(result.current.saveTick).toBe(1);
   });
 
   it('falls back to no mimeType option when audio/webm is unsupported', () => {
