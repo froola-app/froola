@@ -30,7 +30,7 @@ dist-ssr
 CLAUDE.md
 CLAUDE.track-b.md
 # Internal docs — keep off GitHub
-docs/
+/docs/
 
 # Licensed melody data — generated locally by tools/melody-extract, never committed
 public/melodies/

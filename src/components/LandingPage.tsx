@@ -10,8 +10,7 @@ import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
 import SmileAccent from './SmileAccent';
 import ThemeToggle from './ThemeToggle';
-
-const CONTACT_EMAIL = 'supportfroola@gmail.com';
+import SiteFooter from './docs/SiteFooter';
 
 // Real songs from the lesson curriculum — the marquee shows the product's
 // soul (what you actually get to play) instead of empty hero margins.
@@ -274,15 +273,7 @@ export default function LandingPage() {
       </div>
 
       {/* Footer */}
-      <footer className="lp4__footer">
-        <div className="lp4__footer-inner">
-          <span>
-            Questions or ideas?{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </span>
-          <span>froola © 2026</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

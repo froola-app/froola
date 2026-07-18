@@ -2066,19 +2066,116 @@ body {
   transition: background 0.35s ease, border-color 0.35s ease;
 }
 
-.lp4__footer-inner {
+.sf {
   max-width: 980px;
   margin: 0 auto;
-  padding: 18px 22px;
+  padding: 40px 22px 18px;
+  font-size: 13px;
+  color: var(--lp-faint);
+}
+
+.sf__brand {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--lp-ink);
+  margin-bottom: 26px;
+}
+
+.sf__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 28px 20px;
+}
+
+.sf__col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sf__col h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--lp-ink);
+  margin: 0 0 2px;
+}
+
+.sf__col a {
+  color: inherit;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.sf__col a:hover { color: var(--lp-accent); }
+
+.sf__bottom {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: var(--lp-faint);
+  margin-top: 34px;
+  padding-top: 16px;
+  border-top: 1px solid var(--lp-hairline);
 }
 
-.lp4__footer-inner a { color: inherit; }
+.sf__bottom a { color: inherit; }
+
+/* Doc pages (/terms, /privacy, /refunds, /about) */
+.doc {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.doc__body {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 96px 22px 72px;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.doc__body h1 {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.doc__updated {
+  color: var(--lp-faint);
+  font-size: 13px;
+  margin: 0 0 28px;
+}
+
+.doc__body h2 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 32px 0 10px;
+}
+
+.doc__body p { margin: 0 0 14px; }
+
+.doc__body ul {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+
+.doc__body li { margin-bottom: 8px; }
+
+.doc__body a {
+  color: var(--lp-accent);
+  text-decoration: none;
+}
+
+.doc__body a:hover { text-decoration: underline; }
 
 /* Post-checkout success overlay + cancel toast */
 .lp4__checkout-overlay {

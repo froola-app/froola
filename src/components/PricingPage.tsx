@@ -7,8 +7,7 @@ import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
 import ThemeToggle from './ThemeToggle';
-
-const CONTACT_EMAIL = 'supportfroola@gmail.com';
+import SiteFooter from './docs/SiteFooter';
 
 // Standalone /pricing route, styled to match the landing page (lp4) so
 // it reads as a real page rather than an onboarding step.
@@ -33,15 +32,7 @@ export default function PricingPage() {
       <PricingSection />
       <CheckoutResult />
 
-      <footer className="lp4__footer">
-        <div className="lp4__footer-inner">
-          <span>
-            Questions or ideas?{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </span>
-          <span>froola © 2026</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
