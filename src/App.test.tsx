@@ -35,7 +35,7 @@ describe('App routing (Supabase configured, signed out)', () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('heading', { level: 1, name: /make music/i })).toBeDefined();
+    expect(screen.getByRole('heading', { level: 1, name: /meet froola/i })).toBeDefined();
   });
 
   it('renders the instrument at /play', async () => {

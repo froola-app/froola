@@ -48,15 +48,15 @@ describe('LandingPage', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('renders the headline and the camera CTA', () => {
+  it('renders the headline and the start-playing CTA', () => {
     render(<LandingPage />);
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /enable camera/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /start playing/i }).length).toBeGreaterThan(0);
   });
 
-  it('stores camera mode and navigates to /play when enabling the camera', async () => {
+  it('stores camera mode and navigates to /play when starting', async () => {
     render(<LandingPage />);
-    await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: /start playing/i })[0]);
     expect(sessionStorage.getItem('froola.inputMode')).toBe('camera');
     expect(navigate).toHaveBeenCalledWith('/play');
   });

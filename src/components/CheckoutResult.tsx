@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PlanId } from '../billing';
+import { TRIAL_DAYS } from '../pricingTiers';
 import SmileAccent from './SmileAccent';
 
 const PLAN_NAMES: Record<PlanId, string> = { plus: 'Plus', studio: 'Studio' };
-const TRIAL_DAYS = 14;
 
 // Rainbow confetti weighted toward the brand oranges — festive, but the
 // froola color still leads the parade.
