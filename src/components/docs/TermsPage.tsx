@@ -109,13 +109,7 @@ export default function TermsPage() {
         acceptance of the updated Terms.
       </p>
 
-      <h2>11. Governing law</h2>
-      <p>
-        These Terms are governed by the laws of [jurisdiction], without regard
-        to conflict-of-law principles.
-      </p>
-
-      <h2>12. Contact</h2>
+      <h2>11. Contact</h2>
       <p>
         Questions about these Terms? Email us at{' '}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
