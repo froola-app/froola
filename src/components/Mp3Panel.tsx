@@ -18,13 +18,16 @@ export default function Mp3Panel({ open }: { open: boolean }) {
     return () => { cancelled = true; };
   }, [open]);
 
-  const download = async (id: string) => {
+  const download = async ({ id, createdAt }: Mp3Meta) => {
     const blob = await getMp3Blob(id);
     if (!blob) return;
+    const d = new Date(createdAt);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'froola-session.mp3';
+    a.download = `froola-${stamp}.mp3`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -42,7 +45,7 @@ export default function Mp3Panel({ open }: { open: boolean }) {
             <p className="profile-drawer__row-label">{new Date(r.createdAt).toLocaleDateString()}</p>
             <p className="profile-drawer__row-hint">{fmtDuration(r.durationMs)}</p>
           </div>
-          <button className="profile-drawer__row-btn" onClick={() => void download(r.id)}>
+          <button className="profile-drawer__row-btn" onClick={() => void download(r)}>
             Download
           </button>
           <button className="profile-drawer__row-btn" aria-label="Delete MP3" onClick={() => {

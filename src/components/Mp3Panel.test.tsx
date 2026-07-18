@@ -44,13 +44,17 @@ describe('Mp3Panel', () => {
     const createUrl = vi.fn(() => 'blob:fake');
     const revokeUrl = vi.fn();
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: createUrl, revokeObjectURL: revokeUrl }));
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    let filename: string | null = null;
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(function (this: HTMLAnchorElement) { filename = this.download; });
 
     render(<Mp3Panel open />);
     await userEvent.click((await screen.findAllByRole('button', { name: 'Download' }))[0]);
 
     await waitFor(() => expect(click).toHaveBeenCalled());
     expect(getMp3Blob).toHaveBeenCalledWith('a');
+    expect(filename).toBe('froola-2026-07-13-1200.mp3');
     expect(revokeUrl).toHaveBeenCalledWith('blob:fake');
     click.mockRestore();
     vi.unstubAllGlobals();
