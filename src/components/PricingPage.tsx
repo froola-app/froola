@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { useScrollReveal } from '../useScrollReveal';
 import { useTheme } from '../useTheme';
 import CheckoutResult from './CheckoutResult';
+import Footer from './Footer';
 import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
 import ThemeToggle from './ThemeToggle';
-
-const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
 // Standalone /pricing route, styled to match the landing page (lp4) so
 // it reads as a real page rather than an onboarding step.
@@ -33,15 +32,7 @@ export default function PricingPage() {
       <PricingSection />
       <CheckoutResult />
 
-      <footer className="lp4__footer">
-        <div className="lp4__footer-inner">
-          <span>
-            Questions or ideas?{' '}
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </span>
-          <span>froola © 2026</span>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

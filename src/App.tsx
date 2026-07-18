@@ -18,6 +18,8 @@ const PricingMockups = lazy(() => import('./components/PricingMockups'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
+const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
+const TermsPage = lazy(() => import('./components/TermsPage'));
 
 function AppRoutes() {
   const { user, profile, loading, authReady } = useAuth();
@@ -44,6 +46,8 @@ function AppRoutes() {
         <Route path="/learn/review" element={<ReviewSession />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/pricing-mockups" element={<PricingMockups />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -54,6 +58,9 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/onboarding" element={<OnboardingFlow />} />
+        {/* Legal stays readable even mid-onboarding. */}
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
@@ -69,6 +76,8 @@ function AppRoutes() {
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

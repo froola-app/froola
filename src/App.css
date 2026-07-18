@@ -1100,72 +1100,62 @@ body {
 .theme-toggle.is-dark .theme-toggle__icon--sun { opacity: 0; }
 .theme-toggle.is-dark .theme-toggle__icon--moon { opacity: 1; }
 
-/* Wow hero — the living logo owns the first screen */
-.lp4__wow {
-  position: relative;
-  /* Fill the first screen exactly: the section boundary sits at the fold
-     and the labeled cue at the bottom makes "this scrolls" obvious. */
-  min-height: 100svh;
-  padding: 0 22px 76px;
+/* Sticky nav: wordmark, section links, one CTA. Blur + hairline keep it
+   quiet over any section it floats above. */
+.lp4__nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  gap: 28px;
+  padding: 0 max(22px, calc(50% - 510px));
+  height: 56px;
+  background: color-mix(in srgb, var(--lp-bg) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--lp-hairline);
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
 
-.lp4__wow::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  /* The ellipse terminus must sit fully off-viewport: any on-screen end of
-     the fade — hard stop or not — reads as an oval ring over the corner
-     controls. Oversize the ellipse past every corner, and fade the bottom
-     clip edge with a mask so the section boundary doesn't seam. */
-  background: radial-gradient(140% 120% at 50% 42%, rgba(212, 80, 10, 0.08), rgba(212, 80, 10, 0.04) 45%, rgba(212, 80, 10, 0.012) 75%, rgba(212, 80, 10, 0));
-  mask-image: linear-gradient(to bottom, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
-  pointer-events: none;
+.lp4__nav-brand {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
 }
 
-.lp4__wow > * {
-  position: relative;
-}
-
-.lp4__wow-ctas {
-  margin-top: clamp(36px, 6vh, 64px);
-  animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.35s both;
-}
-
-.lp4__scroll-cue {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
+.lp4__nav-links {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: 13px;
+  gap: 24px;
+}
+
+.lp4__nav-links a {
+  font-size: 13.5px;
   font-weight: 500;
   color: var(--lp-gray);
-  padding: 8px 14px;
-  /* Keeps the button centered when reduced-motion disables the animation. */
-  transform: translateX(-50%);
-  animation: lp4-cue 2.4s ease-in-out infinite;
+  text-decoration: none;
   transition: color 0.2s ease;
 }
 
-.lp4__scroll-cue:hover { color: var(--lp-accent); }
+.lp4__nav-links a:hover { color: var(--lp-ink); }
 
-.lp4__scroll-cue svg { width: 20px; height: 20px; }
+.lp4__nav-side {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-@keyframes lp4-cue {
-  0%, 100% { transform: translate(-50%, 0); opacity: 0.65; }
-  50% { transform: translate(-50%, 6px); opacity: 1; }
+.lp4__pill--nav {
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 7px 16px;
+}
+
+@media (max-width: 640px) {
+  .lp4__nav { gap: 16px; }
+  .lp4__nav-links { display: none; }
 }
 
 /* Living logo: the wordmark as a face. The o's are eyes, the smile is the
@@ -1278,9 +1268,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .living-logo,
   .living-logo__face.is-nodding,
-  .living-logo__face.is-poked,
-  .lp4__scroll-cue,
-  .lp4__wow-ctas { animation: none; }
+  .living-logo__face.is-poked { animation: none; }
   .living-logo__eye,
   .living-logo__smile { transition: none; }
 }
@@ -1326,12 +1314,17 @@ body {
 }
 
 .lp4__headline {
-  font-size: clamp(40px, 7vw, 64px);
-  line-height: 1.05;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  /* Display type in the wordmark's face (DM Sans 900): the headline carries
+     the brand genetics now that the living logo lives in the closing band. */
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: clamp(52px, 8.5vw, 92px);
+  line-height: 1.02;
+  font-weight: 900;
+  letter-spacing: -0.03em;
   animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
+
+.lp4__headline-dot { color: var(--lp-accent); }
 
 .lp4__subhead {
   margin-top: 18px;
@@ -1363,11 +1356,11 @@ body {
   font-weight: 500;
   padding: 12px 26px;
   border-radius: 980px;
-  transition: filter 0.2s;
+  transition: filter 0.2s, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.lp4__pill:hover { filter: brightness(1.08); }
-.lp4__pill:active { filter: brightness(0.94); }
+.lp4__pill:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.lp4__pill:active { filter: brightness(0.94); transform: scale(0.97); }
 
 .lp4__link-btn {
   border: none;
@@ -1377,9 +1370,11 @@ body {
   font-size: 17px;
   color: var(--lp-accent);
   padding: 12px 0;
+  text-decoration: none;
+  display: inline-block;
 }
 
-.lp4__link-btn:hover { text-decoration: underline; }
+.lp4__link-btn:hover { text-decoration: underline; text-underline-offset: 4px; }
 
 /* Hero product stage */
 .lp4__stage {
@@ -1460,82 +1455,6 @@ body {
 }
 
 /* How-it-works cards */
-.lp4__cards {
-  margin-top: 44px;
-  width: 100%;
-  max-width: 980px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 768px) {
-  .lp4__cards { grid-template-columns: 1fr; }
-}
-
-.lp4__card {
-  background: var(--lp-card);
-  border-radius: 18px;
-  padding: 36px 28px;
-  text-align: left;
-  box-shadow: var(--lp-card-shadow);
-  transition: background 0.35s ease, box-shadow 0.35s ease;
-}
-
-.lp4__card-icon {
-  display: block;
-  width: 30px;
-  height: 30px;
-  color: var(--lp-accent);
-  margin-bottom: 22px;
-}
-
-.lp4__card-icon svg { width: 100%; height: 100%; }
-
-.lp4__card-step {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--lp-faint);
-  margin-bottom: 6px;
-}
-
-.lp4__card-title {
-  font-size: 21px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.lp4__card-body {
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--lp-gray);
-}
-
-/* Hero trust line — three quiet value props under the CTAs. */
-.lp4__trust {
-  margin-top: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px 20px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: var(--lp-faint);
-  animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.2s both;
-}
-.lp4__trust span { display: inline-flex; align-items: center; gap: 7px; }
-.lp4__trust span::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--lp-accent);
-  opacity: 0.75;
-}
-
 /* Songs marquee — full-width drifting rows of the real songs you learn,
    so the page shows the product's soul instead of empty margins. */
 .lp4__songs {
@@ -1587,29 +1506,6 @@ body {
 .lp4__song-title { font-size: 16px; font-weight: 600; color: var(--lp-ink); }
 .lp4__song-artist { font-size: 13px; color: var(--lp-faint); }
 .lp4__songs-cta { margin-top: 36px; padding: 0 22px; }
-
-/* Feature trio — supports the privacy statement with real value props. */
-.lp4__features {
-  margin-top: 40px;
-  width: 100%;
-  max-width: 980px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-@media (max-width: 768px) { .lp4__features { grid-template-columns: 1fr; } }
-.lp4__feature {
-  background: var(--lp-card);
-  border: 1px solid var(--lp-hairline);
-  border-radius: 18px;
-  padding: 30px 26px;
-  text-align: left;
-  box-shadow: var(--lp-card-shadow);
-}
-.lp4__feature-icon { display: block; width: 26px; height: 26px; color: var(--lp-accent); margin-bottom: 16px; }
-.lp4__feature-icon svg { width: 100%; height: 100%; }
-.lp4__feature-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: var(--lp-ink); }
-.lp4__feature-body { font-size: 14px; line-height: 1.5; color: var(--lp-gray); }
 
 /* Final CTA band — ends the page on a confident accent block instead of
    trailing off into empty white above the footer. */
@@ -1969,7 +1865,7 @@ body {
 
 .lp4__lock svg { width: 100%; height: 100%; }
 
-/* Footer */
+/* Footer: scaled-down Apple sitemap. Link columns, hairline, legal bar. */
 .lp4__footer {
   background: var(--lp-bg-alt);
   border-top: 1px solid var(--lp-hairline);
@@ -1979,16 +1875,119 @@ body {
 .lp4__footer-inner {
   max-width: 980px;
   margin: 0 auto;
-  padding: 18px 22px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  padding: 34px 22px 26px;
   font-size: 12px;
   color: var(--lp-faint);
 }
 
-.lp4__footer-inner a { color: inherit; }
+.lp4__footer-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  padding-bottom: 28px;
+}
+
+.lp4__footer-col h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__footer-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.lp4__footer a {
+  color: var(--lp-gray);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.lp4__footer a:hover {
+  color: var(--lp-ink);
+  text-decoration: underline;
+}
+
+.lp4__footer-legal {
+  border-top: 1px solid var(--lp-hairline);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp4__footer-legal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lp4__footer-sep {
+  margin: 0 8px;
+  color: var(--lp-faint);
+}
+
+@media (max-width: 560px) {
+  .lp4__footer-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Legal pages (/privacy, /terms): narrow reading column, quiet type. */
+.lp4__legal {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 110px 22px 90px;
+}
+
+.lp4__legal-title {
+  margin: 0 0 8px;
+  font-size: clamp(34px, 6vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.lp4__legal-updated {
+  margin: 0 0 34px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--lp-hairline);
+  font-size: 14px;
+  color: var(--lp-faint);
+}
+
+.lp4__legal h2 {
+  margin: 34px 0 10px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.lp4__legal p,
+.lp4__legal li {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--lp-gray);
+}
+
+.lp4__legal ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.lp4__legal li { margin-bottom: 6px; }
+
+.lp4__legal a {
+  color: var(--lp-accent);
+  text-decoration: none;
+}
+
+.lp4__legal a:hover { text-decoration: underline; }
 
 /* Post-checkout success overlay + cancel toast */
 .lp4__checkout-overlay {
@@ -2143,7 +2142,7 @@ body {
 
 /* Staggered child reveals: cards pop in one after another once their
    section is in view, then keep a springy hover lift afterwards. */
-.lp4 [data-reveal] :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
+.lp4 [data-reveal] :is(.lp4__pricing-card, .lp4__step) {
   opacity: 0;
   transform: translateY(26px) scale(0.98);
   transition:
@@ -2154,46 +2153,18 @@ body {
     border-color 0.3s ease;
 }
 
-.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
+.lp4 [data-reveal].is-in :is(.lp4__pricing-card, .lp4__step) {
   opacity: 1;
   transform: none;
 }
 
-.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):nth-child(2) { transition-delay: 0.1s; }
-.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):nth-child(3) { transition-delay: 0.2s; }
+.lp4 [data-reveal].is-in :is(.lp4__pricing-card, .lp4__step):nth-child(2) { transition-delay: 0.1s; }
+.lp4 [data-reveal].is-in :is(.lp4__pricing-card, .lp4__step):nth-child(3) { transition-delay: 0.2s; }
 
-.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover {
+.lp4 [data-reveal].is-in :is(.lp4__pricing-card):hover {
   transform: translateY(-6px);
   box-shadow: var(--lp-card-shadow-hover);
   transition-delay: 0s;
-}
-
-/* Card icons come alive on hover */
-.lp4__card:hover .lp4__card-icon {
-  animation: lp4-wiggle 0.7s ease;
-  transform-origin: 50% 85%;
-}
-
-.lp4__feature:hover .lp4__feature-icon {
-  animation: lp4-bounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.lp4__card-step { transition: color 0.25s ease; }
-.lp4__card:hover .lp4__card-step { color: var(--lp-accent); }
-
-@keyframes lp4-wiggle {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-10deg); }
-  55% { transform: rotate(8deg); }
-  80% { transform: rotate(-4deg); }
-  100% { transform: rotate(0deg); }
-}
-
-@keyframes lp4-bounce {
-  0% { transform: none; }
-  40% { transform: translateY(-7px) scale(1.12); }
-  75% { transform: translateY(1px) scale(0.96); }
-  100% { transform: none; }
 }
 
 /* Song chips: the marquee pauses while you browse, chips pop on hover */
@@ -2235,6 +2206,153 @@ body {
   stroke-dashoffset: 0;
 }
 
+/* Editorial (left-aligned) layout grammar */
+.lp4__wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.lp4__hero--left {
+  max-width: 1124px;
+  align-items: stretch;
+  text-align: left;
+}
+
+.lp4__hero--left .lp4__smile-accent { margin: 18px 0 0; }
+.lp4__hero--left .lp4__ctas { justify-content: flex-start; }
+.lp4__hero--left .lp4__subhead { margin-left: 0; }
+
+.lp4__hero--left .lp4__stage {
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lp4__section--left {
+  align-items: stretch;
+  text-align: left;
+}
+
+.lp4__songs--left { text-align: left; }
+
+.lp4__songs--left .lp4__songs-head,
+.lp4__songs--left .lp4__songs-cta {
+  width: 100%;
+  max-width: 1124px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+/* Facts strip: privacy + credibility as one quiet line, not a section. */
+.lp4__strip {
+  border-top: 1px solid var(--lp-hairline);
+  border-bottom: 1px solid var(--lp-hairline);
+  padding: 20px 22px;
+}
+
+.lp4__strip-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px 32px;
+  flex-wrap: wrap;
+}
+
+.lp4__strip-inner span {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lp4__strip-inner span::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lp-accent);
+}
+
+/* The hero has no data-reveal (it's above the fold), so its smile draws
+   itself in on load instead. */
+.lp4__hero .lp4__smile-accent path {
+  animation: lp4-smile-draw 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.5s both;
+}
+
+/* Anchor targets stop short of the sticky nav. */
+.lp4__section,
+.lp4__songs,
+.lp4__hero { scroll-margin-top: 56px; }
+
+.lp4 ::selection { background: var(--lp-accent); color: #fff; }
+
+.lp4 :focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 3px;
+}
+
+/* How it works — editorial numbered steps, no icon cards */
+.lp4__steps {
+  list-style: none;
+  margin-top: 44px;
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .lp4__steps { grid-template-columns: 1fr; gap: 26px; }
+}
+
+.lp4__step {
+  border-top: 1px solid var(--lp-hairline);
+  padding-top: 18px;
+}
+
+.lp4__step-num {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--lp-accent);
+}
+
+.lp4__step-title {
+  margin-top: 10px;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__step-body {
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--lp-gray);
+}
+
+/* Privacy — statement + facts, two columns */
+.lp4__split {
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .lp4__split { grid-template-columns: 1fr; gap: 32px; }
+}
+
 /* Mini living face reprise in the CTA band — white on the orange field */
 .lp4__cta-band .living-logo {
   font-size: clamp(40px, 5.5vw, 64px);
@@ -2253,17 +2371,15 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .lp4 [data-reveal] { opacity: 1; transform: none; transition: none; }
-  .lp4 [data-reveal] :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
+  .lp4 [data-reveal] :is(.lp4__pricing-card, .lp4__step) {
     opacity: 1;
     transform: none;
     transition: none;
   }
-  .lp4__card:hover .lp4__card-icon,
-  .lp4__feature:hover .lp4__feature-icon { animation: none; }
   .lp4__song-chip { transition: none; }
   .lp4__song-chip:hover,
   .lp4__song-chip:nth-child(even):hover { transform: none; }
-  .lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover { transform: none; }
+  .lp4 [data-reveal].is-in :is(.lp4__pricing-card):hover { transform: none; }
   .lp4__smile-accent path { stroke-dashoffset: 0; transition: none; animation: none; }
   .lp4__checkout-overlay,
   .lp4__checkout-card,
