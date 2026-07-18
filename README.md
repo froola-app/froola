@@ -2,6 +2,8 @@
 
 **Play music with your hands — no instrument required.**
 
+Live at [froolamusic.com](https://froolamusic.com).
+
 Froola is a browser-based musical instrument that uses your camera and hand tracking to let anyone play chords and melodies in real time. Point your hands at the screen, move them around the two interactive dials, and make music. No downloads, no sign-up friction, no music theory knowledge required.
 
 ---
@@ -80,7 +82,7 @@ npm run dev
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. In [Google Cloud Console](https://console.cloud.google.com/), create an OAuth Client ID (Web application) and add the Supabase callback URL (`https://<project-ref>.supabase.co/auth/v1/callback`) as an authorized redirect URI
 3. In Supabase, **Authentication** → Providers → enable **Google**, pasting in the Client ID/Secret from step 2
-4. **Authentication** → URL Configuration → Redirect URLs → add `http://localhost:5173/auth/popup` and your production origin + `/auth/popup` (the sign-in popup calls `signInWithOAuth` with this as `redirectTo`, so it must be allowlisted or the OAuth flow will fail)
+4. **Authentication** → URL Configuration → Redirect URLs → add `http://localhost:5173/auth/popup` and your production origin + `/auth/popup` (e.g. `https://froolamusic.com/auth/popup`) — the sign-in popup calls `signInWithOAuth` with this as `redirectTo`, so it must be allowlisted or the OAuth flow will fail
 5. **Table Editor** → create a `profiles` table with columns: `id` (uuid, references `auth.users`), `user_type` (text), `onboarding_complete` (boolean)
 6. **Project settings** → API → copy the Project URL and anon/publishable key
 7. Paste the values into your `.env` file:

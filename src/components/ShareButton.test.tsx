@@ -8,7 +8,7 @@ describe('ShareButton', () => {
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
     Object.defineProperty(window, 'location', {
-      value: { origin: 'https://froola.app' },
+      value: { origin: 'https://froolamusic.com' },
       writable: true,
     });
   });
@@ -21,7 +21,7 @@ describe('ShareButton', () => {
   it('copies the app URL on click and shows Copied!', async () => {
     render(<ShareButton />);
     await userEvent.click(screen.getByRole('button', { name: 'Share' }));
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://froola.app/');
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://froolamusic.com/');
     expect(screen.getByRole('button', { name: 'Copied!' })).toBeInTheDocument();
   });
 
