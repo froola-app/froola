@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme, type Theme } from '../useTheme';
+import { useTheme, type Theme } from '../hooks/useTheme';
 import { openBillingPortal } from '../billing';
 import { effectivePlan } from '../entitlements';
 import Avatar from './Avatar';

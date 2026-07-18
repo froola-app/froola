@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '../useScrollReveal';
-import { useTheme } from '../useTheme';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+import { useTheme } from '../hooks/useTheme';
 import CheckoutResult from './CheckoutResult';
 import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';

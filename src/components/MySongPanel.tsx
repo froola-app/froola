@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
-import { useTheme } from '../useTheme';
+import { useTheme } from '../hooks/useTheme';
 import { getMySong, saveMySong, deleteMySong, parseSheet, type MySong } from '../engine/songsheet';
 import { listLoops, type SavedLoop } from '../engine/looper';
 import SheetOverlay from './SheetOverlay';

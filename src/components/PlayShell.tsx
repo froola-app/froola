@@ -26,7 +26,7 @@ import MySongPanel from './MySongPanel';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { usePlayWall } from '../hooks/usePlayWall';
-import { useTheme } from '../useTheme';
+import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../contexts/AuthContext';
 import { entitlementsFor } from '../entitlements';
 
