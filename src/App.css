@@ -608,11 +608,14 @@ body {
 }
 
 
-/* chord looper — sits in .hud-bottom-stack directly above the music bar */
+/* chord looper — horizontal strip in .hud-bottom-stack: slots and
+   controls inline, saved loops wrap onto their own line below */
 .loop-panel {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   max-width: calc(100vw - 2rem);
   font-family: 'DM Sans', system-ui, sans-serif;
@@ -714,10 +717,11 @@ body {
 }
 
 .loop-saved {
+  flex-basis: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .loop-saved-row {
