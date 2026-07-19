@@ -447,31 +447,33 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {/* The permission screen (mode 'asking') is a full-viewport layer below
           the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
+      <div className="hud-capture">
+        <RecordButton
+          selectedRef={selectedRef}
+          vibe={vibe}
+          maxDurationMs={ent.maxReplayRecordMs}
+          watermark={ent.replayWatermark}
+          maxSavedRecordings={ent.maxSavedRecordings}
+          locked={!ent.replayRecordUnlocked}
+          onLockedClick={() => setUpsell('recordings')}
+        />
+        <VideoRecordButton
+          canvasRef={canvasRef}
+          cameraVideoRef={cameraVideoRef}
+          engineRef={engineRef}
+          maxDurationMs={ent.maxVideoRecordMs}
+          watermark={ent.exportWatermark}
+          locked={!ent.videoRecordUnlocked}
+          onLockedClick={() => setUpsell('video')}
+        />
+        <AudioExportButton
+          engineRef={engineRef}
+          maxDurationMs={ent.maxVideoRecordMs}
+          locked={!ent.audioExportUnlocked}
+          onLockedClick={() => setUpsell('mp3')}
+        />
+      </div>
       <ShareButton />
-      <RecordButton
-        selectedRef={selectedRef}
-        vibe={vibe}
-        maxDurationMs={ent.maxReplayRecordMs}
-        watermark={ent.replayWatermark}
-        maxSavedRecordings={ent.maxSavedRecordings}
-        locked={!ent.replayRecordUnlocked}
-        onLockedClick={() => setUpsell('recordings')}
-      />
-      <VideoRecordButton
-        canvasRef={canvasRef}
-        cameraVideoRef={cameraVideoRef}
-        engineRef={engineRef}
-        maxDurationMs={ent.maxVideoRecordMs}
-        watermark={ent.exportWatermark}
-        locked={!ent.videoRecordUnlocked}
-        onLockedClick={() => setUpsell('video')}
-      />
-      <AudioExportButton
-        engineRef={engineRef}
-        maxDurationMs={ent.maxVideoRecordMs}
-        locked={!ent.audioExportUnlocked}
-        onLockedClick={() => setUpsell('mp3')}
-      />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <FeedbackButton />
       <ProfileButton

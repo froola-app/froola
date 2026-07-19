@@ -5293,6 +5293,94 @@ body {
 .loop-teaser:hover { background: var(--lg-bottom-fill-hover); }
 .loop-teaser .lock-chip { background: var(--lg-bottom-ink); }
 
+/* ── HUD clusters ─────────────────────────────────────────────
+   Capture (top-left) and nav (top-right) capsules. Containers carry
+   border + shadow only — NO backdrop-filter/transform, so the
+   position:fixed .record-progress bars rendered inside stay
+   viewport-anchored. Each child segment keeps its own glass blur;
+   together they tile the capsule. */
+.hud-capture,
+.hud-nav {
+  position: fixed;
+  top: 1rem;
+  z-index: 20;
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 999px;
+  box-shadow: var(--lg-top-shadow);
+}
+.hud-capture { left: 1rem; }
+.hud-nav { right: 1rem; }
+
+/* Children become static segments: kill their own fixed offsets,
+   borders, and outer shadows; keep fills, blur, and state colors. */
+.hud-capture .record-btn,
+.hud-capture .vid-record-btn,
+.hud-capture .audio-export-btn,
+.hud-nav .learn-nav-btn,
+.hud-nav .share-btn,
+.hud-nav .feedback-btn,
+.hud-nav .profile-btn {
+  position: relative; /* rim ::before needs a positioned box (was fixed) */
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* rounded capsule ends */
+.hud-capture > :first-child,
+.hud-nav > :first-child {
+  border-radius: 999px 0 0 999px;
+  padding-left: 1.1rem;
+}
+.hud-capture > :last-child,
+.hud-nav > :last-child {
+  border-radius: 0 999px 999px 0;
+  padding-right: 1.1rem;
+}
+
+/* hairline dividers between segments */
+.hud-capture > :not(:first-child),
+.hud-nav > :not(:first-child) {
+  border-left: 1px solid var(--lg-top-stroke);
+}
+
+/* segments must not float/squish out of the capsule */
+.hud-capture .record-btn:hover, .hud-capture .record-btn:active,
+.hud-capture .vid-record-btn:hover, .hud-capture .vid-record-btn:active,
+.hud-capture .audio-export-btn:hover, .hud-capture .audio-export-btn:active,
+.hud-nav .learn-nav-btn:hover, .hud-nav .learn-nav-btn:active,
+.hud-nav .share-btn:hover, .hud-nav .share-btn:active,
+.hud-nav .feedback-btn:hover, .hud-nav .feedback-btn:active,
+.hud-nav .profile-btn:hover, .hud-nav .profile-btn:active {
+  transform: none;
+}
+
+/* Narrow screens: capsules revert to vertical stacks of standalone
+   pills (the horizontal row would overflow half the viewport). */
+@media (max-width: 640px) {
+  .hud-capture,
+  .hud-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    gap: 0.4rem;
+  }
+  .hud-nav { align-items: flex-end; }
+  .hud-capture > *,
+  .hud-nav > * {
+    border-radius: 999px !important;
+    border: 1px solid var(--lg-top-stroke) !important;
+  }
+}
+
 .upsheet-overlay {
   position: fixed;
   inset: 0;

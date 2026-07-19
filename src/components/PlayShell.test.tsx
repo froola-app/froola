@@ -404,3 +404,19 @@ describe('PlayShell — record-arm rising-edge capture', () => {
     expect(armButton().getAttribute('aria-pressed')).toBe('false');
   });
 });
+
+describe('HUD clusters', () => {
+  it('groups Record, Record video, and MP3 into a top-left capture capsule', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    render(<PlayShell />);
+    const capsule = document.querySelector('.hud-capture');
+    expect(capsule).not.toBeNull();
+    // Record (real component, free tier shows lock badge — match loosely)
+    expect(capsule!.contains(screen.getByRole('button', { name: /^record\b(?!.*video)/i }))).toBe(true);
+    // Video (mocked as a testid div at the top of this file)
+    expect(capsule!.contains(screen.getByTestId('video-record-button'))).toBe(true);
+    // MP3
+    expect(capsule!.contains(screen.getByRole('button', { name: /mp3/i }))).toBe(true);
+  });
+});
