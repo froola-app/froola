@@ -5326,22 +5326,37 @@ body {
   box-shadow: none;
 }
 
-/* rounded capsule ends */
-.hud-capture > :first-child,
-.hud-nav > :first-child {
+/* rounded capsule ends — keyed to classes, not child index, because
+   the recording buttons render their .record-progress bar as a
+   preceding sibling while recording (see RecordButton.tsx etc.),
+   which would otherwise become :first-child and steal the end-cap. */
+.hud-capture .record-btn,
+.hud-nav .learn-nav-btn {
   border-radius: 999px 0 0 999px;
   padding-left: 1.1rem;
 }
-.hud-capture > :last-child,
-.hud-nav > :last-child {
+.hud-capture .audio-export-btn,
+.hud-nav .profile-btn {
   border-radius: 0 999px 999px 0;
   padding-right: 1.1rem;
 }
 
 /* hairline dividers between segments */
-.hud-capture > :not(:first-child),
-.hud-nav > :not(:first-child) {
+.hud-capture .vid-record-btn,
+.hud-capture .audio-export-btn,
+.hud-nav .share-btn,
+.hud-nav .feedback-btn,
+.hud-nav .profile-btn {
   border-left: 1px solid var(--lg-top-stroke);
+}
+
+/* .record-progress never participates in end-caps/dividers above (it
+   matches none of those class selectors), but pin down its box model
+   explicitly so it can never inherit capsule segment styling. */
+.hud-capture .record-progress {
+  border: none;
+  border-radius: 0;
+  padding: 0;
 }
 
 /* segments must not float/squish out of the capsule */
@@ -5375,8 +5390,8 @@ body {
     gap: 0.4rem;
   }
   .hud-nav { align-items: flex-end; }
-  .hud-capture > *,
-  .hud-nav > * {
+  .hud-capture > :not(.record-progress),
+  .hud-nav > :not(.record-progress) {
     border-radius: 999px !important;
     border: 1px solid var(--lg-top-stroke) !important;
   }

@@ -448,4 +448,21 @@ describe('HUD clusters', () => {
     // teaser renders above (before) the bar
     expect(teaser!.compareDocumentPosition(bar!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('renders the loop panel inside the bottom stack, above the music bar, for plus tier', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUseAuth.mockReturnValue(plusAuthState);
+    render(<PlayShell />);
+    const stack = document.querySelector('.hud-bottom-stack');
+    expect(stack).not.toBeNull();
+    const panel = document.querySelector('.loop-panel');
+    expect(panel).not.toBeNull();
+    expect(screen.getByRole('group', { name: /chord looper/i })).toBe(panel);
+    const bar = document.querySelector('.hud-bottom');
+    expect(stack!.contains(panel)).toBe(true);
+    expect(stack!.contains(bar!)).toBe(true);
+    // loop panel renders above (before) the music bar
+    expect(panel!.compareDocumentPosition(bar!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
