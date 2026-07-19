@@ -450,13 +450,22 @@ body {
     var(--lg-top-shadow-hover);
 }
 
-/* bottom-center HUD row — holds instrument / key / scale / theme pickers */
-.hud-bottom {
+/* bottom stack: loop strip snug above the music bar, one anchored column */
+.hud-bottom-stack {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+}
+
+/* bottom-center HUD row — laid out by .hud-bottom-stack */
+.hud-bottom {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -572,9 +581,10 @@ body {
   cursor: default;
 }
 
-/* arp toggle — stands alone on the video (not inside a pill), so it
-   carries the full glass treatment itself */
-.arp-btn {
+/* arp toggle + My Song — stand alone on the video (not inside a pill),
+   so they carry the full glass treatment themselves */
+.arp-btn,
+.my-song-btn {
   width: auto;
   height: auto;
   font-size: 0.85rem;
@@ -592,39 +602,27 @@ body {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
-.arp-btn:hover:not(:disabled) {
+.arp-btn:hover:not(:disabled),
+.my-song-btn:hover:not(:disabled) {
   background:
     linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
     var(--lg-bottom-fill-hover);
 }
 
 
-/* chord looper — frosted panel sitting above the bottom HUD row */
+/* chord looper — horizontal strip in .hud-bottom-stack: slots and
+   controls inline, saved loops wrap onto their own line below */
 .loop-panel {
-  position: fixed;
-  bottom: 4.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   max-width: calc(100vw - 2rem);
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--lg-bottom-ink);
   transition: color 0.3s;
-}
-
-/* At medium widths .hud-bottom's pills wrap to 2 rows, and at narrow widths
-   to 3+ rows. Adjust .loop-panel bottom offset to clear the variable height
-   instead of assuming a fixed single-row layout. */
-@media (max-width: 800px) {
-  .loop-panel { bottom: 7rem; }
-}
-
-@media (max-width: 480px) {
-  .loop-panel { bottom: 9.5rem; }
 }
 
 .loop-slots {
@@ -721,10 +719,11 @@ body {
 }
 
 .loop-saved {
+  flex-basis: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  max-width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
 }
 
 .loop-saved-row {
@@ -773,10 +772,9 @@ body {
   letter-spacing: 0.18px;
 }
 
+/* record/video/MP3 buttons render only inside .hud-capture, which owns
+   placement — the segment overrides near the end of this file anchor them */
 .record-btn {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -792,7 +790,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
 }
 
@@ -891,9 +888,6 @@ body {
 /* ── Video record button ───────────────────────────────────── */
 
 .vid-record-btn {
-  position: fixed;
-  top: 3.5rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -909,7 +903,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -956,9 +949,6 @@ body {
 /* ── Audio export button ───────────────────────────────────── */
 
 .audio-export-btn {
-  position: fixed;
-  top: 8.5rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -974,7 +964,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -5158,7 +5147,7 @@ body {
    (usually skin tone) into every pill, which is what made the HUD look
    randomly tinted. The fill is opaque enough to carry the material now. */
 .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint,
 .instrument-select {
   backdrop-filter: blur(24px) saturate(130%);
@@ -5166,7 +5155,7 @@ body {
 }
 
 .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
     transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -5176,7 +5165,7 @@ body {
    controls. The HUD pills above are position: fixed with top/right
    offsets; forcing them relative drops them into flow and their old
    offsets scatter them diagonally. Fixed boxes anchor pseudos already. */
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip {
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip {
   position: relative;
 }
 
@@ -5184,7 +5173,7 @@ body {
    painted via the two-layer mask trick (fill minus content box) */
 .share-btn::before, .record-btn::before, .vid-record-btn::before, .audio-export-btn::before,
 .learn-nav-btn::before, .feedback-btn::before, .profile-btn::before, .octave-control::before,
-.arp-btn::before, .loop-controls::before, .loop-slot::before,
+.arp-btn::before, .my-song-btn::before, .loop-controls::before, .loop-slot::before,
 .tutorial-skip::before, .nod-hint::before {
   content: '';
   position: absolute;
@@ -5208,13 +5197,13 @@ body {
 /* motion: hover floats, press squishes — the spring curve in the
    grouped transition above gives the release its bounce */
 .share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled), .audio-export-btn:hover:not(:disabled),
-.learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover,
+.learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover, .my-song-btn:hover,
 .tutorial-skip:hover {
   transform: translateY(-1px);
 }
 
 .share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled), .audio-export-btn:active:not(:disabled),
-.learn-nav-btn:active, .feedback-btn:active, .profile-btn:active, .arp-btn:active,
+.learn-nav-btn:active, .feedback-btn:active, .profile-btn:active, .arp-btn:active, .my-song-btn:active,
 .tutorial-skip:active {
   transform: scale(0.95);
 }
@@ -5230,12 +5219,12 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
-  .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+  .octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
   .octave-btn, .loop-btn, .permission-btn-primary, .permission-btn-secondary {
     transition-property: color, background, border-color, box-shadow;
   }
   .share-btn:hover, .record-btn:hover, .vid-record-btn:hover, .audio-export-btn:hover,
-  .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover,
+  .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover, .my-song-btn:hover,
   .tutorial-skip:hover, .permission-btn-primary:hover, .permission-btn-secondary:hover {
     transform: none;
   }
@@ -5270,11 +5259,6 @@ body {
 /* Free-plan teaser pill sitting where the loop panel lives for paid plans —
    same glass material as the HUD pills it neighbors. */
 .loop-teaser {
-  position: fixed;
-  bottom: 4.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -5292,6 +5276,123 @@ body {
 }
 .loop-teaser:hover { background: var(--lg-bottom-fill-hover); }
 .loop-teaser .lock-chip { background: var(--lg-bottom-ink); }
+
+/* ── HUD clusters ─────────────────────────────────────────────
+   Capture (top-left) and nav (top-right) capsules. Containers carry
+   border + shadow only — NO backdrop-filter/transform, so the
+   position:fixed .record-progress bars rendered inside stay
+   viewport-anchored. Each child segment keeps its own glass blur;
+   together they tile the capsule. */
+.hud-capture,
+.hud-nav {
+  position: fixed;
+  top: 1rem;
+  z-index: 20;
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 999px;
+  box-shadow: var(--lg-top-shadow);
+}
+.hud-capture { left: 1rem; }
+.hud-nav { right: 1rem; }
+
+/* Children become static segments: kill their own fixed offsets,
+   borders, and outer shadows; keep fills, blur, and state colors. */
+.hud-capture .record-btn,
+.hud-capture .vid-record-btn,
+.hud-capture .audio-export-btn,
+.hud-nav .learn-nav-btn,
+.hud-nav .share-btn,
+.hud-nav .feedback-btn,
+.hud-nav .profile-btn {
+  position: relative; /* rim ::before needs a positioned box (was fixed) */
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* rounded capsule ends — keyed to classes, not child index, because
+   the recording buttons render their .record-progress bar as a
+   preceding sibling while recording (see RecordButton.tsx etc.),
+   which would otherwise become :first-child and steal the end-cap. */
+.hud-capture .record-btn,
+.hud-nav .learn-nav-btn {
+  border-radius: 999px 0 0 999px;
+  padding-left: 1.1rem;
+}
+.hud-capture .audio-export-btn,
+.hud-nav .profile-btn {
+  border-radius: 0 999px 999px 0;
+  padding-right: 1.1rem;
+}
+
+/* Feedback is an <a>, so it inherits the body's line-height while the
+   sibling <button>s compute `normal` — left alone it inflates the nav
+   capsule ~6px taller than the capture capsule across the screen. */
+.hud-nav .feedback-btn {
+  line-height: normal;
+}
+
+/* hairline dividers between segments */
+.hud-capture .vid-record-btn,
+.hud-capture .audio-export-btn,
+.hud-nav .share-btn,
+.hud-nav .feedback-btn,
+.hud-nav .profile-btn {
+  border-left: 1px solid var(--lg-top-stroke);
+}
+
+/* .record-progress never participates in end-caps/dividers above (it
+   matches none of those class selectors), but pin down its box model
+   explicitly so it can never inherit capsule segment styling. */
+.hud-capture .record-progress {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* segments must not float/squish out of the capsule */
+.hud-capture .record-btn:hover, .hud-capture .record-btn:active,
+.hud-capture .vid-record-btn:hover, .hud-capture .vid-record-btn:active,
+.hud-capture .audio-export-btn:hover, .hud-capture .audio-export-btn:active,
+.hud-nav .learn-nav-btn:hover, .hud-nav .learn-nav-btn:active,
+.hud-nav .share-btn:hover, .hud-nav .share-btn:active,
+.hud-nav .feedback-btn:hover, .hud-nav .feedback-btn:active,
+.hud-nav .profile-btn:hover, .hud-nav .profile-btn:active {
+  transform: none;
+}
+
+/* profile avatar as the capsule's end cap: keep the avatar glyph
+   centered, widen the hit area to match sibling segments */
+.hud-nav .profile-btn {
+  width: 2.6rem;
+  height: auto;
+}
+
+/* Narrow screens: capsules revert to vertical stacks of standalone
+   pills (the horizontal row would overflow half the viewport). */
+@media (max-width: 640px) {
+  .hud-capture,
+  .hud-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    gap: 0.4rem;
+  }
+  .hud-nav { align-items: flex-end; }
+  .hud-capture > :not(.record-progress),
+  .hud-nav > :not(.record-progress) {
+    border-radius: 999px !important;
+    border: 1px solid var(--lg-top-stroke) !important;
+  }
+}
 
 .upsheet-overlay {
   position: fixed;

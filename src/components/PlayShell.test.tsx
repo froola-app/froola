@@ -404,3 +404,80 @@ describe('PlayShell — record-arm rising-edge capture', () => {
     expect(armButton().getAttribute('aria-pressed')).toBe('false');
   });
 });
+
+describe('HUD clusters', () => {
+  it('groups Record, Record video, and MP3 into a top-left capture capsule', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    render(<PlayShell />);
+    const capsule = document.querySelector('.hud-capture');
+    expect(capsule).not.toBeNull();
+    // Record (real component, free tier shows lock badge — match loosely)
+    expect(capsule!.contains(screen.getByRole('button', { name: /^record\b(?!.*video)/i }))).toBe(true);
+    // Video (mocked as a testid div at the top of this file)
+    expect(capsule!.contains(screen.getByTestId('video-record-button'))).toBe(true);
+    // MP3
+    expect(capsule!.contains(screen.getByRole('button', { name: /mp3/i }))).toBe(true);
+  });
+
+  it('renders the recording progress bar as a capsule sibling, not a segment', () => {
+    // During a take, RecordButton mounts .record-progress as a direct child
+    // of .hud-capture (a fragment sibling of the button). The capsule CSS
+    // keys end-caps/dividers to classes so this extra child must never pick
+    // up segment styling — this test pins the structure that hazard lives in.
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUseAuth.mockReturnValue(plusAuthState); // plus: replay recording unlocked
+    render(<PlayShell />);
+    fireEvent.click(screen.getByRole('button', { name: /^record\b(?!.*video)/i }));
+    const capsule = document.querySelector('.hud-capture')!;
+    expect(capsule.querySelector(':scope > .record-progress')).not.toBeNull();
+    expect(capsule.contains(screen.getByRole('button', { name: /stop/i }))).toBe(true);
+  });
+
+  it('groups Learn, Share, Feedback, and profile into a top-right nav capsule', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    render(<PlayShell />);
+    const capsule = document.querySelector('.hud-nav');
+    expect(capsule).not.toBeNull();
+    expect(capsule!.contains(screen.getByRole('button', { name: /learn/i }))).toBe(true);
+    expect(capsule!.contains(screen.getByRole('button', { name: /share/i }))).toBe(true);
+    // FeedbackButton renders an <a>, so its role is link
+    expect(capsule!.contains(screen.getByRole('link', { name: /feedback/i }))).toBe(true);
+    // ProfileButton signed-out aria-label is "Sign in and settings"
+    // (signed-in: "Account and settings") — match the shared suffix
+    expect(capsule!.contains(screen.getByRole('button', { name: /and settings/i }))).toBe(true);
+  });
+
+  it('stacks the loop area directly above the music bar in one bottom container', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    render(<PlayShell />);
+    const stack = document.querySelector('.hud-bottom-stack');
+    expect(stack).not.toBeNull();
+    const teaser = document.querySelector('.loop-teaser'); // free tier default mock
+    const bar = document.querySelector('.hud-bottom');
+    expect(stack!.contains(teaser!)).toBe(true);
+    expect(stack!.contains(bar!)).toBe(true);
+    // teaser renders above (before) the bar
+    expect(teaser!.compareDocumentPosition(bar!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('renders the loop panel inside the bottom stack, above the music bar, for plus tier', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUseAuth.mockReturnValue(plusAuthState);
+    render(<PlayShell />);
+    const stack = document.querySelector('.hud-bottom-stack');
+    expect(stack).not.toBeNull();
+    const panel = document.querySelector('.loop-panel');
+    expect(panel).not.toBeNull();
+    expect(screen.getByRole('group', { name: /chord looper/i })).toBe(panel);
+    const bar = document.querySelector('.hud-bottom');
+    expect(stack!.contains(panel)).toBe(true);
+    expect(stack!.contains(bar!)).toBe(true);
+    // loop panel renders above (before) the music bar
+    expect(panel!.compareDocumentPosition(bar!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
