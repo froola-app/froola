@@ -17,7 +17,7 @@ vi.mock('../engine/music/customWheelStore', () => ({
   saveWheel: vi.fn(),
   deleteWheel: vi.fn(),
 }));
-vi.mock('./VideoRecordButton', () => ({
+vi.mock('./recording/VideoRecordButton', () => ({
   default: vi.fn(() => <div data-testid="video-record-button" />),
 }));
 
@@ -27,7 +27,7 @@ const mockUseAuth = vi.mocked(useAuth);
 const mockListWheels = vi.mocked(listWheels);
 
 // Import the mock to check props passed to it
-import VideoRecordButton from './VideoRecordButton';
+import VideoRecordButton from './recording/VideoRecordButton';
 const mockVideoRecordButton = vi.mocked(VideoRecordButton);
 
 function fakeEngine() {

@@ -1,5 +1,5 @@
-import FroolaLogo from './FroolaLogo';
-import { GoogleButton, EmailSignIn } from './AuthMethods';
+import FroolaLogo from './brand/FroolaLogo';
+import { GoogleButton, EmailSignIn } from './account/AuthMethods';
 
 export default function PlayWall() {
   return (

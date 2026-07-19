@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserType } from '../../contexts/AuthContext';
 import { useTheme } from '../../hooks/useTheme';
-import FroolaLogo from '../FroolaLogo';
+import FroolaLogo from '../brand/FroolaLogo';
 import ThemeToggle from '../ThemeToggle';
 import UserTypeStep from './UserTypeStep';
 import LearningCurveStep from './LearningCurveStep';

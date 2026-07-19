@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
-import type { AudioEngine } from '../engine/audio/AudioEngine';
-import { useVideoRecorder } from '../engine/recording/useVideoRecorder';
-import LockBadge from './LockBadge';
+import type { AudioEngine } from '../../engine/audio/AudioEngine';
+import { useVideoRecorder } from '../../engine/recording/useVideoRecorder';
+import LockBadge from '../LockBadge';
 
 type Props = {
   canvasRef: RefObject<HTMLCanvasElement | null>;

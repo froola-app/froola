@@ -31,7 +31,7 @@ vi.mocked(useAuth).mockReturnValue({
 
 // PricingSection calls useAuth, which needs an AuthProvider these tests
 // don't set up — not relevant to input-mode behavior, so stub it out.
-vi.mock('./PricingSection', () => ({
+vi.mock('./pricing/PricingSection', () => ({
   default: () => <div>pricing section</div>,
 }));
 

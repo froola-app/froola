@@ -3,9 +3,9 @@ import { render as rtlRender, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ProfileButton from './ProfileButton';
 import { initialsOf } from './Avatar';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
-vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 const mockUseAuth = vi.mocked(useAuth);
 
 // The sidebar's Plan row renders a react-router Link when on the free plan.

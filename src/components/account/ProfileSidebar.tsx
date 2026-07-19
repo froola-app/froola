@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme, type Theme } from '../hooks/useTheme';
-import { openBillingPortal } from '../billing';
-import { effectivePlan } from '../entitlements';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTheme, type Theme } from '../../hooks/useTheme';
+import { openBillingPortal } from '../../billing';
+import { effectivePlan } from '../../entitlements';
 import Avatar from './Avatar';
-import ThemeToggle from './ThemeToggle';
-import FroolaLogo from './FroolaLogo';
+import ThemeToggle from '../ThemeToggle';
+import FroolaLogo from '../brand/FroolaLogo';
 import { GoogleButton, EmailSignIn } from './AuthMethods';
-import RecordingsPanel from './RecordingsPanel';
-import Mp3Panel from './Mp3Panel';
+import RecordingsPanel from '../recording/RecordingsPanel';
+import Mp3Panel from '../recording/Mp3Panel';
 
 const PLAN_LABEL: Record<string, string> = { free: 'Free', plus: 'Plus', studio: 'Studio' };
 

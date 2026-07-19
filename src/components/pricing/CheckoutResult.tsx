@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import type { PlanId } from '../billing';
-import { TRIAL_DAYS } from '../pricingTiers';
-import SmileAccent from './SmileAccent';
+import { useAuth } from '../../contexts/AuthContext';
+import type { PlanId } from '../../billing';
+import { TRIAL_DAYS } from '../../pricingTiers';
+import SmileAccent from '../brand/SmileAccent';
 
 const PLAN_NAMES: Record<PlanId, string> = { plus: 'Plus', studio: 'Studio' };
 

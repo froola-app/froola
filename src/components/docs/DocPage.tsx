@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
-import FroolaLogo from '../FroolaLogo';
+import FroolaLogo from '../brand/FroolaLogo';
 import ThemeToggle from '../ThemeToggle';
 import SiteFooter from './SiteFooter';
 

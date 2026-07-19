@@ -5,10 +5,10 @@ import { SONG_PATH } from '../engine/lessons/curriculum';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useTheme } from '../hooks/useTheme';
 import HeroDials from './HeroDials';
-import LivingLogo from './LivingLogo';
-import PricingSection from './PricingSection';
-import ProfileButton from './ProfileButton';
-import SmileAccent from './SmileAccent';
+import LivingLogo from './brand/LivingLogo';
+import PricingSection from './pricing/PricingSection';
+import ProfileButton from './account/ProfileButton';
+import SmileAccent from './brand/SmileAccent';
 import ThemeToggle from './ThemeToggle';
 import SiteFooter from './docs/SiteFooter';
 

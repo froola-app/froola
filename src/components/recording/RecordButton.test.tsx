@@ -2,9 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRef } from 'react';
 import RecordButton from './RecordButton';
-import { listRecordings, saveRecordingCapped } from '../engine/recording/recordingStore';
+import { listRecordings, saveRecordingCapped } from '../../engine/recording/recordingStore';
 
-vi.mock('../engine/recording/recordingStore', () => ({
+vi.mock('../../engine/recording/recordingStore', () => ({
   listRecordings: vi.fn().mockResolvedValue([]),
   saveRecordingCapped: vi.fn().mockResolvedValue(null),
 }));

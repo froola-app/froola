@@ -1,7 +1,7 @@
 import { useRef } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import FroolaLogo from './FroolaLogo';
-import { useLandingCanvas } from '../hooks/useLandingCanvas';
+import { useAuth } from '../../contexts/AuthContext';
+import FroolaLogo from '../brand/FroolaLogo';
+import { useLandingCanvas } from '../../hooks/useLandingCanvas';
 
 export default function SignInPage() {
   const { signInWithGoogle } = useAuth();

@@ -4,7 +4,7 @@ import type { RefObject } from 'react';
 import type { GestureSignal } from '../engine/types';
 import type { DialSelection } from '../engine/renderer';
 import { wheelGeometry } from '../engine/renderer/geometry';
-import FroolaMascot from './FroolaMascot';
+import FroolaMascot from './brand/FroolaMascot';
 
 const TUTORIAL_KEY = 'froola.tutorialSeen';
 

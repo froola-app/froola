@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProfileSidebar from './ProfileSidebar';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
-vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
+vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 const mockUseAuth = vi.mocked(useAuth);
 
 function authState(overrides: Partial<ReturnType<typeof useAuth>> = {}) {

@@ -11,7 +11,7 @@ const h = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('../supabase', () => ({
+vi.mock('../../supabase', () => ({
   supabase: { auth: h.auth },
   supabaseConfigured: true,
 }));

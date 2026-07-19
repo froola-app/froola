@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listMp3s, getMp3Blob, deleteMp3, type Mp3Meta } from '../engine/recording/mp3Store';
+import { listMp3s, getMp3Blob, deleteMp3, type Mp3Meta } from '../../engine/recording/mp3Store';
 
 const fmtDuration = (ms: number) => {
   const total = Math.floor(ms / 1000);

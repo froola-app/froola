@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
-import type { AudioEngine } from '../engine/audio/AudioEngine';
-import { useAudioExporter } from '../engine/recording/useAudioExporter';
-import LockBadge from './LockBadge';
+import type { AudioEngine } from '../../engine/audio/AudioEngine';
+import { useAudioExporter } from '../../engine/recording/useAudioExporter';
+import LockBadge from '../LockBadge';
 
 type Props = {
   engineRef: RefObject<AudioEngine | null>;

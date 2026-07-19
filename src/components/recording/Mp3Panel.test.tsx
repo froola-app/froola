@@ -2,9 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import Mp3Panel from './Mp3Panel';
-import { listMp3s, getMp3Blob, deleteMp3 } from '../engine/recording/mp3Store';
+import { listMp3s, getMp3Blob, deleteMp3 } from '../../engine/recording/mp3Store';
 
-vi.mock('../engine/recording/mp3Store', () => ({
+vi.mock('../../engine/recording/mp3Store', () => ({
   listMp3s: vi.fn(),
   getMp3Blob: vi.fn(),
   deleteMp3: vi.fn(),

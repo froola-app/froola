@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Avatar from './Avatar';
 import ProfileSidebar, { type PlayActions } from './ProfileSidebar';
 

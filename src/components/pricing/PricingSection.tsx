@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { startCheckout, warmCheckoutApi, type PlanId } from '../billing';
-import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../pricingTiers';
-import SmileAccent from './SmileAccent';
+import { useAuth } from '../../contexts/AuthContext';
+import { startCheckout, warmCheckoutApi, type PlanId } from '../../billing';
+import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../../pricingTiers';
+import SmileAccent from '../brand/SmileAccent';
 
 const PLUS_TIER = PRICING_TIERS.find(t => t.planId === 'plus')!;
 

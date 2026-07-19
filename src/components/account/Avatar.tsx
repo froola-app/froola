@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // One place for the avatar fallback chain: custom photo (profiles table,
 // future upload flow) → Google account photo → initials → silhouette.

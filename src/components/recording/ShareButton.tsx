@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { copyToClipboard } from '../utils/clipboard';
+import { copyToClipboard } from '../../utils/clipboard';
 
 export default function ShareButton() {
   const [label, setLabel] = useState<'Share' | 'Copied!' | 'Failed'>('Share');

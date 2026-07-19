@@ -1,12 +1,12 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import '../test-utils/webAudioMock';
-import { encode } from '../engine/recording/codec';
-import { fetchRecording } from '../engine/recording/recordingStore';
-import type { Recording } from '../engine/types';
+import '../../test-utils/webAudioMock';
+import { encode } from '../../engine/recording/codec';
+import { fetchRecording } from '../../engine/recording/recordingStore';
+import type { Recording } from '../../engine/types';
 import ReplayShell from './ReplayShell';
 
-vi.mock('../engine/recording/recordingStore', () => ({ fetchRecording: vi.fn() }));
+vi.mock('../../engine/recording/recordingStore', () => ({ fetchRecording: vi.fn() }));
 const mockFetchRecording = vi.mocked(fetchRecording);
 
 function renderAt(search: string) {

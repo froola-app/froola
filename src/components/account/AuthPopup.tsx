@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { supabase } from '../supabase';
-import FroolaLogo from './FroolaLogo';
+import { supabase } from '../../supabase';
+import FroolaLogo from '../brand/FroolaLogo';
 
 // Where the Google OAuth popup lands after the provider redirect.
 // supabase-js processes the tokens in the URL on init; once the session

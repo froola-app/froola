@@ -8,11 +8,11 @@ import './App.css';
 // `/` is the marketing page; the instrument and everything else off the
 // critical path load on demand.
 const PlayShell = lazy(() => import('./components/PlayShell'));
-const ReplayShell = lazy(() => import('./components/ReplayShell'));
-const AuthPopup = lazy(() => import('./components/AuthPopup'));
+const ReplayShell = lazy(() => import('./components/recording/ReplayShell'));
+const AuthPopup = lazy(() => import('./components/account/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
-const PricingPage = lazy(() => import('./components/PricingPage'));
-const PricingMockups = lazy(() => import('./components/PricingMockups'));
+const PricingPage = lazy(() => import('./components/pricing/PricingPage'));
+const PricingMockups = lazy(() => import('./components/pricing/PricingMockups'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const TermsPage = lazy(() => import('./components/docs/TermsPage'));
 const PrivacyPage = lazy(() => import('./components/docs/PrivacyPage'));

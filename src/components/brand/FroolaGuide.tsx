@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { LooperState } from '../engine/looper';
+import type { LooperState } from '../../engine/looper';
 import FroolaMascot from './FroolaMascot';
 
 const STEP_KEY = 'froola.guideStep';

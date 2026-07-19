@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { startCheckout, warmCheckoutApi, type PlanId } from '../billing';
-import FroolaLogo from './FroolaLogo';
-import { useTheme } from '../hooks/useTheme';
+import { useAuth } from '../../contexts/AuthContext';
+import { startCheckout, warmCheckoutApi, type PlanId } from '../../billing';
+import FroolaLogo from '../brand/FroolaLogo';
+import { useTheme } from '../../hooks/useTheme';
 
 // The feature the user just reached for — drives the headline so the sheet
 // sells that feature, not a generic plan grid.

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import type { GestureSignal, InstrumentMode, Recording } from '../engine/types';
-import { decode } from '../engine/recording/codec';
-import { fetchRecording } from '../engine/recording/recordingStore';
-import { sampleEndTimes, signalsAt } from '../engine/recording/replayPlayer';
-import { useCoordinator } from '../coordinator';
+import type { GestureSignal, InstrumentMode, Recording } from '../../engine/types';
+import { decode } from '../../engine/recording/codec';
+import { fetchRecording } from '../../engine/recording/recordingStore';
+import { sampleEndTimes, signalsAt } from '../../engine/recording/replayPlayer';
+import { useCoordinator } from '../../coordinator';
 
 export default function ReplayShell() {
   const [searchParams] = useSearchParams();

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { entitlementsFor } from '../entitlements';
-import { listRecordings, deleteRecording, type RecordingMeta } from '../engine/recording/recordingStore';
-import { copyToClipboard } from '../utils/clipboard';
+import { useAuth } from '../../contexts/AuthContext';
+import { entitlementsFor } from '../../entitlements';
+import { listRecordings, deleteRecording, type RecordingMeta } from '../../engine/recording/recordingStore';
+import { copyToClipboard } from '../../utils/clipboard';
 
 const fmtDuration = (ms: number | null) => {
   if (ms == null) return '—';
