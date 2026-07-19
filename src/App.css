@@ -5435,6 +5435,9 @@ body {
     border-radius: 999px !important;
     border: 1px solid var(--lg-top-stroke) !important;
   }
+  .hud-capture > .export-format-toggle {
+    border: none !important;
+  }
 }
 
 .upsheet-overlay {

@@ -119,4 +119,15 @@ describe('done state', () => {
     expect(h.download).toHaveBeenCalled();
     expect(h.reset).toHaveBeenCalled();
   });
+
+  it('disables done-state actions during the saved flash so clicks cannot double-fire', async () => {
+    const h = hookState({ state: 'done' });
+    mockHook.mockReturnValue(h);
+    render(<VideoRecordButton {...props} />);
+    fireEvent.click(screen.getByRole('button', { name: /share video/i }));
+    await screen.findByText(/saved · caption copied/i);
+    expect(screen.getByRole('button', { name: /saved · caption copied/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /download video/i })).toBeDisabled();
+    expect(h.download).toHaveBeenCalledTimes(1);
+  });
 });

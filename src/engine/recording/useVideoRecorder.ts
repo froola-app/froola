@@ -72,14 +72,18 @@ export function useVideoRecorder(
       return;
     }
 
-    const layout = layoutFor(format, canvas.width || window.innerWidth, canvas.height || window.innerHeight);
+    // Output/composite dimensions are locked at start; only the per-frame
+    // layout's source sampling below tracks the live (possibly resized)
+    // canvas, so wheel geometry doesn't go stale after a window resize.
+    const initialLayout = layoutFor(format, canvas.width || window.innerWidth, canvas.height || window.innerHeight);
     const composite = document.createElement('canvas');
-    composite.width = layout.width;
-    composite.height = layout.height;
+    composite.width = initialLayout.width;
+    composite.height = initialLayout.height;
     const ctx2d = composite.getContext('2d')!;
 
     function drawFrame() {
-      drawExportFrame(ctx2d, layout, {
+      const liveLayout = layoutFor(format, canvas!.width || window.innerWidth, canvas!.height || window.innerHeight);
+      drawExportFrame(ctx2d, liveLayout, {
         canvas: canvas!,
         camVideo: cameraVideoRef.current,
         chordLabel: getChordLabel?.() ?? '',
@@ -147,10 +151,14 @@ export function useVideoRecorder(
   }, []);
 
   const reset = useCallback(() => {
+    // Backstop against stale timers (e.g. the share-fallback "saved" flash in
+    // VideoRecordButton): only a 'done' state may be reset back to idle, so
+    // a late callback can't clobber a recording the user has since started.
+    if (state !== 'done') return;
     blobRef.current = null;
     setState('idle');
     setElapsed(0);
-  }, []);
+  }, [state]);
 
   return { state, elapsed, start, stop, download, fileForShare, reset };
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { AudioEngine } from '../../engine/audio/AudioEngine';
 import { useVideoRecorder } from '../../engine/recording/useVideoRecorder';
@@ -39,8 +39,15 @@ function formatTime(s: number): string {
 export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef, maxDurationMs, watermark = false, getChordLabel, locked, onLockedClick }: Props) {
   const [format, setFormat] = useState<ExportFormat>(storedFormat);
   const [doneLabel, setDoneLabel] = useState<string | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { state, elapsed, start, stop, download, fileForShare, reset } =
     useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs, watermark, format, getChordLabel);
+
+  function clearFlashTimer() {
+    if (flashTimerRef.current) { clearTimeout(flashTimerRef.current); flashTimerRef.current = null; }
+  }
+
+  useEffect(() => clearFlashTimer, []);
 
   function pickFormat(f: ExportFormat) {
     setFormat(f);
@@ -64,6 +71,7 @@ export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef
           key={f}
           role="radio"
           aria-checked={format === f}
+          tabIndex={format === f ? 0 : -1}
           className={`export-format-opt${format === f ? ' is-active' : ''}`}
           disabled={state === 'recording' || state === 'requesting'}
           onClick={() => pickFormat(f)}
@@ -88,7 +96,12 @@ export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef
     download();
     const copied = await copyToClipboard(CAPTION);
     setDoneLabel(copied ? 'Saved · caption copied' : 'Saved');
-    setTimeout(() => { setDoneLabel(null); reset(); }, 1500);
+    clearFlashTimer();
+    flashTimerRef.current = setTimeout(() => {
+      flashTimerRef.current = null;
+      setDoneLabel(null);
+      reset();
+    }, 1500);
   }
 
   if (state === 'idle') {
@@ -116,13 +129,19 @@ export default function VideoRecordButton({ canvasRef, cameraVideoRef, engineRef
   if (state === 'done') {
     return (
       <>
-        <button className="vid-record-btn vid-record-btn--done" onClick={handleShare} aria-label="Share video">
+        <button
+          className="vid-record-btn vid-record-btn--done"
+          onClick={handleShare}
+          aria-label={doneLabel ?? 'Share video'}
+          disabled={doneLabel != null}
+        >
           {doneLabel ?? '↗ Share video'}
         </button>
         <button
           className="vid-record-btn vid-record-btn--done"
           onClick={() => { download(); reset(); }}
           aria-label="Download video"
+          disabled={doneLabel != null}
         >
           ↓
         </button>
