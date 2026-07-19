@@ -419,4 +419,19 @@ describe('HUD clusters', () => {
     // MP3
     expect(capsule!.contains(screen.getByRole('button', { name: /mp3/i }))).toBe(true);
   });
+
+  it('groups Learn, Share, Feedback, and profile into a top-right nav capsule', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    render(<PlayShell />);
+    const capsule = document.querySelector('.hud-nav');
+    expect(capsule).not.toBeNull();
+    expect(capsule!.contains(screen.getByRole('button', { name: /learn/i }))).toBe(true);
+    expect(capsule!.contains(screen.getByRole('button', { name: /share/i }))).toBe(true);
+    // FeedbackButton renders an <a>, so its role is link
+    expect(capsule!.contains(screen.getByRole('link', { name: /feedback/i }))).toBe(true);
+    // ProfileButton signed-out aria-label is "Sign in and settings"
+    // (signed-in: "Account and settings") — match the shared suffix
+    expect(capsule!.contains(screen.getByRole('button', { name: /and settings/i }))).toBe(true);
+  });
 });

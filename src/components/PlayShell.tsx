@@ -473,12 +473,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           onLockedClick={() => setUpsell('mp3')}
         />
       </div>
-      <ShareButton />
-      <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
-      <FeedbackButton />
-      <ProfileButton
-        play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
-      />
+      <div className="hud-nav">
+        <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
+        <ShareButton />
+        <FeedbackButton />
+        <ProfileButton
+          play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
+        />
+      </div>
       </>}
       {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
         <LoopPanel
