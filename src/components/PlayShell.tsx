@@ -482,32 +482,33 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         />
       </div>
       </>}
-      {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
-        <LoopPanel
-          looper={looper}
-          state={loopState}
-          onAddChord={addCurrentChord}
-          maxSlots={ent.loopSlots}
-          armed={loopArmed}
-          onToggleArm={toggleLoopArm}
-          savedLoops={savedLoops}
-          onSaveLoop={handleSaveLoop}
-          onLoadLoop={handleLoadLoop}
-          onDeleteLoop={handleDeleteLoop}
-        />
-      )}
-      {/* Free plans see where the looper lives — a teaser pill in the
-          panel's spot that opens the upgrade sheet. */}
-      {!isMobile && mode === 'camera' && !ent.loopUnlocked && (
-        <button className="loop-teaser" onClick={() => setUpsell('loop')}>
-          Loops <LockBadge />
-        </button>
-      )}
       {/* Mobile keeps only the two controls that shape which notes are on
           the wheels — instrument/octave/arp stay at their defaults
           (synth, octave 0, arp on) and are only reachable on a wider
           screen, so the phone HUD doesn't crowd the canvas. */}
-      {mode !== 'asking' && <div className="hud-bottom">
+      {mode !== 'asking' && <div className="hud-bottom-stack">
+        {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
+          <LoopPanel
+            looper={looper}
+            state={loopState}
+            onAddChord={addCurrentChord}
+            maxSlots={ent.loopSlots}
+            armed={loopArmed}
+            onToggleArm={toggleLoopArm}
+            savedLoops={savedLoops}
+            onSaveLoop={handleSaveLoop}
+            onLoadLoop={handleLoadLoop}
+            onDeleteLoop={handleDeleteLoop}
+          />
+        )}
+        {/* Free plans see where the looper lives — a teaser pill in the
+            panel's spot that opens the upgrade sheet. */}
+        {!isMobile && mode === 'camera' && !ent.loopUnlocked && (
+          <button className="loop-teaser" onClick={() => setUpsell('loop')}>
+            Loops <LockBadge />
+          </button>
+        )}
+        <div className="hud-bottom">
         {!isMobile && <>
         <select
           className="instrument-select"
@@ -626,6 +627,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         >
           My Song <LockBadge />
         </button>)}
+        </div>
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
       {ent.mySongUnlocked && mySongOpen && (

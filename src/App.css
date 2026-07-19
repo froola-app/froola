@@ -450,13 +450,22 @@ body {
     var(--lg-top-shadow-hover);
 }
 
-/* bottom-center HUD row — holds instrument / key / scale / theme pickers */
-.hud-bottom {
+/* bottom stack: loop strip snug above the music bar, one anchored column */
+.hud-bottom-stack {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+}
+
+/* bottom-center HUD row — laid out by .hud-bottom-stack */
+.hud-bottom {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -599,13 +608,8 @@ body {
 }
 
 
-/* chord looper — frosted panel sitting above the bottom HUD row */
+/* chord looper — sits in .hud-bottom-stack directly above the music bar */
 .loop-panel {
-  position: fixed;
-  bottom: 4.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -614,17 +618,6 @@ body {
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--lg-bottom-ink);
   transition: color 0.3s;
-}
-
-/* At medium widths .hud-bottom's pills wrap to 2 rows, and at narrow widths
-   to 3+ rows. Adjust .loop-panel bottom offset to clear the variable height
-   instead of assuming a fixed single-row layout. */
-@media (max-width: 800px) {
-  .loop-panel { bottom: 7rem; }
-}
-
-@media (max-width: 480px) {
-  .loop-panel { bottom: 9.5rem; }
 }
 
 .loop-slots {
@@ -5270,11 +5263,6 @@ body {
 /* Free-plan teaser pill sitting where the loop panel lives for paid plans —
    same glass material as the HUD pills it neighbors. */
 .loop-teaser {
-  position: fixed;
-  bottom: 4.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;

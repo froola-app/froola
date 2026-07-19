@@ -434,4 +434,18 @@ describe('HUD clusters', () => {
     // (signed-in: "Account and settings") — match the shared suffix
     expect(capsule!.contains(screen.getByRole('button', { name: /and settings/i }))).toBe(true);
   });
+
+  it('stacks the loop area directly above the music bar in one bottom container', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    render(<PlayShell />);
+    const stack = document.querySelector('.hud-bottom-stack');
+    expect(stack).not.toBeNull();
+    const teaser = document.querySelector('.loop-teaser'); // free tier default mock
+    const bar = document.querySelector('.hud-bottom');
+    expect(stack!.contains(teaser!)).toBe(true);
+    expect(stack!.contains(bar!)).toBe(true);
+    // teaser renders above (before) the bar
+    expect(teaser!.compareDocumentPosition(bar!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });
