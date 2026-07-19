@@ -3,7 +3,7 @@ import type { RefObject } from 'react';
 import type { DialSelection } from '../../engine/renderer';
 import { useRecorder } from '../../engine/recording/useRecorder';
 import { listRecordings } from '../../engine/recording/recordingStore';
-import { copyToClipboard } from '../../utils/clipboard';
+import { copyToClipboard } from './clipboard';
 import LockBadge from '../LockBadge';
 
 type Props = {

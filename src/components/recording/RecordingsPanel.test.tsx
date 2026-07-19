@@ -3,14 +3,14 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import RecordingsPanel from './RecordingsPanel';
 import { useAuth } from '../../contexts/AuthContext';
 import { listRecordings, deleteRecording } from '../../engine/recording/recordingStore';
-import { copyToClipboard } from '../../utils/clipboard';
+import { copyToClipboard } from './clipboard';
 
 vi.mock('../../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../../engine/recording/recordingStore', () => ({
   listRecordings: vi.fn(),
   deleteRecording: vi.fn(),
 }));
-vi.mock('../../utils/clipboard', () => ({ copyToClipboard: vi.fn() }));
+vi.mock('./clipboard', () => ({ copyToClipboard: vi.fn() }));
 
 const mockUseAuth = vi.mocked(useAuth);
 const mockListRecordings = vi.mocked(listRecordings);
