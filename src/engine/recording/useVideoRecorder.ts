@@ -72,9 +72,10 @@ export function useVideoRecorder(
       return;
     }
 
-    // Output/composite dimensions are locked at start; only the per-frame
-    // layout's source sampling below tracks the live (possibly resized)
-    // canvas, so wheel geometry doesn't go stale after a window resize.
+    // Output dimensions are locked at start (they must match the frozen
+    // composite canvas); only the portrait/square wheel SOURCE circles are
+    // refreshed per frame so sampling tracks a live canvas resize. 16:9
+    // stretches the whole canvas, so it needs no refresh.
     const initialLayout = layoutFor(format, canvas.width || window.innerWidth, canvas.height || window.innerHeight);
     const composite = document.createElement('canvas');
     composite.width = initialLayout.width;
@@ -82,8 +83,15 @@ export function useVideoRecorder(
     const ctx2d = composite.getContext('2d')!;
 
     function drawFrame() {
-      const liveLayout = layoutFor(format, canvas!.width || window.innerWidth, canvas!.height || window.innerHeight);
-      drawExportFrame(ctx2d, liveLayout, {
+      let layout = initialLayout;
+      if (format !== '16:9') {
+        const live = layoutFor(format, canvas!.width || window.innerWidth, canvas!.height || window.innerHeight);
+        layout = {
+          ...initialLayout,
+          wheels: initialLayout.wheels!.map((w, i) => ({ src: live.wheels![i].src, dst: w.dst })),
+        };
+      }
+      drawExportFrame(ctx2d, layout, {
         canvas: canvas!,
         camVideo: cameraVideoRef.current,
         chordLabel: getChordLabel?.() ?? '',
