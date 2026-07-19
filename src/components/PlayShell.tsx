@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import { storeInputMode, type InputMode } from '../engine/input';
-import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type ChordMode, type MusicConfig, type CustomWheel } from '../engine/music';
+import { KEYS, SCALE_NAMES, buildCommand, wheelChord, type ScaleName, type ChordMode, type MusicConfig, type CustomWheel } from '../engine/music';
 import { listWheels, saveWheel, deleteWheel } from '../engine/music/customWheelStore';
 import WheelEditor from './WheelEditor';
 import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, listLoops, saveLoop, deleteLoop, type LooperState, type SavedLoop } from '../engine/looper';
@@ -182,6 +182,14 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
 
   const gatedRef = useRef(false);
   const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef, sustainedRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+
+  // Live chord label for the video export chip: reads the current wheel
+  // selection per frame via a stable getter (both refs are stable), so the
+  // export chip always names the chord actually sounding.
+  const getChordLabel = useCallback(
+    () => wheelChord(selectedRef.current.noteIdx, selectedRef.current.qualIdx, musicRef.current).label,
+    [selectedRef],
+  );
 
   // No explainer screen to click through — ask for the camera the moment
   // the page loads. Only fires once: after a denial, mode reverts to
@@ -463,6 +471,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           engineRef={engineRef}
           maxDurationMs={ent.maxVideoRecordMs}
           watermark={ent.exportWatermark}
+          getChordLabel={getChordLabel}
           locked={!ent.videoRecordUnlocked}
           onLockedClick={() => setUpsell('video')}
         />

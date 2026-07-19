@@ -1,8 +1,9 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import type { RefObject } from 'react';
 import type { AudioEngine } from '../audio/AudioEngine';
+import { layoutFor, drawExportFrame, type ExportFormat } from './exportFrame';
 
-export type VideoRecorderState = 'idle' | 'requesting' | 'recording';
+export type VideoRecorderState = 'idle' | 'requesting' | 'recording' | 'done';
 
 const DEFAULT_MAX_DURATION_MS = 180_000; // 3 minutes
 
@@ -15,6 +16,10 @@ export function useVideoRecorder(
   // Plan-gated (replayWatermark): free downloads get "made with froola"
   // burned into the video frames.
   watermark = false,
+  format: ExportFormat = '16:9',
+  // Live chord label for the portrait chip; a getter so the rAF loop reads
+  // the current value without re-subscribing. Omitted (or '') draws no chip.
+  getChordLabel?: () => string,
 ) {
   const [state, setState] = useState<VideoRecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -26,6 +31,8 @@ export function useVideoRecorder(
   const micStreamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
+  const blobRef = useRef<Blob | null>(null);
+  const fileNameRef = useRef('');
 
   const cleanup = useCallback(() => {
     if (animIdRef.current !== null) { cancelAnimationFrame(animIdRef.current); animIdRef.current = null; }
@@ -65,41 +72,19 @@ export function useVideoRecorder(
       return;
     }
 
-    // Composite canvas: draw the Froola UI, then overlay the camera as a PiP in
-    // the bottom-right corner (mirrored to match what the user sees on screen).
+    const layout = layoutFor(format, canvas.width || window.innerWidth, canvas.height || window.innerHeight);
     const composite = document.createElement('canvas');
-    composite.width = canvas.width || window.innerWidth;
-    composite.height = canvas.height || window.innerHeight;
+    composite.width = layout.width;
+    composite.height = layout.height;
     const ctx2d = composite.getContext('2d')!;
 
     function drawFrame() {
-      ctx2d.clearRect(0, 0, composite.width, composite.height);
-      ctx2d.drawImage(canvas!, 0, 0, composite.width, composite.height);
-
-      const camVideo = cameraVideoRef.current;
-      if (camVideo && camVideo.readyState >= 2 && camVideo.videoWidth > 0) {
-        const pw = Math.floor(composite.width * 0.22);
-        const ph = Math.floor(pw * (camVideo.videoHeight / camVideo.videoWidth));
-        const px = composite.width - pw - 16;
-        const py = composite.height - ph - 16;
-        // Mirror horizontally to match the CSS scaleX(-1) applied to the live feed
-        ctx2d.save();
-        ctx2d.translate(px + pw, py);
-        ctx2d.scale(-1, 1);
-        ctx2d.drawImage(camVideo, 0, 0, pw, ph);
-        ctx2d.restore();
-      }
-
-      if (watermark) {
-        const fs = Math.max(14, Math.round(composite.height * 0.028));
-        ctx2d.font = `600 ${fs}px system-ui, -apple-system, sans-serif`;
-        ctx2d.fillStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx2d.shadowColor = 'rgba(0, 0, 0, 0.4)';
-        ctx2d.shadowBlur = 4;
-        ctx2d.fillText('made with froola', 16, composite.height - 16);
-        ctx2d.shadowBlur = 0;
-      }
-
+      drawExportFrame(ctx2d, layout, {
+        canvas: canvas!,
+        camVideo: cameraVideoRef.current,
+        chordLabel: getChordLabel?.() ?? '',
+        watermark,
+      });
       animIdRef.current = requestAnimationFrame(drawFrame);
     }
     drawFrame();
@@ -127,17 +112,9 @@ export function useVideoRecorder(
 
     recorder.onstop = () => {
       cleanup();
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `froola-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setState('idle');
-      setElapsed(0);
+      blobRef.current = new Blob(chunksRef.current, { type: 'video/webm' });
+      fileNameRef.current = `froola-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.webm`;
+      setState('done');
     };
 
     recorder.start(200);
@@ -149,7 +126,31 @@ export function useVideoRecorder(
       setElapsed(secs);
       if (secs * 1000 >= maxDurationMs) stop();
     }, 100);
-  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs, watermark]);
+  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs, watermark, format, getChordLabel]);
 
-  return { state, elapsed, start, stop };
+  const download = useCallback(() => {
+    const blob = blobRef.current;
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileNameRef.current;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, []);
+
+  const fileForShare = useCallback((): File | null => {
+    const blob = blobRef.current;
+    return blob ? new File([blob], fileNameRef.current, { type: 'video/webm' }) : null;
+  }, []);
+
+  const reset = useCallback(() => {
+    blobRef.current = null;
+    setState('idle');
+    setElapsed(0);
+  }, []);
+
+  return { state, elapsed, start, stop, download, fileForShare, reset };
 }
