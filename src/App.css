@@ -581,9 +581,10 @@ body {
   cursor: default;
 }
 
-/* arp toggle — stands alone on the video (not inside a pill), so it
-   carries the full glass treatment itself */
-.arp-btn {
+/* arp toggle + My Song — stand alone on the video (not inside a pill),
+   so they carry the full glass treatment themselves */
+.arp-btn,
+.my-song-btn {
   width: auto;
   height: auto;
   font-size: 0.85rem;
@@ -601,7 +602,8 @@ body {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
-.arp-btn:hover:not(:disabled) {
+.arp-btn:hover:not(:disabled),
+.my-song-btn:hover:not(:disabled) {
   background:
     linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
     var(--lg-bottom-fill-hover);
@@ -5155,7 +5157,7 @@ body {
    (usually skin tone) into every pill, which is what made the HUD look
    randomly tinted. The fill is opaque enough to carry the material now. */
 .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint,
 .instrument-select {
   backdrop-filter: blur(24px) saturate(130%);
@@ -5163,7 +5165,7 @@ body {
 }
 
 .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
     transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -5173,7 +5175,7 @@ body {
    controls. The HUD pills above are position: fixed with top/right
    offsets; forcing them relative drops them into flow and their old
    offsets scatter them diagonally. Fixed boxes anchor pseudos already. */
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip {
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip {
   position: relative;
 }
 
@@ -5181,7 +5183,7 @@ body {
    painted via the two-layer mask trick (fill minus content box) */
 .share-btn::before, .record-btn::before, .vid-record-btn::before, .audio-export-btn::before,
 .learn-nav-btn::before, .feedback-btn::before, .profile-btn::before, .octave-control::before,
-.arp-btn::before, .loop-controls::before, .loop-slot::before,
+.arp-btn::before, .my-song-btn::before, .loop-controls::before, .loop-slot::before,
 .tutorial-skip::before, .nod-hint::before {
   content: '';
   position: absolute;
@@ -5205,13 +5207,13 @@ body {
 /* motion: hover floats, press squishes — the spring curve in the
    grouped transition above gives the release its bounce */
 .share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled), .audio-export-btn:hover:not(:disabled),
-.learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover,
+.learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover, .my-song-btn:hover,
 .tutorial-skip:hover {
   transform: translateY(-1px);
 }
 
 .share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled), .audio-export-btn:active:not(:disabled),
-.learn-nav-btn:active, .feedback-btn:active, .profile-btn:active, .arp-btn:active,
+.learn-nav-btn:active, .feedback-btn:active, .profile-btn:active, .arp-btn:active, .my-song-btn:active,
 .tutorial-skip:active {
   transform: scale(0.95);
 }
@@ -5227,12 +5229,12 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
-  .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+  .octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
   .octave-btn, .loop-btn, .permission-btn-primary, .permission-btn-secondary {
     transition-property: color, background, border-color, box-shadow;
   }
   .share-btn:hover, .record-btn:hover, .vid-record-btn:hover, .audio-export-btn:hover,
-  .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover,
+  .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover, .my-song-btn:hover,
   .tutorial-skip:hover, .permission-btn-primary:hover, .permission-btn-secondary:hover {
     transform: none;
   }
