@@ -36,6 +36,15 @@ describe('layoutFor', () => {
     }
   });
 
+  it('destination wheels never overlap each other', () => {
+    for (const format of ['9:16', '1:1'] as const) {
+      const l = layoutFor(format, 1280, 800);
+      const [a, b] = l.wheels!.map(w => w.dst);
+      const dist = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+      expect(dist).toBeGreaterThanOrEqual(a.r + b.r);
+    }
+  });
+
   it('exports the formats in toggle order', () => {
     expect(EXPORT_FORMATS).toEqual(['9:16', '1:1', '16:9']);
   });

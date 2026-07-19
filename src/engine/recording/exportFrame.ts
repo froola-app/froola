@@ -32,7 +32,7 @@ export function layoutFor(format: ExportFormat, srcW: number, srcH: number): Exp
   const width = 1080;
   const height = format === '9:16' ? 1920 : 1080;
   const g = wheelGeometry(srcW, srcH);
-  const r = format === '9:16' ? width * 0.3 : width * 0.24;
+  const r = format === '9:16' ? width * 0.22 : width * 0.21;
   const inset = width * 0.04;
   // 9:16: offset-stack in the lower half (left wheel upper-left, right wheel
   // lower-right); 1:1: both in the bottom corners.
