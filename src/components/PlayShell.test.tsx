@@ -420,6 +420,21 @@ describe('HUD clusters', () => {
     expect(capsule!.contains(screen.getByRole('button', { name: /mp3/i }))).toBe(true);
   });
 
+  it('renders the recording progress bar as a capsule sibling, not a segment', () => {
+    // During a take, RecordButton mounts .record-progress as a direct child
+    // of .hud-capture (a fragment sibling of the button). The capsule CSS
+    // keys end-caps/dividers to classes so this extra child must never pick
+    // up segment styling — this test pins the structure that hazard lives in.
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUseAuth.mockReturnValue(plusAuthState); // plus: replay recording unlocked
+    render(<PlayShell />);
+    fireEvent.click(screen.getByRole('button', { name: /^record\b(?!.*video)/i }));
+    const capsule = document.querySelector('.hud-capture')!;
+    expect(capsule.querySelector(':scope > .record-progress')).not.toBeNull();
+    expect(capsule.contains(screen.getByRole('button', { name: /stop/i }))).toBe(true);
+  });
+
   it('groups Learn, Share, Feedback, and profile into a top-right nav capsule', () => {
     const engine = fakeEngine();
     mockUseCoordinator.mockReturnValue(coordinatorState(engine));

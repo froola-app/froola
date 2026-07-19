@@ -772,10 +772,9 @@ body {
   letter-spacing: 0.18px;
 }
 
+/* record/video/MP3 buttons render only inside .hud-capture, which owns
+   placement — the segment overrides near the end of this file anchor them */
 .record-btn {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -791,7 +790,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
 }
 
@@ -890,9 +888,6 @@ body {
 /* ── Video record button ───────────────────────────────────── */
 
 .vid-record-btn {
-  position: fixed;
-  top: 3.5rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -908,7 +903,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -955,9 +949,6 @@ body {
 /* ── Audio export button ───────────────────────────────────── */
 
 .audio-export-btn {
-  position: fixed;
-  top: 8.5rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -973,7 +964,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -5339,6 +5329,13 @@ body {
 .hud-nav .profile-btn {
   border-radius: 0 999px 999px 0;
   padding-right: 1.1rem;
+}
+
+/* Feedback is an <a>, so it inherits the body's line-height while the
+   sibling <button>s compute `normal` — left alone it inflates the nav
+   capsule ~6px taller than the capture capsule across the screen. */
+.hud-nav .feedback-btn {
+  line-height: normal;
 }
 
 /* hairline dividers between segments */
