@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storeInputMode } from '../engine/input';
+import { warmGestureInput } from '../engine/input/warm';
 import { SONG_PATH } from '../engine/lessons/curriculum';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useTheme } from '../hooks/useTheme';
@@ -102,6 +103,18 @@ export default function LandingPage() {
 
   // Scroll reveals: sections fade-rise in once as they enter the viewport.
   useScrollReveal(rootRef);
+
+  // Start the MediaPipe warm-up while the visitor reads the page, on idle so
+  // it never competes with landing paint. Best-effort: failures are silent
+  // and /play retries cold.
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(() => warmGestureInput());
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(warmGestureInput, 1);
+    return () => clearTimeout(t);
+  }, []);
 
   const ctas = (
     <div className="lp4__ctas">
