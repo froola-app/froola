@@ -2,6 +2,7 @@ import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
 import { TempoClock, type StepCallback, type TempoClockOptions } from './TempoClock'
 import { SongBackingTrack } from './SongBackingTrack'
+import { takeUnlockedContext } from './unlockedContext'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
@@ -63,7 +64,9 @@ export class AudioEngine {
   private lastVoiceMidi: (number | null)[] = Array<number | null>(VOICES).fill(null)
 
   constructor() {
-    this.ctx = new AudioContext()
+    // Adopt the context the landing CTA click already unlocked, if any —
+    // it is created inside a user gesture, so it starts out running.
+    this.ctx = takeUnlockedContext() ?? new AudioContext()
 
     // Master is unity now; the synth sits at soundgo's gentle 0.2 on its own,
     // and the sampler keeps its previous 0.7 level on a dedicated gain stage.

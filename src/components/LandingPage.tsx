@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storeInputMode } from '../engine/input';
 import { warmGestureInput } from '../engine/input/warm';
+import { unlockAudio } from '../engine/audio/unlockedContext';
 import { SONG_PATH } from '../engine/lessons/curriculum';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useTheme } from '../hooks/useTheme';
@@ -97,6 +98,9 @@ export default function LandingPage() {
   // Remember the choice so PlayShell on /play skips its own prompt and drops
   // the user straight into the instrument.
   const chooseCamera = () => {
+    // Unlock audio inside this click's user-activation window so /play
+    // starts with sound live — no "tap anywhere" needed.
+    unlockAudio();
     storeInputMode('camera');
     navigate('/play');
   };
