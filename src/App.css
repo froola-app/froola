@@ -5340,6 +5340,7 @@ body {
 
 /* hairline dividers between segments */
 .hud-capture .vid-record-btn,
+.hud-capture .export-format-toggle,
 .hud-capture .audio-export-btn,
 .hud-nav .share-btn,
 .hud-nav .feedback-btn,
@@ -5354,6 +5355,48 @@ body {
   border: none;
   border-radius: 0;
   padding: 0;
+}
+
+/* Export format mini-toggle — a capsule segment of three tiny radio pills */
+.export-format-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.5rem;
+}
+
+.export-format-opt {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--lg-top-ink);
+  opacity: 0.55;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  cursor: pointer;
+  transition: color 0.3s, background 0.3s, opacity 0.3s;
+}
+
+.export-format-opt.is-active {
+  opacity: 1;
+  background: var(--lg-top-inner, rgba(127, 127, 127, 0.18));
+  border-color: var(--lg-top-stroke);
+}
+
+.export-format-opt:disabled { cursor: default; opacity: 0.3; }
+
+/* done state: amber, matching .record-btn--done */
+.vid-record-btn--done {
+  color: #fbbf24;
+  background: rgba(17, 17, 17, 0.72);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.vid-record-btn--done:hover {
+  background: rgba(34, 26, 8, 0.88);
+  color: #fcd34d;
 }
 
 /* segments must not float/squish out of the capsule */
@@ -5391,6 +5434,9 @@ body {
   .hud-nav > :not(.record-progress) {
     border-radius: 999px !important;
     border: 1px solid var(--lg-top-stroke) !important;
+  }
+  .hud-capture > .export-format-toggle {
+    border: none !important;
   }
 }
 
