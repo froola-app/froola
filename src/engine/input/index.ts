@@ -117,9 +117,15 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       } catch {
         setMode('asking');
         setCameraError(true);
+        // The load we started is ours now (ownership taken) — close its landmarker when we bail before using it.
+        void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
         return;
       }
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+      if (cancelled) {
+        stream.getTracks().forEach(t => t.stop());
+        void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        return;
+      }
 
       // Show camera feed immediately while models finish loading.
       const video = document.createElement('video');
@@ -133,6 +139,7 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       if (cancelled) {
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
+        void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
         return;
       }
 
