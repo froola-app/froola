@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storeInputMode } from '../engine/input';
+import { warmGestureInput } from '../engine/input/warm';
+import { unlockAudio } from '../engine/audio/unlockedContext';
 import { SONG_PATH } from '../engine/lessons/curriculum';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { useTheme } from '../hooks/useTheme';
@@ -96,12 +98,27 @@ export default function LandingPage() {
   // Remember the choice so PlayShell on /play skips its own prompt and drops
   // the user straight into the instrument.
   const chooseCamera = () => {
+    // Unlock audio inside this click's user-activation window so /play
+    // starts with sound live — no "tap anywhere" needed.
+    unlockAudio();
     storeInputMode('camera');
     navigate('/play');
   };
 
   // Scroll reveals: sections fade-rise in once as they enter the viewport.
   useScrollReveal(rootRef);
+
+  // Start the MediaPipe warm-up while the visitor reads the page, on idle so
+  // it never competes with landing paint. Best-effort: failures are silent
+  // and /play retries cold.
+  useEffect(() => {
+    if ('requestIdleCallback' in window) {
+      const id = requestIdleCallback(() => warmGestureInput());
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(warmGestureInput, 1);
+    return () => clearTimeout(t);
+  }, []);
 
   const ctas = (
     <div className="lp4__ctas">

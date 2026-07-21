@@ -84,6 +84,7 @@ export function useCoordinator(
 
     return () => {
       engine.suspend();
+      engine.releaseIfAdopted();
       for (const ev of events) window.removeEventListener(ev, resume);
     };
   }, [gatedRef]);

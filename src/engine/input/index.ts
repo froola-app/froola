@@ -1,9 +1,11 @@
 // src/engine/input/index.ts
 import React, { useEffect, useRef, useState } from 'react';
+import type { HandLandmarker as HandLandmarkerInstance } from '@mediapipe/tasks-vision';
 import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
 import { wheelGeometry, type WheelGeometry } from '../renderer/geometry';
+import { obtainHandTracking, restashHandTracking } from './warm';
 
 export type InputMode = 'asking' | 'camera';
 
@@ -34,18 +36,6 @@ export function storeInputMode(mode: 'camera'): void {
 const isMobile =
   typeof navigator !== 'undefined' &&
   /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-// MediaPipe's WebGL GPU delegate stalls badly in Safari/WebKit specifically
-// (texture upload/readback overhead per frame with no compute-shader path,
-// where it's often *slower* than the CPU delegate) — so WebKit starts on
-// CPU. Every other mobile browser starts on GPU, which is several times
-// faster than CPU when it works; GPU delegate failures are common enough
-// across Android GPU/driver combos, though, that startCamera falls back to
-// CPU at runtime (see gpuFailed below) rather than assuming it always works
-// or always avoiding it.
-const isWebKit =
-  typeof navigator !== 'undefined' &&
-  navigator.vendor === 'Apple Computer, Inc.';
 
 // A single detected hand can only be on one wheel at a time, so we label it
 // by which wheel center it's nearest — on the desktop/landscape side-by-side
@@ -107,15 +97,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
     const INFERENCE_INTERVAL = 33; // ms (~30 fps inference)
 
     async function startCamera() {
-      const { HandLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
-      if (cancelled) return;
-
-      // Kick off model loading and stream acquisition in parallel so the user
-      // sees their camera feed as soon as permission is granted instead of waiting
-      // for both MediaPipe models to download first.
-      const visionPromise = FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm'
-      );
+      // Whole tracking load (module + WASM + model) runs concurrently with
+      // the permission prompt and stream acquisition; warm visits from the
+      // landing page usually have it finished already (see ./warm.ts).
+      const trackingPromise = obtainHandTracking();
 
       // Mobile detection is CPU-bound often enough (WebKit always, Android on
       // GPU-delegate fallback) that a smaller capture resolution is worth
@@ -132,9 +117,20 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       } catch {
         setMode('asking');
         setCameraError(true);
+        // The load we started is ours now (ownership taken) — restash it for
+        // reuse if nothing newer has claimed the cache, else close it.
+        if (!restashHandTracking(trackingPromise)) {
+          void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        }
         return;
       }
-      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+      if (cancelled) {
+        stream.getTracks().forEach(t => t.stop());
+        if (!restashHandTracking(trackingPromise)) {
+          void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        }
+        return;
+      }
 
       // Show camera feed immediately while models finish loading.
       const video = document.createElement('video');
@@ -148,44 +144,26 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       if (cancelled) {
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
+        if (!restashHandTracking(trackingPromise)) {
+          void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        }
         return;
       }
 
-      const vision = await visionPromise;
-      if (cancelled) {
+      let landmarker: HandLandmarkerInstance;
+      let currentDelegate: 'CPU' | 'GPU';
+      let createLandmarker: (d: 'CPU' | 'GPU') => Promise<HandLandmarkerInstance>;
+      try {
+        const tracking = await trackingPromise;
+        landmarker = tracking.landmarker;
+        currentDelegate = tracking.delegate;
+        createLandmarker = tracking.createLandmarker;
+      } catch {
+        setMode('asking');
+        setCameraError(true);
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
         return;
-      }
-
-      const MODEL_ASSET_PATH =
-        'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
-
-      function createLandmarker(delegate: 'CPU' | 'GPU') {
-        return HandLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_ASSET_PATH, delegate },
-          runningMode: 'VIDEO',
-          numHands: 2,
-          // Keep MediaPipe's 0.5 defaults. Dropping these to 0.3 (to track hands
-          // held close to the camera) made it accept low-confidence/blurry hands:
-          // noisy landmarks caused heavy jitter, and a curled-looking blurry hand
-          // registered as a fist, freezing the reported position at center
-          // ("stuck in the middle"). 0.5 restores stable tracking.
-          minHandDetectionConfidence: 0.5,
-          minHandPresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5,
-        });
-      }
-
-      let currentDelegate: 'CPU' | 'GPU' = isWebKit ? 'CPU' : 'GPU';
-      let landmarker: Awaited<ReturnType<typeof createLandmarker>>;
-      try {
-        landmarker = await createLandmarker(currentDelegate);
-      } catch {
-        // GPU delegate creation itself can throw (not just first detect) on
-        // devices that don't support the backend at all.
-        currentDelegate = 'CPU';
-        landmarker = await createLandmarker('CPU');
       }
       let fallingBack = false;
 
@@ -206,7 +184,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       }
 
       if (cancelled) {
-        landmarker.close();
+        if (!restashHandTracking(Promise.resolve({ landmarker, delegate: currentDelegate, createLandmarker }))) {
+          landmarker.close();
+        }
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
         return;

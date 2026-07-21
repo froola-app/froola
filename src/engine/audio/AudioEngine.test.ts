@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mockAudioContext } from '../../test-utils/webAudioMock'
 import { AudioEngine } from './AudioEngine'
+import { unlockAudio, takeUnlockedContext } from './unlockedContext'
 import { midiToHz } from '../music/scales'
 import type { MusicalCommand } from '../types'
 
@@ -24,6 +25,7 @@ const CMD: MusicalCommand = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  takeUnlockedContext() // drain any stash left by a previous test
 })
 
 describe('AudioEngine — construction', () => {
@@ -323,6 +325,22 @@ describe('AudioEngine — resume() / suspend()', () => {
     const engine = new AudioEngine()
     engine.suspend()
     expect(mockAudioContext.suspend).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('AudioEngine — releaseIfAdopted()', () => {
+  it('restashes an adopted context so a subsequent take returns the same one', () => {
+    unlockAudio()
+    const engine = new AudioEngine() // adopts the stashed context
+    expect(takeUnlockedContext()).toBeNull() // engine took it — stash is empty
+    engine.releaseIfAdopted()
+    expect(takeUnlockedContext()).not.toBeNull()
+  })
+  it('is a no-op when constructed cold (nothing stashed)', () => {
+    expect(takeUnlockedContext()).toBeNull()
+    const engine = new AudioEngine() // constructs its own context
+    engine.releaseIfAdopted()
+    expect(takeUnlockedContext()).toBeNull() // stash stays empty
   })
 })
 

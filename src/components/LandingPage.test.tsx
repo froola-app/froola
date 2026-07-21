@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import LandingPage from './LandingPage';
 import { useAuth } from '../contexts/AuthContext';
+import { takeUnlockedContext } from '../engine/audio/unlockedContext';
 
 // LandingPage's CTAs navigate to /play; capture the navigation instead of
 // mounting the real router destination.
@@ -39,6 +40,7 @@ describe('LandingPage', () => {
   beforeEach(() => {
     sessionStorage.clear();
     navigate.mockClear();
+    takeUnlockedContext(); // drain any stash left by a previous test
   });
 
   it('renders the marketing hero even with a stored input mode', () => {
@@ -59,5 +61,11 @@ describe('LandingPage', () => {
     await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
     expect(sessionStorage.getItem('froola.inputMode')).toBe('camera');
     expect(navigate).toHaveBeenCalledWith('/play');
+  });
+
+  it('unlocks audio inside the Enable camera click', async () => {
+    render(<LandingPage />);
+    await userEvent.click(screen.getAllByRole('button', { name: /enable camera/i })[0]);
+    expect(takeUnlockedContext()).not.toBeNull();
   });
 });

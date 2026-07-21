@@ -2,6 +2,7 @@ import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
 import { TempoClock, type StepCallback, type TempoClockOptions } from './TempoClock'
 import { SongBackingTrack } from './SongBackingTrack'
+import { takeUnlockedContext, restashUnlockedContext } from './unlockedContext'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
@@ -61,9 +62,14 @@ export class AudioEngine {
   // Last MIDI note each pad voice was sent — glide-vs-jump decisions measure
   // distance against this (reading frequency.value mid-ramp is unreliable).
   private lastVoiceMidi: (number | null)[] = Array<number | null>(VOICES).fill(null)
+  private adoptedFromUnlock: boolean
 
   constructor() {
-    this.ctx = new AudioContext()
+    // Adopt the context the landing CTA click already unlocked, if any —
+    // it is created inside a user gesture, so it starts out running.
+    const adopted = takeUnlockedContext()
+    this.adoptedFromUnlock = adopted !== null
+    this.ctx = adopted ?? new AudioContext()
 
     // Master is unity now; the synth sits at soundgo's gentle 0.2 on its own,
     // and the sampler keeps its previous 0.7 level on a dedicated gain stage.
@@ -439,5 +445,12 @@ export class AudioEngine {
 
   suspend(): void {
     this.ctx.suspend()
+  }
+
+  /** If this engine's context came from the click-unlock stash and was
+   *  never really used, hand it back so a StrictMode remount (or any
+   *  quick re-construction) can adopt it instead of falling back cold. */
+  releaseIfAdopted(): void {
+    if (this.adoptedFromUnlock) restashUnlockedContext(this.ctx)
   }
 }
