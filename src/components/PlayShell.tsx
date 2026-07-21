@@ -434,7 +434,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         <BeginnerTutorial
           key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
-          selectedRef={selectedRef}
           onDone={() => setTutorialDone(true)}
         />
       )}
