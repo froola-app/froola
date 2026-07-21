@@ -21,3 +21,10 @@ export function takeUnlockedContext(): AudioContext | null {
   unlocked = null;
   return ctx;
 }
+
+/** Put a context back in the stash (used when a consumer tears down
+ *  without ever using it — e.g. React StrictMode's dev-only double-invoke
+ *  of effects). Never overwrites a newer click's stashed context. */
+export function restashUnlockedContext(ctx: AudioContext): void {
+  if (!unlocked) unlocked = ctx;
+}
