@@ -7,7 +7,7 @@ There are **two unrelated things called "onboarding" in this codebase** —
 don't conflate them:
 
 1. **Account onboarding** (`src/components/onboarding/`, route `/onboarding`)
-   — a 3-step signup flow, documented below. Only reachable when Firebase is
+   — a 3-step signup flow, documented below. Only reachable when Supabase is
    configured and the user is signed in but hasn't completed it
    (`AppRoutes` in `src/App.tsx`).
 2. **In-app gesture tutorial** (`src/components/BeginnerTutorial.tsx`) — the

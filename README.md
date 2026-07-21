@@ -17,22 +17,11 @@ Froola uses [MediaPipe](https://mediapipe.dev/) to track your hands entirely on-
 
 ---
 
-## Features
+## Features & plans
 
-### Free
-- Both instrument modes — **synth** and **piano**
-- Camera hand tracking (on-device, private)
-- Recordings up to 30 seconds
-- Shareable replay links
-
-### Pro *(coming soon)*
-- Unlimited recordings
-- Audio download (MP3 / WAV)
-- Watermark-free share links
-- Additional instrument & sound packs
-- Loop & layer tracks
-- Custom visual themes
-- MIDI export
+Froola has a free tier plus paid Plus and Studio subscriptions (Stripe). Tier contents
+are deliberately **not** listed here — the single source of truth for what each plan
+unlocks is `src/entitlements.ts`, and the display copy lives in `src/pricingTiers.ts`.
 
 ---
 

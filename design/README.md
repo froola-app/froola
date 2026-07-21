@@ -1,9 +1,22 @@
 # Froola Design System
 
+_Direction locked 2026-07-09; tokens verified 2026-07-11._
+
 ## Direction
 
-Editorial light mode. Single accent color. Typography does the heavy lifting.
-Target audience: Gen Z. Aesthetic reference: Teenage Engineering / Figma marketing.
+**"Like Apple designed it."** Froola is a fun tool for professionals — premium,
+impeccable, never flashy, never game-like or childish. Editorial light mode, single
+accent color, typography does the heavy lifting. Confident white space, hairline rules,
+restrained purposeful motion.
+
+Delight is welcome but only through the brand mark and the design system (the living
+logo face, Froo the metronome guide, playful copy) — it must read as product craft, not
+game art. No gradients-as-candy, no confetti, no gamification. Playful brand imagery
+stays out of the landing hero (quality must register in the first 15ms); it lives in
+sanctioned moments like the final CTA band.
+
+Aesthetic reference: Apple's marketing site — value prop on fold one, satisfying
+micro-interactions, "more a psychological experience than anything".
 
 ## Color
 
