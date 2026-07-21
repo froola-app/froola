@@ -5,7 +5,7 @@ import type { GestureSignal } from '../types';
 import { classifyHandFacing, handFacingAngles } from './handFacing';
 import { palmCenter } from './palmCenter';
 import { wheelGeometry, type WheelGeometry } from '../renderer/geometry';
-import { obtainHandTracking } from './warm';
+import { obtainHandTracking, restashHandTracking } from './warm';
 
 export type InputMode = 'asking' | 'camera';
 
@@ -117,13 +117,18 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       } catch {
         setMode('asking');
         setCameraError(true);
-        // The load we started is ours now (ownership taken) — close its landmarker when we bail before using it.
-        void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        // The load we started is ours now (ownership taken) — restash it for
+        // reuse if nothing newer has claimed the cache, else close it.
+        if (!restashHandTracking(trackingPromise)) {
+          void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        }
         return;
       }
       if (cancelled) {
         stream.getTracks().forEach(t => t.stop());
-        void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        if (!restashHandTracking(trackingPromise)) {
+          void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        }
         return;
       }
 
@@ -139,7 +144,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       if (cancelled) {
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
-        void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        if (!restashHandTracking(trackingPromise)) {
+          void trackingPromise.then(t => t.landmarker.close()).catch(() => {});
+        }
         return;
       }
 
@@ -177,7 +184,9 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
       }
 
       if (cancelled) {
-        landmarker.close();
+        if (!restashHandTracking(Promise.resolve({ landmarker, delegate: currentDelegate, createLandmarker }))) {
+          landmarker.close();
+        }
         if (video.parentNode) video.parentNode.removeChild(video);
         stream.getTracks().forEach(t => t.stop());
         return;

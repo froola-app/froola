@@ -75,3 +75,15 @@ export function obtainHandTracking(): Promise<HandTracking> {
   pending = null;
   return p;
 }
+
+/** Put an in-flight/completed load back in the cache if nothing newer has
+ *  taken its place — used when a consumer tears down before ever using the
+ *  tracking it obtained (e.g. React StrictMode's dev-only double-invoke of
+ *  effects), so the real surviving mount can still reuse it instead of
+ *  falling back to a cold load. Returns false if something newer was
+ *  already cached (caller should close the tracking it holds instead). */
+export function restashHandTracking(p: Promise<HandTracking>): boolean {
+  if (pending) return false;
+  pending = p;
+  return true;
+}
