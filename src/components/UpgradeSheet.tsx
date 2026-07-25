@@ -22,7 +22,7 @@ const FEATURE_COPY: Record<LockedFeature, { title: string; body: string; recomme
   },
   themes: {
     title: 'Re-ink your instrument.',
-    body: 'Ember, neon, ocean, mono — Plus recolors the wheels and orbs to match your mood. Same pro instrument, your palette.',
+    body: 'Ember, neon, ocean, mono — Plus recolors the wheels and hand markers to match your mood. Same pro instrument, your palette.',
     recommend: 'plus',
   },
 };

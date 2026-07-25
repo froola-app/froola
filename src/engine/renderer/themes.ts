@@ -36,14 +36,14 @@ export interface VisualTheme {
 function orbAccent(hue: number, sat = 90): OrbAccent {
   const c = (s: number, l: number, a: number) => `hsla(${hue},${s}%,${l}%,${a})`;
   return {
-    ring: c(sat, 52, 0.55),
-    fistRing: c(sat, 68, 0.85),
+    ring: c(sat, 58, 0.98),
+    fistRing: c(sat, 72, 0.98),
     ghost: c(sat, 68, 1),
     ghostFill: c(sat, 68, 0.6),
     halo0: c(sat, 84, 0.7),
     halo1: c(sat, 52, 0.28),
     halo2: c(sat, 52, 0),
-    core: c(sat, 93, 0.95),
+    core: c(sat, 96, 1),
   };
 }
 
@@ -55,24 +55,24 @@ const FROOLA: VisualTheme = {
   noteAccent: '#FF9F0A',
   extHue: [211, 280],
   left: {
-    ring: 'rgba(10,132,255,0.55)',
-    fistRing: 'rgba(120,200,255,0.85)',
+    ring: 'rgba(65,161,255,0.98)',
+    fistRing: 'rgba(155,214,255,0.98)',
     ghost: 'rgba(120,200,255,1)',
     ghostFill: 'rgba(120,200,255,0.6)',
     halo0: 'rgba(190,225,255,0.7)',
     halo1: 'rgba(10,132,255,0.28)',
     halo2: 'rgba(10,132,255,0)',
-    core: 'rgba(225,240,255,0.95)',
+    core: 'rgba(238,247,255,1)',
   },
   right: {
-    ring: 'rgba(255,159,10,0.55)',
-    fistRing: 'rgba(255,214,10,0.85)',
+    ring: 'rgba(255,173,32,0.98)',
+    fistRing: 'rgba(255,222,82,0.98)',
     ghost: 'rgba(255,214,10,1)',
     ghostFill: 'rgba(255,214,10,0.6)',
     halo0: 'rgba(255,235,190,0.7)',
     halo1: 'rgba(255,159,10,0.28)',
     halo2: 'rgba(255,159,10,0)',
-    core: 'rgba(255,248,225,0.95)',
+    core: 'rgba(255,251,238,1)',
   },
 };
 

@@ -9,7 +9,7 @@ import { getVisualTheme, type VisualTheme } from './themes';
 
 export type DialSelection = { noteIdx: number; qualIdx: number };
 
-// Continuous slice position (0..n) of the orb around the wheel. The +π/2 offset
+// Continuous slice position (0..n) of the hand marker around the wheel. The +π/2 offset
 // puts slice 0 at the top; integer values land on slice centres.
 function angleToSlicePos(orbX: number, orbY: number, cx: number, cy: number, n: number): number {
   const angle = Math.atan2(orbY - cy, orbX - cx);
@@ -17,7 +17,7 @@ function angleToSlicePos(orbX: number, orbY: number, cx: number, cy: number, n: 
   return normalized / (Math.PI * 2) * n;
 }
 
-// Deadband (in slices) the orb must travel past a boundary before the selection
+// Deadband (in slices) the hand marker must travel past a boundary before the selection
 // flips. Stops jitter/tremor near a boundary from rapidly retriggering the audio.
 const SLICE_HYSTERESIS = 0.18;
 
@@ -213,61 +213,65 @@ function drawOrb(
 ) {
   const cx = signal.x * w;
   const cy = signal.y * h;
-  const baseRadius = 16;
-  const glowRadius = baseRadius + amplitude * 30;
+  // A compact, opaque control puck: it keeps its contrast over any camera
+  // feed without becoming a glowing game object. Audio only moves its edge a
+  // touch, so the hand position remains visually anchored.
+  const baseRadius = 15;
+  const markerRadius = baseRadius + amplitude * 2;
 
   const accent = signal.handId === 'left' ? theme.left : theme.right;
 
   if (isGhost) {
-    // Ghost orb: dashed ring only — shows where the target hand should be
+    // Lesson target: a subdued version of the live puck, distinct enough to
+    // guide a hand without competing with it.
     ctx.save();
-    ctx.globalAlpha = 0.45;
+    ctx.globalAlpha = 0.64;
     ctx.beginPath();
-    ctx.arc(cx, cy, glowRadius * 1.4, 0, Math.PI * 2);
+    ctx.arc(cx, cy, markerRadius, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(8, 10, 14, 0.72)';
+    ctx.fill();
     ctx.strokeStyle = accent.ghost;
     ctx.lineWidth = 2;
-    ctx.setLineDash([6, 5]);
+    ctx.setLineDash([5, 4]);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
     ctx.fillStyle = accent.ghostFill;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     return;
   }
 
-  // Tight halo + crisp near-white core; the amplitude still breathes the
-  // radius but nothing blooms across half the screen.
-  const { halo0: stop0, halo1: stop1, halo2: stop2, core } = accent;
-
-  const orbGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius * 2);
-  orbGrad.addColorStop(0, stop0);
-  orbGrad.addColorStop(0.35, stop1);
-  orbGrad.addColorStop(1, stop2);
-  ctx.fillStyle = orbGrad;
+  ctx.save();
+  // The graphite body creates a stable silhouette over both bright rooms and
+  // dark sleeves; the color is carried by one firm rim, not a diffuse bloom.
   ctx.beginPath();
-  ctx.arc(cx, cy, glowRadius * 2, 0, Math.PI * 2);
+  ctx.arc(cx, cy, markerRadius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(12, 14, 18, 0.88)';
   ctx.fill();
-
-  ctx.fillStyle = core;
-  ctx.beginPath();
-  ctx.arc(cx, cy, glowRadius * 0.85, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx, cy, glowRadius * 0.85, 0, Math.PI * 2);
   ctx.strokeStyle = accent.ring;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 3;
   ctx.stroke();
 
-  // Fist = chord locked: draw a bright ring around the orb
+  // A pale center cap makes the puck immediately readable at a glance while
+  // retaining the restrained, physical-control feel of the dark body.
+  ctx.fillStyle = accent.core;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fist = chord locked: a second solid ring, like a physical control that
+  // has clicked into a detent.
   if (signal.fist) {
+    ctx.globalAlpha = 0.98;
     ctx.beginPath();
-    ctx.arc(cx, cy, glowRadius * 1.45, 0, Math.PI * 2);
+    ctx.arc(cx, cy, markerRadius * 1.65, 0, Math.PI * 2);
     ctx.strokeStyle = accent.fistRing;
     ctx.lineWidth = 2;
     ctx.stroke();
   }
+  ctx.restore();
 }
 
 export function useRenderer(
@@ -277,8 +281,8 @@ export function useRenderer(
   selectedRef: RefObject<DialSelection>,
   commandRef?: RefObject<MusicalCommand | null>,
   musicRef?: RefObject<MusicConfig>,
-  // Optional ghost orbs — translucent dashed rings showing lesson target positions.
-  // Drawn before live orbs so live hands always appear on top.
+  // Optional ghost hand markers — translucent reticles showing lesson target positions.
+  // Drawn before live markers so live hands always appear on top.
   ghostSignalsRef?: RefObject<GestureSignal[]>,
   guardrailRef?: RefObject<boolean>,
 ): void {
@@ -333,13 +337,13 @@ export function useRenderer(
       particlesRef.current.spawn(spawnX, spawnY, amplitude, tension);
       particlesRef.current.tick(ctx);
 
-      // Orb positions in pixels
+      // Hand-marker positions in pixels
       const leftOrbX  = left  ? left.x  * w : leftCx;
       const leftOrbY  = left  ? left.y  * h : leftCy;
       const rightOrbX = right ? right.x * w : rightCx;
       const rightOrbY = right ? right.y * h : rightCy;
 
-      // Orb touches a slice only when it is in the annular ring (innerR..outerR).
+      // A hand marker touches a slice only when it is in the annular ring (innerR..outerR).
       // Inside innerR (center hub) atan2 is unstable — tiny tremors flip the
       // selected slice — so we treat that zone as inactive.
       const leftDist  = Math.hypot(leftOrbX  - leftCx,  leftOrbY  - leftCy);
@@ -372,7 +376,7 @@ export function useRenderer(
       const noteLabels = scaleNotes(music.keyOffset, music.scale).map(n => n.label);
       const chordName = diatonicChord(noteIdx, qualIdx, music.keyOffset, music.scale).label;
 
-      // Ghost orb target slices — read before drawing the wheels so each one
+      // Ghost marker target slices — read before drawing the wheels so each one
       // can highlight its own ghost's slice, connecting the dashed ring to
       // the label sitting under it instead of leaving the orb unlabeled.
       const ghostSignals = ghostSignalsRef?.current ?? [];
@@ -406,13 +410,13 @@ export function useRenderer(
       // Publish slice selection so the coordinator can drive audio
       selectedRef.current = { noteIdx, qualIdx };
 
-      // Ghost orbs (lesson target) drawn first so live hands appear on top
+      // Ghost markers (lesson target) drawn first so live hands appear on top
       for (const gs of ghostSignals) {
         if (!gs.present) continue;
         drawOrb(ctx, gs, w, h, 0, theme, true);
       }
 
-      // Live orbs
+      // Live hand markers
       for (const signal of signals) {
         if (!signal.present) continue;
         drawOrb(ctx, signal, w, h, amplitude, theme);

@@ -92,7 +92,7 @@ src/
 │   ├── audio/        # Web Audio engine (synth, sampler, AudioContext management)
 │   ├── input/        # Hand tracking gesture input
 │   ├── music/        # Chord voicings, scales, gesture → musical command mapping
-│   ├── renderer/     # Canvas 2D rendering (dials, orbs, particles)
+│   ├── renderer/     # Canvas 2D rendering (dials, hand markers, particles)
 │   └── types.ts      # Shared types (GestureSignal, MusicalCommand, etc.)
 ├── components/
 │   ├── onboarding/   # 3-step onboarding flow (user type, tips, pricing)

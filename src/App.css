@@ -4814,6 +4814,119 @@ body {
   background: var(--pd-glass-btn-hover);
 }
 
+/* Looks is a compact gallery rather than another settings row: the swatches
+   show the canvas palette before the player commits to it. */
+.profile-drawer__looks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0.65rem 0 0.5rem;
+}
+.profile-drawer__look {
+  position: relative;
+  min-width: 0;
+  padding: 0.3rem;
+  color: var(--pd-ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.16s, background 0.16s;
+}
+.profile-drawer__look:hover { transform: translateY(-2px); }
+.profile-drawer__look:focus-visible {
+  outline: 2px solid var(--pd-accent);
+  outline-offset: 2px;
+}
+.profile-drawer__look.is-selected {
+  background: var(--pd-accent-tint);
+  border-color: var(--looks-note);
+}
+.profile-drawer__look-art {
+  position: relative;
+  display: block;
+  height: 2.7rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--looks-note) 42%, transparent);
+  border-radius: 0.48rem;
+  background:
+    linear-gradient(145deg, #0e1015, #22252d);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.profile-drawer__look-chip {
+  position: absolute;
+  top: 50%;
+  width: 0.48rem;
+  height: 1.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 0.22rem;
+  background: var(--looks-note);
+  transform: translateY(-50%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
+}
+.profile-drawer__look-chip--left { left: 19%; background: var(--looks-left); border-color: var(--looks-left); }
+.profile-drawer__look-chip--right { right: 19%; background: var(--looks-right); border-color: var(--looks-right); }
+.profile-drawer__look-spine {
+  position: absolute;
+  width: 0.22rem;
+  height: 1.62rem;
+  left: 50%;
+  top: 50%;
+  border-radius: 99px;
+  background: var(--looks-note);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+}
+.profile-drawer__look-label {
+  display: block;
+  margin: 0.33rem 0.1rem 0;
+  overflow: hidden;
+  font-size: 0.64rem;
+  font-weight: 600;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+.profile-drawer__look-lock {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  display: grid;
+  width: 0.9rem;
+  height: 0.9rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(16, 16, 20, 0.72);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.profile-drawer__look.is-locked { opacity: 0.56; }
+.profile-drawer__look.is-locked:hover { transform: none; }
+.profile-drawer__looks-upgrade {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--pd-glass-btn-border);
+  border-radius: 0.65rem;
+  color: var(--pd-ink);
+  background: var(--pd-glass-btn);
+  font-size: 0.71rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.profile-drawer__looks-upgrade:hover {
+  border-color: var(--pd-accent);
+  background: var(--pd-glass-btn-hover);
+}
+
 /* Sign-in controls inside the drawer trade the flat white SignInPrompt
    styling for the drawer's glass vocabulary. The standalone overlay
    keeps its own look. */

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,12 @@ import {
   type VideoRecording,
 } from '../engine/recording/videoRecordingStore';
 import { copyToClipboard } from '../utils/clipboard';
+import {
+  getVisualTheme,
+  setVisualTheme,
+  VISUAL_THEMES,
+  type VisualTheme,
+} from '../engine/renderer/themes';
 import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
@@ -237,6 +243,94 @@ function RecordingsPanel({ open }: { open: boolean }) {
   );
 }
 
+function LookSwatch({ visualTheme, selected, locked, onChoose }: {
+  visualTheme: VisualTheme;
+  selected: boolean;
+  locked: boolean;
+  onChoose: () => void;
+}) {
+  const style = {
+    '--looks-note': visualTheme.noteAccent,
+    '--looks-left': visualTheme.left.ring,
+    '--looks-right': visualTheme.right.ring,
+  } as CSSProperties;
+
+  return (
+    <button
+      className={
+        'profile-drawer__look' +
+        (selected ? ' is-selected' : '') +
+        (locked ? ' is-locked' : '')
+      }
+      style={style}
+      onClick={onChoose}
+      aria-pressed={selected}
+      aria-label={`${visualTheme.label}${locked ? ', locked' : ''}`}
+    >
+      <span className="profile-drawer__look-art" aria-hidden="true">
+        <span className="profile-drawer__look-chip profile-drawer__look-chip--left" />
+        <span className="profile-drawer__look-spine" />
+        <span className="profile-drawer__look-chip profile-drawer__look-chip--right" />
+      </span>
+      <span className="profile-drawer__look-label">{visualTheme.label}</span>
+      {locked && <span className="profile-drawer__look-lock" aria-hidden="true">+</span>}
+    </button>
+  );
+}
+
+function LooksPanel({ onClose }: { onClose: () => void }) {
+  const { profile } = useAuth();
+  const ent = entitlementsFor(profile);
+  const [selectedId, setSelectedId] = useState(() => getVisualTheme().id);
+
+  // A subscription downgrade must bring the canvas back to the free palette
+  // immediately, not leave a previously selected paid look active.
+  useEffect(() => {
+    if (!ent.visualThemesUnlocked && selectedId !== 'froola') {
+      setVisualTheme('froola');
+    }
+  }, [ent.visualThemesUnlocked, selectedId]);
+
+  // Keep the selected appearance truthful during a downgrade without a
+  // second render just to mirror entitlement state. The previous paid choice
+  // remains remembered in local component state for a later re-upgrade.
+  const visibleSelectedId = ent.visualThemesUnlocked ? selectedId : 'froola';
+
+  const choose = (visualTheme: VisualTheme) => {
+    const locked = visualTheme.id !== 'froola' && !ent.visualThemesUnlocked;
+    if (locked) return;
+    setVisualTheme(visualTheme.id);
+    setSelectedId(visualTheme.id);
+  };
+
+  return (
+    <>
+      <p className="profile-drawer__note">
+        Set the color story for your wheels and hand markers.
+      </p>
+      <div className="profile-drawer__looks" role="group" aria-label="Instrument looks">
+        {VISUAL_THEMES.map(visualTheme => {
+          const locked = visualTheme.id !== 'froola' && !ent.visualThemesUnlocked;
+          return (
+            <LookSwatch
+              key={visualTheme.id}
+              visualTheme={visualTheme}
+              selected={visibleSelectedId === visualTheme.id}
+              locked={locked}
+              onChoose={() => choose(visualTheme)}
+            />
+          );
+        })}
+      </div>
+      {!ent.visualThemesUnlocked && (
+        <a className="profile-drawer__looks-upgrade" href="/pricing" onClick={onClose}>
+          Unlock all looks with Plus <span aria-hidden="true">→</span>
+        </a>
+      )}
+    </>
+  );
+}
+
 function SettingsPanel({ play, onClose, theme, onToggleTheme }: {
   play?: PlayActions;
   onClose: () => void;
@@ -312,6 +406,10 @@ export default function ProfileSidebar({ open, onClose, play }: {
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Recordings</h3>
             <RecordingsPanel open={open} />
+          </section>
+          <section className="profile-drawer__section">
+            <h3 className="profile-drawer__section-title">Looks</h3>
+            <LooksPanel onClose={onClose} />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Settings</h3>

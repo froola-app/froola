@@ -43,7 +43,7 @@ export const PRICING_TIERS: PricingTier[] = [
       'Up to 3 recordings, 3 minutes each, no watermark',
       'MP3 / MP4 export (watermarked)',
       'Chord looper, 8 slots',
-      'Visual themes for the wheels & orbs',
+      'Visual themes for the wheels & hand markers',
     ],
   },
   {

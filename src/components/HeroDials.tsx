@@ -52,7 +52,7 @@ function Wheel({
   selected,
   accent,
   centerLabel,
-  orbColors,
+  markerColor,
 }: {
   cx: number;
   cy: number;
@@ -60,10 +60,10 @@ function Wheel({
   selected: number;
   accent: (i: number) => string;
   centerLabel: string;
-  orbColors: { core: string; halo: string };
+  markerColor: string;
 }) {
   const n = labels.length;
-  const [orbX, orbY] = polar(cx, cy, R * 0.88, sliceAngle(selected, n));
+  const [markerX, markerY] = polar(cx, cy, R * 0.88, sliceAngle(selected, n));
 
   return (
     <g>
@@ -116,15 +116,16 @@ function Wheel({
         );
       })}
 
-      {/* Orb gliding between slices */}
+      {/* Opaque control puck gliding between slices — the same high-contrast,
+          physical-control language as the live canvas. */}
       <g
         style={{
-          transform: `translate(${orbX}px, ${orbY}px)`,
+          transform: `translate(${markerX}px, ${markerY}px)`,
           transition: 'transform 1.1s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        <circle r="16" fill={orbColors.halo} opacity="0.22" />
-        <circle r="7" fill={orbColors.core} />
+        <circle r="15" fill="#101216" fillOpacity="0.92" stroke={markerColor} strokeWidth="3" />
+        <circle r="4" fill="#f5f5f2" />
       </g>
 
       {/* Hub */}
@@ -168,7 +169,7 @@ export default function HeroDials() {
         selected={note}
         accent={() => '#FF9F0A'}
         centerLabel={chord}
-        orbColors={{ core: '#EDF5FF', halo: '#0A84FF' }}
+        markerColor="#79bdea"
       />
       <Wheel
         cx={642}
@@ -177,7 +178,7 @@ export default function HeroDials() {
         selected={ext}
         accent={(i) => `hsl(${211 + (i / (EXT_LABELS.length - 1)) * 69}, 90%, 61%)`}
         centerLabel={EXT_LABELS[ext]}
-        orbColors={{ core: '#FFF6E3', halo: '#FF9F0A' }}
+        markerColor="#ffb25c"
       />
     </svg>
   );

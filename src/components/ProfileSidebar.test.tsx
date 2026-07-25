@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProfileSidebar from './ProfileSidebar';
 import { useAuth } from '../contexts/AuthContext';
+import { getVisualTheme, setVisualTheme } from '../engine/renderer/themes';
 
 vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 const mockUseAuth = vi.mocked(useAuth);
@@ -20,7 +21,11 @@ function authState(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
   };
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+  setVisualTheme('froola');
+});
 
 describe('ProfileSidebar — email magic-link sign-in', () => {
   it('does not render the email form when auth is not configured', () => {
@@ -69,5 +74,32 @@ describe('ProfileSidebar — email magic-link sign-in', () => {
     });
     expect(screen.getByLabelText(/email address/i)).toBeDefined();
     expect(screen.getByRole('button', { name: /send magic link/i })).not.toBeDisabled();
+  });
+});
+
+describe('ProfileSidebar — looks', () => {
+  it('shows visual-theme previews and keeps paid looks locked on Free', () => {
+    mockUseAuth.mockReturnValue(authState());
+    render(<ProfileSidebar open onClose={() => {}} />);
+
+    expect(screen.getByText('Looks')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'froola' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'neon, locked' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText(/unlock all looks with plus/i)).toBeDefined();
+
+    fireEvent.click(screen.getByRole('button', { name: 'neon, locked' }));
+    expect(getVisualTheme().id).toBe('froola');
+  });
+
+  it('changes the live renderer palette for Plus members', () => {
+    mockUseAuth.mockReturnValue(authState({
+      profile: { plan: 'plus', betaTester: false },
+    }));
+    render(<ProfileSidebar open onClose={() => {}} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ocean' }));
+    expect(getVisualTheme().id).toBe('ocean');
+    expect(screen.getByRole('button', { name: 'ocean' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText(/unlock all looks with plus/i)).toBeNull();
   });
 });
