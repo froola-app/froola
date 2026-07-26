@@ -405,6 +405,68 @@ describe('PlayShell — record-arm rising-edge capture', () => {
   });
 });
 
+describe('PlayShell — mobile is a bare canvas', () => {
+  const realMatchMedia = window.matchMedia;
+  const realWidth = window.innerWidth;
+
+  beforeEach(() => {
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    window.matchMedia = ((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+    localStorage.removeItem('froola.tutorialSeen');
+  });
+
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+    Object.defineProperty(window, 'innerWidth', { value: realWidth, configurable: true });
+  });
+
+  it('renders the profile button and nothing else — no other buttons, links, or selects', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    render(<PlayShell />);
+
+    // Signed-out aria-label is "Sign in and settings" (signed-in: "Account
+    // and settings") — match the shared suffix.
+    const profile = screen.getByRole('button', { name: /and settings/i });
+    expect(screen.queryAllByRole('button')).toEqual([profile]);
+    expect(document.querySelector('.hud-nav')!.contains(profile)).toBe(true);
+
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+    expect(document.querySelector('.hud-capture')).toBeNull();
+    expect(document.querySelector('.hud-bottom-stack')).toBeNull();
+  });
+
+  it('does not render the beginner tutorial', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(false);
+    render(<PlayShell />);
+
+    expect(document.querySelector('.tutorial-overlay')).toBeNull();
+  });
+
+  it('still renders the canvas and the play wall when gated', () => {
+    const engine = fakeEngine();
+    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
+    mockUsePlayWall.mockReturnValue(true);
+    const { container } = render(<PlayShell />);
+
+    expect(container.querySelector('.main-canvas')).not.toBeNull();
+    expect(container.querySelector('.play-wall')).not.toBeNull();
+  });
+});
+
 describe('HUD clusters', () => {
   it('groups Record, Record video, and MP3 into a top-left capture capsule', () => {
     const engine = fakeEngine();

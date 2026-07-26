@@ -426,11 +426,9 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     <>
       <canvas ref={canvasRef} className="main-canvas" />
       {mode === 'camera' && <GlassDials />}
-      {/* Unlike Froo's post-tutorial tour and the loop panel (still
-          mobile-hidden below), this teaches hand positioning — "no
-          tutorial, no warning of the hand not being well positioned" was
-          the actual complaint, so mobile keeps it. */}
-      {showTutorial && mode === 'camera' && (
+      {/* Mobile is a bare canvas: no tutorial, no guide, no HUD — just the
+          camera and the wheels. Every control below is desktop-only. */}
+      {!isMobile && showTutorial && mode === 'camera' && (
         <BeginnerTutorial
           key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
@@ -454,7 +452,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {/* The permission screen (mode 'asking') is a full-viewport layer below
           the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
-      <div className="hud-capture">
+      {!isMobile && <div className="hud-capture">
         <RecordButton
           selectedRef={selectedRef}
           vibe={vibe}
@@ -480,22 +478,27 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           locked={!ent.audioExportUnlocked}
           onLockedClick={() => setUpsell('mp3')}
         />
-      </div>
+      </div>}
+      {/* Mobile keeps exactly one control: the profile avatar. It's the only
+          way off the play screen on a phone (sign-in, settings, upgrade), so
+          it stays while Learn/Share/Feedback go. "Replay tutorial" is desktop
+          -only because the tutorial itself doesn't render on mobile. */}
       <div className="hud-nav">
+        {!isMobile && <>
         <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
         <ShareButton />
         <FeedbackButton />
+        </>}
         <ProfileButton
-          play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
+          play={!isMobile && mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
         />
       </div>
       </>}
-      {/* Mobile keeps only the two controls that shape which notes are on
-          the wheels — instrument/octave/arp stay at their defaults
-          (synth, octave 0, arp on) and are only reachable on a wider
-          screen, so the phone HUD doesn't crowd the canvas. */}
-      {mode !== 'asking' && <div className="hud-bottom-stack">
-        {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
+      {/* Mobile gets no controls at all — instrument, key, scale, chord mode,
+          wheel, octave and arp stay at their defaults (synth, C major,
+          in-key, octave 0, arp on) and are only reachable on a wider screen. */}
+      {mode !== 'asking' && !isMobile && <div className="hud-bottom-stack">
+        {looper && mode === 'camera' && ent.loopUnlocked && (
           <LoopPanel
             looper={looper}
             state={loopState}
@@ -511,13 +514,12 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         )}
         {/* Free plans see where the looper lives — a teaser pill in the
             panel's spot that opens the upgrade sheet. */}
-        {!isMobile && mode === 'camera' && !ent.loopUnlocked && (
+        {mode === 'camera' && !ent.loopUnlocked && (
           <button className="loop-teaser" onClick={() => setUpsell('loop')}>
             Loops <LockBadge />
           </button>
         )}
         <div className="hud-bottom">
-        {!isMobile && <>
         <select
           className="instrument-select"
           value={instrumentMode}
@@ -534,7 +536,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           ))}
         </select>
         {pianoLoading && <span className="instrument-loading">loading piano…</span>}
-        </>}
         <select
           className="instrument-select"
           value={keyOffset}
@@ -583,7 +584,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         {activeWheel && ent.customWheelsUnlocked && (
           <button className="octave-btn" onClick={() => setWheelEditor('edit')} aria-label="Edit wheel">✎</button>
         )}
-        {!isMobile && <div className="octave-control" role="group" aria-label="Octave">
+        <div className="octave-control" role="group" aria-label="Octave">
           <button
             className="octave-btn"
             onClick={() => changeOctave(-1)}
@@ -603,8 +604,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           >
             +
           </button>
-        </div>}
-        {!isMobile && (ent.arpUnlocked ? <button
+        </div>
+        {ent.arpUnlocked ? <button
           className="octave-btn arp-btn"
           onClick={toggleArp}
           aria-pressed={arpEnabled}
@@ -619,8 +620,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           title="Plus turns a held chord into a rolling arpeggio pattern"
         >
           arp <LockBadge />
-        </button>)}
-        {!isMobile && (ent.mySongUnlocked ? <button
+        </button>}
+        {ent.mySongUnlocked ? <button
           className="octave-btn my-song-btn"
           onClick={() => setMySongOpen(true)}
           aria-label="My Song"
@@ -634,7 +635,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           title="Plus keeps one saved song: your lyrics+chords and stored loops"
         >
           My Song <LockBadge />
-        </button>)}
+        </button>}
         </div>
       </div>}
       {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
