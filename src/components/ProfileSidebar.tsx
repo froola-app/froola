@@ -5,6 +5,8 @@ import { useTheme, type Theme } from '../useTheme';
 import {
   listVideoRecordings,
   deleteVideoRecording,
+  localVideoBlob,
+  isShareable,
   watchUrl,
   type VideoRecording,
 } from '../engine/recording/videoRecordingStore';
@@ -45,7 +47,7 @@ function DrawerHeader({ onClose, theme }: { onClose: () => void; theme: Theme })
             <>
               <p className="profile-drawer__name">{authReady ? 'Not signed in' : 'froola'}</p>
               <p className="profile-drawer__email profile-drawer__email--wrap">
-                {authReady ? 'Progress stays on this device' : 'play it by hand'}
+                Everything stays on this device
               </p>
             </>
           )}
@@ -93,7 +95,8 @@ function ProfilePanel() {
   if (!user) {
     return (
       <p className="profile-drawer__note">
-        Sign in to keep your lesson progress and settings with you on any device.
+        Sign in to carry your recordings and lesson progress to your other devices.
+        Everything works signed out; it just stays on this one.
       </p>
     );
   }
@@ -113,28 +116,52 @@ function formatDuration(ms: number): string {
   return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 }
 
+// A cloud take can be handed to anyone, so it offers a link. A local take
+// only exists in this browser, so it offers the file instead — promising a
+// share link for something nobody else can load would be a lie.
 function RecordingRow({ rec, onDeleted }: { rec: VideoRecording; onDeleted: () => void }) {
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const shareable = isShareable(rec);
   const date = new Date(rec.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+  async function download() {
+    const blob = await localVideoBlob(rec.id);
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `froola-${rec.id}.${rec.mime === 'video/mp4' ? 'mp4' : 'webm'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
   return (
     <div className="profile-drawer__row">
       <div className="profile-drawer__row-text">
         <p className="profile-drawer__row-label">
           <a href={watchUrl(rec.id)} target="_blank" rel="noreferrer">{formatDuration(rec.durationMs)} take</a>
         </p>
-        <p className="profile-drawer__row-hint">{date}</p>
+        <p className="profile-drawer__row-hint">{shareable ? date : `${date} · on this device`}</p>
       </div>
-      <button
-        className="profile-drawer__row-btn"
-        onClick={async () => {
-          await copyToClipboard(watchUrl(rec.id));
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }}
-      >
-        {copied ? 'Copied!' : 'Copy link'}
-      </button>
+      {shareable ? (
+        <button
+          className="profile-drawer__row-btn"
+          onClick={async () => {
+            await copyToClipboard(watchUrl(rec.id));
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? 'Copied!' : 'Copy link'}
+        </button>
+      ) : (
+        <button className="profile-drawer__row-btn" onClick={() => void download()}>
+          Download
+        </button>
+      )}
       <button
         className="profile-drawer__row-btn"
         disabled={deleting}
@@ -152,7 +179,7 @@ function RecordingRow({ rec, onDeleted }: { rec: VideoRecording; onDeleted: () =
 }
 
 function RecordingsPanel({ open }: { open: boolean }) {
-  const { user, authReady } = useAuth();
+  const { user } = useAuth();
   // null = fetch failed / unavailable, undefined = fetching.
   const [recordings, setRecordings] = useState<VideoRecording[] | null | undefined>(undefined);
 
@@ -161,19 +188,12 @@ function RecordingsPanel({ open }: { open: boolean }) {
   // the previous list stays up (stale-while-revalidate), which is why there's
   // no synchronous reset here.
   useEffect(() => {
-    if (!open || !user) return;
+    if (!open) return;
     let cancelled = false;
     void listVideoRecordings().then(list => { if (!cancelled) setRecordings(list); });
     return () => { cancelled = true; };
   }, [open, user]);
 
-  if (!authReady || !user) {
-    return (
-      <p className="profile-drawer__note">
-        Sign in to keep your recordings and share links here.
-      </p>
-    );
-  }
   if (recordings === undefined) return <p className="profile-drawer__note">Loading…</p>;
   if (recordings === null) return <p className="profile-drawer__note">Couldn&apos;t load recordings. Try again in a moment.</p>;
 
@@ -184,8 +204,8 @@ function RecordingsPanel({ open }: { open: boolean }) {
       <p className="profile-drawer__note">{count}</p>
       {recordings.length === 0 && (
         <p className="profile-drawer__note">
-          Nothing yet — hit Record on the play screen and your take lands here
-          with a share link.
+          Nothing yet. Hit Record on the play screen and your take lands here,
+          kept on this device unless you&apos;re signed in.
         </p>
       )}
       {recordings.map(rec => (

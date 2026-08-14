@@ -4,16 +4,19 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLessonProgress } from './useLessonProgress';
 import { DRILL_BANK } from './drillBank';
 import { initialBoxState, nextBoxState, isDue } from './leitner';
+import { readProgress, saveProgressEntry } from './progressStore';
 import { supabase, supabaseConfigured } from '../../supabase';
 
 // Drills the user is eligible to review (their introducing lesson is passed),
 // filtered down to the ones currently due, plus a function to record a
-// pass/fail and advance the Leitner schedule. Degrades gracefully — same
-// pattern as useLessonProgress — when Supabase isn't configured.
+// pass/fail and advance the Leitner schedule. Same storage rule as
+// useLessonProgress: this device always, the account too when there is one.
 export function useReviewProgress() {
   const { user, authReady } = useAuth();
   const { allProgress: lessonProgress } = useLessonProgress();
-  const [allProgress, setAllProgress] = useState<Record<string, DrillProgress>>({});
+  const [allProgress, setAllProgress] = useState<Record<string, DrillProgress>>(
+    () => readProgress<DrillProgress>('review'),
+  );
 
   useEffect(() => {
     if (!authReady || !user || !supabaseConfigured) return;
@@ -30,7 +33,7 @@ export function useReviewProgress() {
           lastReviewedAt: row.last_reviewed_at,
         };
       });
-      setAllProgress(map);
+      setAllProgress(prev => ({ ...prev, ...map }));
     });
     return () => { cancelled = true; };
   }, [user, authReady]);
@@ -59,6 +62,8 @@ export function useReviewProgress() {
       lastReviewedAt: Date.now(),
     };
     setAllProgress(prev => ({ ...prev, [drillId]: progress }));
+    saveProgressEntry('review', drillId, progress);
+
     if (!authReady || !user || !supabase) return;
     try {
       await supabase.from('review_progress').upsert({
@@ -70,7 +75,7 @@ export function useReviewProgress() {
         last_result: progress.lastResult,
         last_reviewed_at: progress.lastReviewedAt,
       });
-    } catch { /* database unavailable */ }
+    } catch { /* database unavailable; the local copy already landed */ }
   }, [allProgress, user, authReady]);
 
   return {

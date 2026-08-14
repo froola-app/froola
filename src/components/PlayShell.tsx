@@ -274,7 +274,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         engineRef={engineRef}
         maxDurationMs={ent.maxVideoRecordMs}
         watermark={ent.recordingWatermark}
-        maxRecordings={ent.maxRecordings}
       />
       <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
       <ProfileButton

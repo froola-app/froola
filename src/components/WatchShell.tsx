@@ -13,7 +13,7 @@ export default function WatchShell() {
 
   // undefined = fetching, null = unknown/deleted link. A missing ?v= is
   // derived below rather than set in the effect.
-  const [fetched, setFetched] = useState<{ url: string; mime: string } | null | undefined>(undefined);
+  const [fetched, setFetched] = useState<{ url: string; mime: string; local: boolean } | null | undefined>(undefined);
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -40,7 +40,8 @@ export default function WatchShell() {
       <div className="watch-screen">
         <FroolaLogo size={48} color={logoColor} />
         <p className="watch-note">
-          This recording is gone — its owner rerecorded or deleted it.
+          This recording isn&apos;t here. It was deleted, or it only ever
+          existed in the browser that made it.
         </p>
         <button className="btn-primary" onClick={() => navigate('/play')}>
           Make your own →
