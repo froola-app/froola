@@ -96,7 +96,7 @@ npm run build       # typecheck + production build
 npm run test        # vitest run
 npm run test:watch  # vitest watch
 npm run lint        # eslint
-npx tsc --noEmit    # typecheck only
+npm run typecheck   # tsc -b, no emit
 ```
 
 ## Browser support

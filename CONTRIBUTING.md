@@ -20,7 +20,7 @@ Before opening a pull request:
 ```bash
 npm run test
 npm run lint
-npx tsc --noEmit
+npm run typecheck
 ```
 
 CI runs the same three.
