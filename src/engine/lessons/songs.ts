@@ -1,12 +1,12 @@
 import type { Lesson } from './types';
 import { seq, step, chord } from './builders';
 
-// Song lessons — real songs' chord progressions, taught in chunks and then
+// Song lessons — well-worn chord progressions, taught in chunks and then
 // played full-speed over a synthesized backing track (see SongBackingTrack).
 //
-// Only the chord progression is reproduced — never melody, lyrics, or audio —
-// so nothing copyrightable is copied. Titles/artists are used nominatively to
-// identify which song's changes are being taught.
+// Only the progression is here: never a melody, a lyric, or any audio, and no
+// song titles or artist names either. Chord progressions aren't copyrightable,
+// and each lesson names the style it evokes rather than a record it copies.
 //
 // Chords are authored in even beat counts and every bpm keeps a 2-beat chord
 // on the 100ms recording sample grid ((120000 / bpm) % 100 === 0).
@@ -14,20 +14,20 @@ import { seq, step, chord } from './builders';
 // noteIdx = scale degree on the left wheel for the lesson's key/scale.
 // qualIdx: triad=0 6th=1 7th=2 9th=3 add9=4 sus2=5 sus4=6.
 
-// ── Let It Be — The Beatles ── C major: C(0) G(4) Am(5) F(3) ──
+// ── The Four-Chord Loop ── C major: C(0) G(4) Am(5) F(3) ──
 
 const LIB = 75;
 
-const letItBe: Lesson = {
-  id: 'song-let-it-be',
-  title: 'Let It Be',
-  subtitle: 'The Beatles — the four-chord loop that powers half of pop music',
+const fourChordLoop: Lesson = {
+  id: 'song-four-chord-loop',
+  title: 'The Four-Chord Loop',
+  subtitle: 'The four chords that power half of pop music',
   kind: 'song',
-  artist: 'The Beatles',
+  style: 'In the style of sixties pop',
   difficulty: 'beginner',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: LIB,
-  backing: 'let-it-be',
+  backing: 'four-chord-loop',
   progression: ['C', 'G', 'Am', 'F'],
   steps: [
     step(
@@ -61,20 +61,20 @@ const letItBe: Lesson = {
   tags: ['song', 'I-V-vi-IV', 'C major'],
 };
 
-// ── Stand By Me — Ben E. King ── C major: C(0) Am(5) F(3) G(4) ──
+// ── The Doo-Wop Changes ── C major: C(0) Am(5) F(3) G(4) ──
 
 const SBM = 120;
 
-const standByMe: Lesson = {
-  id: 'song-stand-by-me',
-  title: 'Stand By Me',
-  subtitle: 'Ben E. King — the ’50s progression behind a thousand doo-wop songs',
+const dooWopChanges: Lesson = {
+  id: 'song-doo-wop-changes',
+  title: 'The Doo-Wop Changes',
+  subtitle: 'The progression behind a thousand doo-wop records',
   kind: 'song',
-  artist: 'Ben E. King',
+  style: 'In the style of fifties soul',
   difficulty: 'beginner',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: SBM,
-  backing: 'stand-by-me',
+  backing: 'doo-wop-changes',
   progression: ['C', 'Am', 'F', 'G'],
   steps: [
     step(
@@ -105,21 +105,21 @@ const standByMe: Lesson = {
   tags: ['song', "'50s progression", 'C major'],
 };
 
-// ── Best Part — Daniel Caesar ── C major 7ths: F7(3,2) Em7(2,2) Dm7(1,2) C7(0,2) ──
+// ── Dreamy Sevenths ── C major 7ths: F7(3,2) Em7(2,2) Dm7(1,2) C7(0,2) ──
 // (Wheel labels show the diatonic 7th — F7 here sounds as Fmaj7, C7 as Cmaj7.)
 
 const BP = 80;
 
-const bestPart: Lesson = {
-  id: 'song-best-part',
-  title: 'Best Part',
-  subtitle: 'Daniel Caesar — a slow descent through dreamy seventh chords',
+const dreamySevenths: Lesson = {
+  id: 'song-dreamy-sevenths',
+  title: 'Dreamy Sevenths',
+  subtitle: 'A slow descent through dreamy seventh chords',
   kind: 'song',
-  artist: 'Daniel Caesar',
+  style: 'In the style of modern R&B',
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: BP,
-  backing: 'best-part',
+  backing: 'dreamy-sevenths',
   progression: ['F7', 'Em7', 'Dm7', 'C7'],
   steps: [
     step(
@@ -147,20 +147,20 @@ const bestPart: Lesson = {
   tags: ['song', 'sevenths', 'neo-soul'],
 };
 
-// ── Someone Like You — Adele ── A major (keyOffset 9): A(0) E(4) F#m(5) D(3) ──
+// ── Four Chords, New Key ── A major (keyOffset 9): A(0) E(4) F#m(5) D(3) ──
 
 const SLY = 75;
 
-const someoneLikeYou: Lesson = {
-  id: 'song-someone-like-you',
-  title: 'Someone Like You',
-  subtitle: 'Adele — the same four-chord shape you already know, in a brand-new key',
+const fourChordsNewKey: Lesson = {
+  id: 'song-four-chords-new-key',
+  title: 'Four Chords, New Key',
+  subtitle: 'The four-chord shape you already know, moved somewhere new',
   kind: 'song',
-  artist: 'Adele',
+  style: 'In the style of piano ballads',
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 9, scale: 'major' },
   bpm: SLY,
-  backing: 'someone-like-you',
+  backing: 'four-chords-new-key',
   progression: ['A', 'E', 'F#m', 'D'],
   steps: [
     step(
@@ -173,7 +173,7 @@ const someoneLikeYou: Lesson = {
       'sly-s2',
       'The fall: F#m → D',
       seq(chord(5, 0, 4, SLY), chord(3, 0, 4, SLY), chord(5, 0, 4, SLY), chord(3, 0, 4, SLY)),
-      { hint: 'Same slices as Am → F in Let It Be — the shape transfers between keys' },
+      { hint: 'Same slices as the Am → F you already played — the shape transfers between keys' },
     ),
     step(
       'sly-s3',
@@ -188,24 +188,24 @@ const someoneLikeYou: Lesson = {
   tags: ['song', 'new key', 'A major'],
 };
 
-// ── Love Yourself — Justin Bieber ── E major (keyOffset 4): E(0) B(4) C#m(5) A(3) ──
+// ── The Sparse Loop ── E major (keyOffset 4): E(0) B(4) C#m(5) A(3) ──
 
 const LY = 100;
 
-const loveYourself: Lesson = {
-  id: 'song-love-yourself',
-  title: 'Love Yourself',
-  subtitle: 'Justin Bieber — a sparse guitar loop where every change counts',
+const sparseLoop: Lesson = {
+  id: 'song-sparse-loop',
+  title: 'The Sparse Loop',
+  subtitle: 'A spare guitar loop where every change counts',
   kind: 'song',
-  artist: 'Justin Bieber',
+  style: 'In the style of acoustic pop',
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 4, scale: 'major' },
   bpm: LY,
-  backing: 'love-yourself',
+  backing: 'sparse-loop',
   // Locally-generated melody data (gitignored; see tools/melody-extract).
   // When the file exists, the verse step plays the lead line over the groove.
-  melodyAsset: '/melodies/love-yourself.json',
-  audioBackingAsset: '/melodies/love-yourself-backing.wav',
+  melodyAsset: '/melodies/sparse-loop.json',
+  audioBackingAsset: '/melodies/sparse-loop-backing.wav',
   melodyStepId: 'ly-s3',
   progression: ['E', 'B', 'C#m', 'A'],
   steps: [
@@ -237,20 +237,20 @@ const loveYourself: Lesson = {
   tags: ['song', 'I-V-vi-IV', 'E major'],
 };
 
-// ── Zombie — The Cranberries ── E minor (keyOffset 4): Em(0) C(5) G(2) D(6) ──
+// ── Minor Four ── E minor (keyOffset 4): Em(0) C(5) G(2) D(6) ──
 
 const ZOM = 80;
 
-const zombie: Lesson = {
-  id: 'song-zombie',
-  title: 'Zombie',
-  subtitle: 'The Cranberries — four chords in a minor key, heavy and hypnotic',
+const minorFour: Lesson = {
+  id: 'song-minor-four',
+  title: 'Minor Four',
+  subtitle: 'Four chords in a minor key, heavy and hypnotic',
   kind: 'song',
-  artist: 'The Cranberries',
+  style: 'In the style of nineties alt-rock',
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 4, scale: 'minor' },
   bpm: ZOM,
-  backing: 'zombie',
+  backing: 'minor-four',
   progression: ['Em', 'C', 'G', 'D'],
   steps: [
     step(
@@ -278,20 +278,20 @@ const zombie: Lesson = {
   tags: ['song', 'minor key', 'E minor'],
 };
 
-// ── Hallelujah — Leonard Cohen ── C major: C(0) Am(5) F(3) G(4) ──
+// ── The Rising Cadence ── C major: C(0) Am(5) F(3) G(4) ──
 
 const HAL = 60;
 
-const hallelujah: Lesson = {
-  id: 'song-hallelujah',
-  title: 'Hallelujah',
-  subtitle: 'Leonard Cohen — the song whose lyrics narrate its own chords',
+const risingCadence: Lesson = {
+  id: 'song-rising-cadence',
+  title: 'The Rising Cadence',
+  subtitle: 'A progression that climbs and resolves like a chorus',
   kind: 'song',
-  artist: 'Leonard Cohen',
+  style: 'In the style of folk balladry',
   difficulty: 'intermediate',
   musicConfig: { keyOffset: 0, scale: 'major' },
   bpm: HAL,
-  backing: 'hallelujah',
+  backing: 'rising-cadence',
   progression: ['C', 'Am', 'F', 'G'],
   steps: [
     step(
@@ -326,20 +326,20 @@ const hallelujah: Lesson = {
   tags: ['song', 'ballad', 'C major'],
 };
 
-// ── Wonderwall — Oasis ── A mixolydian (keyOffset 9): Em7(4,7th) G(6) Dsus4(3,sus4) Asus4(0,sus4) ──
+// ── Sus and Sevenths ── A mixolydian (keyOffset 9): Em7(4,7th) G(6) Dsus4(3,sus4) Asus4(0,sus4) ──
 
 const WW = 80;
 
-const wonderwall: Lesson = {
-  id: 'song-wonderwall',
-  title: 'Wonderwall',
-  subtitle: 'Oasis — sevenths and sus chords give it that unresolved shimmer',
+const susAndSevenths: Lesson = {
+  id: 'song-sus-and-sevenths',
+  title: 'Sus and Sevenths',
+  subtitle: 'Sevenths and sus chords, for that unresolved shimmer',
   kind: 'song',
-  artist: 'Oasis',
+  style: 'In the style of Britpop',
   difficulty: 'advanced',
   musicConfig: { keyOffset: 9, scale: 'mixolydian' },
   bpm: WW,
-  backing: 'wonderwall',
+  backing: 'sus-and-sevenths',
   progression: ['Em7', 'G', 'Dsus4', 'Asus4'],
   steps: [
     step(
@@ -368,12 +368,12 @@ const wonderwall: Lesson = {
 };
 
 export const SONGS: Lesson[] = [
-  letItBe,
-  standByMe,
-  bestPart,
-  someoneLikeYou,
-  loveYourself,
-  zombie,
-  hallelujah,
-  wonderwall,
+  fourChordLoop,
+  dooWopChanges,
+  dreamySevenths,
+  fourChordsNewKey,
+  sparseLoop,
+  minorFour,
+  risingCadence,
+  susAndSevenths,
 ];

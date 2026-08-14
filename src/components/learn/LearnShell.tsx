@@ -185,7 +185,7 @@ function LessonSession({ lesson }: { lesson: Lesson }) {
         <div className="lesson-start-screen">
           <div className="lesson-start-card">
             <p className="lesson-start__eyebrow">
-              {lesson.kind === 'song' ? lesson.artist : `Technique · ${lesson.difficulty}`}
+              {lesson.kind === 'song' ? lesson.style : `Technique · ${lesson.difficulty}`}
             </p>
             <h2 className="lesson-start__title">{lesson.title}</h2>
             <p className="lesson-start__subtitle">{lesson.subtitle}</p>

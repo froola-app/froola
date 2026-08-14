@@ -11,14 +11,14 @@ export type LessonKind = 'technique' | 'song';
 // bespoke per-song arrangement (drums, bassline rhythm, chord/arpeggio voice)
 // defined in SongBackingTrack.ts; 'pop' is the generic fallback.
 export type BackingStyle =
-  | 'let-it-be'
-  | 'stand-by-me'
-  | 'best-part'
-  | 'someone-like-you'
-  | 'love-yourself'
-  | 'zombie'
-  | 'hallelujah'
-  | 'wonderwall'
+  | 'four-chord-loop'
+  | 'doo-wop-changes'
+  | 'dreamy-sevenths'
+  | 'four-chords-new-key'
+  | 'sparse-loop'
+  | 'minor-four'
+  | 'rising-cadence'
+  | 'sus-and-sevenths'
   | 'pop';
 
 export type LessonStep = {
@@ -39,8 +39,9 @@ export type Lesson = {
   musicConfig: MusicConfig;
   steps: LessonStep[];
   tags: string[];
-  /** Song lessons only — credited artist, shown in the catalog. */
-  artist?: string;
+  /** Song lessons only — the style the progression evokes, shown in the
+      catalog. Not a credit: these lessons teach changes, not records. */
+  style?: string;
   /** Song lessons only — drives the backing track and chord pacing. */
   bpm?: number;
   /** Song lessons only — display chips for the loop, e.g. ['C','G','Am','F']. */

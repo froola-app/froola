@@ -12,7 +12,7 @@ describe('learning path', () => {
 
   it('starts with a technique lesson and looks up by id', () => {
     expect(LEARNING_PATH[0].kind).toBe('technique');
-    expect(lessonById('song-let-it-be')?.title).toBe('Let It Be');
+    expect(lessonById('song-four-chord-loop')?.title).toBe('The Four-Chord Loop');
   });
 
   it('walks to the next lesson and ends after the last', () => {
@@ -22,10 +22,10 @@ describe('learning path', () => {
 });
 
 describe('song lessons', () => {
-  it('every song has an artist, bpm, and progression chips', () => {
+  it('every song has a style, bpm, and progression chips', () => {
     for (const s of SONGS) {
       expect(s.kind).toBe('song');
-      expect(s.artist).toBeTruthy();
+      expect(s.style).toBeTruthy();
       expect(s.bpm).toBeGreaterThan(0);
       expect(s.progression?.length).toBeGreaterThan(1);
     }

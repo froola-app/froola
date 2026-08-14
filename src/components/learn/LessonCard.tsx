@@ -68,7 +68,7 @@ export function JourneyCard({ lesson, progress, isNext, isComplete }: Props) {
         <button className="jcard jcard--song" onClick={() => navigate(`/learn/${lesson.id}`)}>
           <span className="jcard__song-head">
             <span>
-              {lesson.artist && <span className="jcard__artist">{lesson.artist}</span>}
+              {lesson.style && <span className="jcard__artist">{lesson.style}</span>}
               <span className="jcard__title">{lesson.title}</span>
             </span>
             <span className={`jcard__diff jcard__diff--${lesson.difficulty}`}>{lesson.difficulty}</span>
@@ -107,7 +107,7 @@ export function UpNextCard({ lesson, isStart }: { lesson: Lesson; isStart: boole
         <span className="upnext__kind">{isSong ? 'Song' : 'Drill'}</span>
       </p>
 
-      {isSong && lesson.artist && <p className="upnext__artist">{lesson.artist}</p>}
+      {isSong && lesson.style && <p className="upnext__artist">{lesson.style}</p>}
       <h2 className="upnext__title">{lesson.title}</h2>
       <p className="upnext__subtitle">{lesson.subtitle}</p>
 

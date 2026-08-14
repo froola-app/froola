@@ -167,17 +167,17 @@ const byId = (id: string): Lesson => {
 
 export const LEARNING_PATH: Lesson[] = [
   byId('first-chord'),          // land a chord; first taste of the right wheel
-  byId('song-let-it-be'),       // first real song with those chords
+  byId('song-four-chord-loop'),  // first song lesson with those chords
   byId('around-the-wheel'),     // navigate all 7 degrees
-  byId('song-stand-by-me'),     // reordered loop, faster changes
+  byId('song-doo-wop-changes'),  // reordered loop, faster changes
   byId('extensions'),           // right-wheel colours in depth
-  byId('song-best-part'),       // whole song on 7th chords
-  byId('song-someone-like-you'),// same shape, new key (A major)
-  byId('song-love-yourself'),   // another key (E major), song-speed changes
-  byId('song-zombie'),          // minor-key mode
-  byId('song-hallelujah'),      // longer form, slow control
+  byId('song-dreamy-sevenths'),  // a whole lesson on 7th chords
+  byId('song-four-chords-new-key'), // same shape, new key (A major)
+  byId('song-sparse-loop'),      // another key (E major), song-speed changes
+  byId('song-minor-four'),       // minor-key mode
+  byId('song-rising-cadence'),   // longer form, slow control
   byId('fist-solo'),            // chord lock + melody
-  byId('song-wonderwall'),      // finale: 7ths + sus4 in mixolydian
+  byId('song-sus-and-sevenths'), // finale: 7ths + sus4 in mixolydian
 ];
 
 // Technique drills and songs, in LEARNING_PATH order, for the catalog's

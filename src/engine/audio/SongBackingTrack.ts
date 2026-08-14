@@ -7,8 +7,9 @@ import type { BackingStyle } from '../lessons/types'
 // A synthesized "band" for song lessons, arranged per song so each backing
 // track carries the feel of the original record: its groove, bassline rhythm,
 // and — crucially — a pad/arpeggio voice playing the actual chord voicings
-// (piano quarters for Let It Be, walking '50s bass for Stand By Me, 6/8
-// broken chords for Hallelujah, driving eighths for Zombie, …).
+// (piano quarters for the four-chord loop, walking '50s bass for the doo-wop
+// changes, 6/8 broken chords for the rising cadence, driving eighths for the
+// minor four, …).
 // Runs through its own low-gain bus into the engine's master so it sits under
 // the user's playing instead of competing with it.
 
@@ -54,7 +55,7 @@ const QUARTERS = [0, 4, 8, 12]
 
 const ARRANGEMENTS: Record<string, Arrangement> = {
   // Piano ballad: block piano chords on the quarters, simple heartbeat drums.
-  'let-it-be': {
+  'four-chord-loop': {
     stepsPerBeat: 4, patternLen: 16,
     kick: [0, 8], snare: [4, 12], hat: [],
     bass: [{ step: 0, interval: 0 }, { step: 8, interval: 0 }], bassDecay: 1.0,
@@ -63,7 +64,7 @@ const ARRANGEMENTS: Record<string, Arrangement> = {
   },
   // Doo-wop: the walking root-fifth bass IS the texture — bass forward,
   // brushed backbeat, everything else sparse.
-  'stand-by-me': {
+  'doo-wop-changes': {
     stepsPerBeat: 4, patternLen: 16,
     kick: [0], snare: [4, 12], hat: QUARTERS,
     bass: [
@@ -74,7 +75,7 @@ const ARRANGEMENTS: Record<string, Arrangement> = {
     gains: { bass: 1.25, snare: 0.5, hat: 0.5 },
   },
   // Neo-soul: swung 16th feel, soft backbeat, fingerpicked broken chords.
-  'best-part': {
+  'dreamy-sevenths': {
     stepsPerBeat: 4, patternLen: 16, swing: 0.58,
     kick: [0, 10], snare: [4, 12], hat: EIGHTHS,
     bass: [{ step: 0, interval: 0 }, { step: 8, interval: 7 }], bassDecay: 0.8,
@@ -86,7 +87,7 @@ const ARRANGEMENTS: Record<string, Arrangement> = {
     gains: { snare: 0.5, hat: 0.55 },
   },
   // Solo-piano ballad: continuous 16th-note arpeggios, no drums.
-  'someone-like-you': {
+  'four-chords-new-key': {
     stepsPerBeat: 4, patternLen: 8,
     kick: [], snare: [], hat: [],
     bass: [{ step: 0, interval: 0 }], bassDecay: 1.6,
@@ -97,7 +98,7 @@ const ARRANGEMENTS: Record<string, Arrangement> = {
     padDecay: 0.6, padGain: 0.55,
   },
   // Sparse guitar pop: plucked chord tones over a soft four-on-the-floor thump.
-  'love-yourself': {
+  'sparse-loop': {
     stepsPerBeat: 4, patternLen: 16,
     kick: QUARTERS, snare: [], hat: [],
     bass: [{ step: 0, interval: 0 }], bassDecay: 0.4,

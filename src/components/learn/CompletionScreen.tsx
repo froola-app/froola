@@ -33,7 +33,7 @@ export default function CompletionScreen({ lesson, stepResults, totalScore, next
           {lesson.kind === 'song' ? 'Song complete' : 'Lesson complete'}
         </p>
         <h2 className="lesson-complete__title">{lesson.title}</h2>
-        {lesson.artist && <p className="lesson-complete__artist">{lesson.artist}</p>}
+        {lesson.style && <p className="lesson-complete__artist">{lesson.style}</p>}
 
         <div className="lesson-complete__stars" aria-label={`${stars} of 3 stars`}>
           {[1, 2, 3].map(n => (

@@ -15,7 +15,7 @@ import ThemeToggle from './ThemeToggle';
 
 // Real songs from the lesson curriculum — the marquee shows the product's
 // soul (what you actually get to play) instead of empty hero margins.
-const MARQUEE_SONGS = SONG_PATH.map(s => ({ title: s.title, artist: s.artist ?? '' }));
+const MARQUEE_SONGS = SONG_PATH.map(s => ({ title: s.title, style: s.style ?? '' }));
 
 const STEPS = [
   {
@@ -146,7 +146,7 @@ export default function LandingPage() {
             {[...MARQUEE_SONGS, ...MARQUEE_SONGS].map((s, i) => (
               <span className="lp4__song-chip" key={`a-${i}`}>
                 <span className="lp4__song-title">{s.title}</span>
-                <span className="lp4__song-artist">{s.artist}</span>
+                <span className="lp4__song-artist">{s.style}</span>
               </span>
             ))}
           </div>
@@ -154,7 +154,7 @@ export default function LandingPage() {
             {[...MARQUEE_SONGS].reverse().concat([...MARQUEE_SONGS].reverse()).map((s, i) => (
               <span className="lp4__song-chip" key={`b-${i}`}>
                 <span className="lp4__song-title">{s.title}</span>
-                <span className="lp4__song-artist">{s.artist}</span>
+                <span className="lp4__song-artist">{s.style}</span>
               </span>
             ))}
           </div>
