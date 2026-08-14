@@ -29,8 +29,11 @@ dist-ssr
 
 CLAUDE.md
 CLAUDE.track-b.md
-# Internal docs — keep off GitHub
-docs/
+# Internal docs stay off GitHub; published docs are opted in one at a time.
+# (docs/* rather than docs/ — git won't descend into an ignored directory, so
+# the negation below would never be reached.)
+docs/*
+!docs/ARCHITECTURE.md
 
 # Licensed melody data — generated locally by tools/melody-extract, never committed
 public/melodies/
