@@ -8,7 +8,7 @@ import Footer from './Footer';
 import FroolaLogo from './FroolaLogo';
 import HeroDials from './HeroDials';
 import LivingLogo from './LivingLogo';
-import PricingSection from './PricingSection';
+import OpenSourceSection from './OpenSourceSection';
 import ProfileButton from './ProfileButton';
 import SmileAccent from './SmileAccent';
 import ThemeToggle from './ThemeToggle';
@@ -37,7 +37,7 @@ const FACTS = [
   'Runs entirely in your browser',
   'No video ever leaves your device',
   'Nothing to install',
-  'Free to start',
+  'Free and open source',
 ];
 
 export default function LandingPage() {
@@ -167,14 +167,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <PricingSection />
+      <OpenSourceSection />
 
       {/* Final CTA — the one playful brand moment. */}
       <div className="lp4__cta-band-wrap" data-reveal>
         <section className="lp4__cta-band">
           <LivingLogo excited={bandExcited} />
           <h2 className="lp4__h2">Ready to play?</h2>
-          <p className="lp4__cta-band-sub">Free to start. Nothing to install.</p>
+          <p className="lp4__cta-band-sub">Free and open source. Nothing to install.</p>
           <div
             className="lp4__ctas"
             onPointerEnter={() => setBandExcited(true)}

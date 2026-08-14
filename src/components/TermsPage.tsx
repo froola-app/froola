@@ -1,10 +1,11 @@
 import LegalShell from './LegalShell';
+import { REPO_URL } from './OpenSourceSection';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
 export default function TermsPage() {
   return (
-    <LegalShell title="Terms of Use" updated="July 18, 2026">
+    <LegalShell title="Terms of Use" updated="August 13, 2026">
       <p>
         These terms are the agreement between you and froola when you use the froola
         website and instrument. They're short on purpose. Please read them.
@@ -13,9 +14,9 @@ export default function TermsPage() {
       <h2>Using froola</h2>
       <p>
         froola is a browser instrument: your camera reads your hands and your hands make
-        the music. You can play free without an account. Some features require an account
-        or a paid plan. Use froola only in ways that are legal and that don't harm the
-        service or other people.
+        the music. Every feature is free, and you can play without an account. Signing in
+        only saves your recordings and lesson progress across devices. Use froola only in
+        ways that are legal and that don't harm the service or other people.
       </p>
 
       <h2>Your account</h2>
@@ -27,19 +28,10 @@ export default function TermsPage() {
         account has been compromised.
       </p>
 
-      <h2>Plans, billing, and cancellation</h2>
+      <h2>Nothing to pay</h2>
       <p>
-        Paid plans are billed weekly or monthly through Stripe and renew automatically
-        until cancelled. You can cancel at any time from your billing settings; your plan
-        stays active until the end of the period you've paid for. If the price of a plan
-        you're on changes, we'll tell you before you're charged the new amount.
-      </p>
-
-      <h2>Refunds</h2>
-      <p>
-        Because plans can be cancelled at any time, payments are generally not refundable,
-        except where the law requires otherwise. If something went wrong with a charge,
-        email us and we'll make it right.
+        froola is free and open source. There are no plans, no subscriptions, and nothing
+        to cancel. We don't take payment information at all.
       </p>
 
       <h2>Your recordings</h2>
@@ -52,17 +44,19 @@ export default function TermsPage() {
 
       <h2>froola's content</h2>
       <p>
-        The froola product, including its design, lessons, code, and brand, belongs to
-        froola. Lessons teach chords and technique; the songs they reference remain the
-        property of their rights holders.
+        The froola source code is released under the MIT license and lives at{' '}
+        <a href={REPO_URL} target="_blank" rel="noreferrer">{REPO_URL}</a>; that license,
+        not this page, governs what you may do with the code. The froola name and brand
+        mark stay ours. Lessons teach chords and technique in the style of well-known
+        songs; the songs themselves remain the property of their rights holders.
       </p>
 
       <h2>The service, as is</h2>
       <p>
         froola is provided as is. We work to keep it available and working well, but we
         can't promise it will always be uninterrupted or error-free. To the extent the law
-        allows, froola isn't liable for indirect damages from using the service, and our
-        total liability is limited to what you've paid us in the past twelve months.
+        allows, froola isn't liable for damages arising from using the service. If you run
+        your own copy of the code, the MIT license's warranty disclaimer applies to it.
       </p>
 
       <h2>Ending things</h2>

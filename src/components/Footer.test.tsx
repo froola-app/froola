@@ -46,6 +46,6 @@ describe('legal pages', () => {
   it('renders the terms of use', () => {
     render(<TermsPage />);
     expect(screen.getByRole('heading', { level: 1, name: /terms of use/i })).toBeInTheDocument();
-    expect(screen.getByText(/renew automatically until cancelled/i)).toBeInTheDocument();
+    expect(screen.getByText(/no plans, no subscriptions/i)).toBeInTheDocument();
   });
 });

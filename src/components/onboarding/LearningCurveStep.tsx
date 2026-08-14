@@ -25,7 +25,7 @@ export default function LearningCurveStep({ onContinue }: Props) {
         ))}
       </ul>
       <button className="onboarding-btn" onClick={onContinue}>
-        Got it →
+        Start playing →
       </button>
     </div>
   );

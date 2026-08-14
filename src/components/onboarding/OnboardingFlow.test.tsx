@@ -28,11 +28,8 @@ describe('OnboardingFlow', () => {
     fireEvent.click(screen.getByText('Just for fun'));
     expect(screen.getByText('A quick heads-up')).toBeInTheDocument();
 
-    // Step 2 → 3.
-    fireEvent.click(screen.getByText('Got it →'));
-    expect(
-      screen.getByText("Free forever, upgrade when you're ready")
-    ).toBeInTheDocument();
+    // Two steps, not three: the plan overview went away with the plans.
+    expect(screen.getByLabelText('Step 2 of 2')).toBeInTheDocument();
     expect(screen.getByText('Start playing →')).toBeInTheDocument();
   });
 

@@ -7,11 +7,10 @@ import FroolaLogo from '../FroolaLogo';
 import ThemeToggle from '../ThemeToggle';
 import UserTypeStep from './UserTypeStep';
 import LearningCurveStep from './LearningCurveStep';
-import PricingStep from './PricingStep';
 
-type Step = 'user-type' | 'learning-curve' | 'pricing';
+type Step = 'user-type' | 'learning-curve';
 
-const ORDER: Step[] = ['user-type', 'learning-curve', 'pricing'];
+const ORDER: Step[] = ['user-type', 'learning-curve'];
 
 export default function OnboardingFlow() {
   const [step, setStep] = useState<Step>('user-type');
@@ -25,11 +24,9 @@ export default function OnboardingFlow() {
     setStep('learning-curve');
   }
 
-  function handleLearningCurveContinue() {
-    setStep('pricing');
-  }
-
-  async function handlePricingContinue() {
+  // Onboarding used to end on a plan overview. With nothing to sell, the
+  // learning-curve step is the last one and finishes the flow.
+  async function handleLearningCurveContinue() {
     await completeOnboarding(selectedType);
     navigate('/');
   }
@@ -63,9 +60,6 @@ export default function OnboardingFlow() {
         )}
         {step === 'learning-curve' && (
           <LearningCurveStep onContinue={handleLearningCurveContinue} />
-        )}
-        {step === 'pricing' && (
-          <PricingStep onContinue={handlePricingContinue} />
         )}
       </main>
     </div>

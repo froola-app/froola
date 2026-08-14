@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { REPO_URL } from './OpenSourceSection';
 
 const CONTACT_EMAIL = 'supportfroola@gmail.com';
 
@@ -12,7 +13,6 @@ const COLUMNS: { head: string; links: FooterLink[] }[] = [
     links: [
       { label: 'Start playing', to: '/play' },
       { label: 'How it works', href: '/#how' },
-      { label: 'Pricing', to: '/pricing' },
     ],
   },
   {
@@ -20,6 +20,14 @@ const COLUMNS: { head: string; links: FooterLink[] }[] = [
     links: [
       { label: 'Lessons', to: '/learn' },
       { label: 'Song path', href: '/#songs' },
+    ],
+  },
+  {
+    head: 'Open source',
+    links: [
+      { label: 'Source on GitHub', href: REPO_URL },
+      { label: 'MIT license', href: `${REPO_URL}/blob/main/LICENSE` },
+      { label: 'Contributing', href: `${REPO_URL}/blob/main/CONTRIBUTING.md` },
     ],
   },
   {
@@ -32,7 +40,7 @@ const COLUMNS: { head: string; links: FooterLink[] }[] = [
   },
 ];
 
-// Shared sitemap footer for marketing-style pages (landing, pricing, legal).
+// Shared sitemap footer for marketing-style pages (landing, legal).
 // Play/learn shells stay chrome-free.
 export default function Footer() {
   return (

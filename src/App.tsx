@@ -13,8 +13,6 @@ const ReplayShell = lazy(() => import('./components/ReplayShell'));
 const WatchShell = lazy(() => import('./components/WatchShell'));
 const AuthPopup = lazy(() => import('./components/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
-const PricingPage = lazy(() => import('./components/PricingPage'));
-const PricingMockups = lazy(() => import('./components/PricingMockups'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
@@ -44,8 +42,9 @@ function AppRoutes() {
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/pricing-mockups" element={<PricingMockups />} />
+        {/* Froola is free and open source; the old plan pages are gone. */}
+        <Route path="/pricing" element={<Navigate to="/" replace />} />
+        <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -75,7 +74,8 @@ function AppRoutes() {
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
-      <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/pricing" element={<Navigate to="/" replace />} />
+      <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
