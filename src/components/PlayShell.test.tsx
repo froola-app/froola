@@ -1,19 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render as rtlRender } from '@testing-library/react';
+import { render as rtlRender, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import PlayShell from './PlayShell';
 import { useCoordinator } from '../coordinator';
-import { usePlayWall } from '../hooks/usePlayWall';
 import { useAuth } from '../contexts/AuthContext';
 
 const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: MemoryRouter });
 
 vi.mock('../coordinator', () => ({ useCoordinator: vi.fn() }));
-vi.mock('../hooks/usePlayWall', () => ({ usePlayWall: vi.fn() }));
 vi.mock('../contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 
 const mockUseCoordinator = vi.mocked(useCoordinator);
-const mockUsePlayWall = vi.mocked(usePlayWall);
 const mockUseAuth = vi.mocked(useAuth);
 
 function fakeEngine() {
@@ -46,6 +43,7 @@ function coordinatorState(engine: ReturnType<typeof fakeEngine>) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockUseCoordinator.mockReturnValue(coordinatorState(fakeEngine()));
   mockUseAuth.mockReturnValue({
     user: null,
     profile: null,
@@ -58,67 +56,23 @@ beforeEach(() => {
   });
 });
 
-describe('PlayShell — play wall wiring', () => {
-  it('suspends the audio engine when usePlayWall reports gated', () => {
-    const engine = fakeEngine();
-    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
-    mockUsePlayWall.mockReturnValue(true);
-    render(<PlayShell />);
-    expect(engine.suspend).toHaveBeenCalled();
-    expect(engine.resume).not.toHaveBeenCalled();
-  });
-
-  it('resumes the audio engine when usePlayWall reports not gated', () => {
-    const engine = fakeEngine();
-    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
-    mockUsePlayWall.mockReturnValue(false);
-    render(<PlayShell />);
-    expect(engine.resume).toHaveBeenCalled();
-    expect(engine.suspend).not.toHaveBeenCalled();
-  });
-
-  it('passes a gatedRef reflecting usePlayWall to useCoordinator', () => {
-    const engine = fakeEngine();
-    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
-    mockUsePlayWall.mockReturnValue(true);
-    render(<PlayShell />);
-
-    const gatedRefArg = mockUseCoordinator.mock.calls[0][11];
-    expect(gatedRefArg).toEqual({ current: true });
-  });
-
-  it('re-inserts the play wall if its DOM node is removed while gated', async () => {
-    const engine = fakeEngine();
-    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
-    mockUsePlayWall.mockReturnValue(true);
+// Froola is open source: a signed-out visitor gets the whole instrument, with
+// no timer, no sign-up wall, and nothing behind a padlock.
+describe('PlayShell — everything unlocked', () => {
+  it('never renders a sign-up wall', () => {
     const { container } = render(<PlayShell />);
-
-    const wall = container.querySelector('.play-wall');
-    expect(wall).not.toBeNull();
-    wall!.remove();
     expect(container.querySelector('.play-wall')).toBeNull();
-
-    await vi.waitFor(() => {
-      expect(container.querySelector('.play-wall')).not.toBeNull();
-    });
   });
 
-  it('re-inserts the play wall even when its next sibling was removed in the same batch', async () => {
-    const engine = fakeEngine();
-    mockUseCoordinator.mockReturnValue(coordinatorState(engine));
-    mockUsePlayWall.mockReturnValue(true);
+  it('offers the piano without a padlock', () => {
+    render(<PlayShell />);
+    const piano = screen.getByText('piano');
+    expect(piano).toBeInTheDocument();
+    expect(piano.textContent).not.toContain('🔒');
+  });
+
+  it('renders no upgrade sheet', () => {
     const { container } = render(<PlayShell />);
-
-    const wall = container.querySelector('.play-wall')!;
-    const sibling = document.createElement('div');
-    wall.parentNode!.insertBefore(sibling, wall.nextSibling);
-
-    sibling.remove();
-    wall.remove();
-    expect(container.querySelector('.play-wall')).toBeNull();
-
-    await vi.waitFor(() => {
-      expect(container.querySelector('.play-wall')).not.toBeNull();
-    });
+    expect(container.querySelector('.upgrade-sheet')).toBeNull();
   });
 });

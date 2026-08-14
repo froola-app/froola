@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, type Theme } from '../useTheme';
-import { openBillingPortal } from '../billing';
-import { effectivePlan, entitlementsFor } from '../entitlements';
 import {
   listVideoRecordings,
   deleteVideoRecording,
@@ -22,8 +19,6 @@ import Avatar from './Avatar';
 import ThemeToggle from './ThemeToggle';
 import FroolaLogo from './FroolaLogo';
 import { GoogleButton, EmailSignIn } from './AuthMethods';
-
-const PLAN_LABEL: Record<string, string> = { free: 'Free', plus: 'Plus', studio: 'Studio' };
 
 // Play-screen actions the Settings tab can offer. Optional so the drawer
 // stays portable — mount it on a screen without these and the rows
@@ -86,42 +81,7 @@ function SettingsRow({ label, hint, children }: {
   );
 }
 
-function PlanRow({ onClose }: { onClose: () => void }) {
-  const { profile } = useAuth();
-  const [pending, setPending] = useState(false);
-  const plan = effectivePlan(profile);
-
-  if (profile?.betaTester) {
-    return <SettingsRow label="Plan" hint="Studio (beta)">{null}</SettingsRow>;
-  }
-
-  if (plan === 'free') {
-    return (
-      <SettingsRow label="Plan" hint="Free">
-        <Link className="profile-drawer__row-btn" to="/pricing" onClick={onClose}>
-          Upgrade
-        </Link>
-      </SettingsRow>
-    );
-  }
-
-  return (
-    <SettingsRow label="Plan" hint={PLAN_LABEL[plan] ?? plan}>
-      <button
-        className="profile-drawer__row-btn"
-        disabled={pending}
-        onClick={() => {
-          setPending(true);
-          void openBillingPortal().finally(() => setPending(false));
-        }}
-      >
-        {pending ? 'Loading…' : 'Manage billing'}
-      </button>
-    </SettingsRow>
-  );
-}
-
-function ProfilePanel({ onClose }: { onClose: () => void }) {
+function ProfilePanel() {
   const { user, authReady, signOutUser } = useAuth();
   if (!authReady) {
     return (
@@ -139,7 +99,6 @@ function ProfilePanel({ onClose }: { onClose: () => void }) {
   }
   return (
     <>
-      <PlanRow onClose={onClose} />
       <SettingsRow label="Signed in" hint={user.email ?? undefined}>
         <button className="profile-drawer__row-btn" onClick={() => void signOutUser()}>
           Sign out
@@ -193,8 +152,7 @@ function RecordingRow({ rec, onDeleted }: { rec: VideoRecording; onDeleted: () =
 }
 
 function RecordingsPanel({ open }: { open: boolean }) {
-  const { user, authReady, profile } = useAuth();
-  const ent = entitlementsFor(profile);
+  const { user, authReady } = useAuth();
   // null = fetch failed / unavailable, undefined = fetching.
   const [recordings, setRecordings] = useState<VideoRecording[] | null | undefined>(undefined);
 
@@ -219,13 +177,11 @@ function RecordingsPanel({ open }: { open: boolean }) {
   if (recordings === undefined) return <p className="profile-drawer__note">Loading…</p>;
   if (recordings === null) return <p className="profile-drawer__note">Couldn&apos;t load recordings. Try again in a moment.</p>;
 
-  const quota = Number.isFinite(ent.maxRecordings)
-    ? `${recordings.length} of ${ent.maxRecordings} slot${ent.maxRecordings === 1 ? '' : 's'} used`
-    : `${recordings.length} recording${recordings.length === 1 ? '' : 's'}`;
+  const count = `${recordings.length} recording${recordings.length === 1 ? '' : 's'}`;
 
   return (
     <>
-      <p className="profile-drawer__note">{quota}</p>
+      <p className="profile-drawer__note">{count}</p>
       {recordings.length === 0 && (
         <p className="profile-drawer__note">
           Nothing yet — hit Record on the play screen and your take lands here
@@ -243,10 +199,9 @@ function RecordingsPanel({ open }: { open: boolean }) {
   );
 }
 
-function LookSwatch({ visualTheme, selected, locked, onChoose }: {
+function LookSwatch({ visualTheme, selected, onChoose }: {
   visualTheme: VisualTheme;
   selected: boolean;
-  locked: boolean;
   onChoose: () => void;
 }) {
   const style = {
@@ -259,13 +214,12 @@ function LookSwatch({ visualTheme, selected, locked, onChoose }: {
     <button
       className={
         'profile-drawer__look' +
-        (selected ? ' is-selected' : '') +
-        (locked ? ' is-locked' : '')
+        (selected ? ' is-selected' : '')
       }
       style={style}
       onClick={onChoose}
       aria-pressed={selected}
-      aria-label={`${visualTheme.label}${locked ? ', locked' : ''}`}
+      aria-label={visualTheme.label}
     >
       <span className="profile-drawer__look-art" aria-hidden="true">
         <span className="profile-drawer__look-chip profile-drawer__look-chip--left" />
@@ -273,32 +227,14 @@ function LookSwatch({ visualTheme, selected, locked, onChoose }: {
         <span className="profile-drawer__look-chip profile-drawer__look-chip--right" />
       </span>
       <span className="profile-drawer__look-label">{visualTheme.label}</span>
-      {locked && <span className="profile-drawer__look-lock" aria-hidden="true">+</span>}
     </button>
   );
 }
 
-function LooksPanel({ onClose }: { onClose: () => void }) {
-  const { profile } = useAuth();
-  const ent = entitlementsFor(profile);
+function LooksPanel() {
   const [selectedId, setSelectedId] = useState(() => getVisualTheme().id);
 
-  // A subscription downgrade must bring the canvas back to the free palette
-  // immediately, not leave a previously selected paid look active.
-  useEffect(() => {
-    if (!ent.visualThemesUnlocked && selectedId !== 'froola') {
-      setVisualTheme('froola');
-    }
-  }, [ent.visualThemesUnlocked, selectedId]);
-
-  // Keep the selected appearance truthful during a downgrade without a
-  // second render just to mirror entitlement state. The previous paid choice
-  // remains remembered in local component state for a later re-upgrade.
-  const visibleSelectedId = ent.visualThemesUnlocked ? selectedId : 'froola';
-
   const choose = (visualTheme: VisualTheme) => {
-    const locked = visualTheme.id !== 'froola' && !ent.visualThemesUnlocked;
-    if (locked) return;
     setVisualTheme(visualTheme.id);
     setSelectedId(visualTheme.id);
   };
@@ -309,24 +245,15 @@ function LooksPanel({ onClose }: { onClose: () => void }) {
         Set the color story for your wheels and hand markers.
       </p>
       <div className="profile-drawer__looks" role="group" aria-label="Instrument looks">
-        {VISUAL_THEMES.map(visualTheme => {
-          const locked = visualTheme.id !== 'froola' && !ent.visualThemesUnlocked;
-          return (
-            <LookSwatch
-              key={visualTheme.id}
-              visualTheme={visualTheme}
-              selected={visibleSelectedId === visualTheme.id}
-              locked={locked}
-              onChoose={() => choose(visualTheme)}
-            />
-          );
-        })}
+        {VISUAL_THEMES.map(visualTheme => (
+          <LookSwatch
+            key={visualTheme.id}
+            visualTheme={visualTheme}
+            selected={selectedId === visualTheme.id}
+            onChoose={() => choose(visualTheme)}
+          />
+        ))}
       </div>
-      {!ent.visualThemesUnlocked && (
-        <a className="profile-drawer__looks-upgrade" href="/pricing" onClick={onClose}>
-          Unlock all looks with Plus <span aria-hidden="true">→</span>
-        </a>
-      )}
     </>
   );
 }
@@ -401,7 +328,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
         <div className="profile-drawer__panel">
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Account</h3>
-            <ProfilePanel onClose={onClose} />
+            <ProfilePanel />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Recordings</h3>
@@ -409,7 +336,7 @@ export default function ProfileSidebar({ open, onClose, play }: {
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Looks</h3>
-            <LooksPanel onClose={onClose} />
+            <LooksPanel />
           </section>
           <section className="profile-drawer__section">
             <h3 className="profile-drawer__section-title">Settings</h3>

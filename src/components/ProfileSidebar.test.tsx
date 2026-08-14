@@ -78,28 +78,24 @@ describe('ProfileSidebar — email magic-link sign-in', () => {
 });
 
 describe('ProfileSidebar — looks', () => {
-  it('shows visual-theme previews and keeps paid looks locked on Free', () => {
+  it('lets a signed-out visitor pick any look', () => {
     mockUseAuth.mockReturnValue(authState());
     render(<ProfileSidebar open onClose={() => {}} />);
 
     expect(screen.getByText('Looks')).toBeDefined();
     expect(screen.getByRole('button', { name: 'froola' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: 'neon, locked' })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByText(/unlock all looks with plus/i)).toBeDefined();
+    expect(screen.queryByText(/unlock all looks/i)).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'neon, locked' }));
-    expect(getVisualTheme().id).toBe('froola');
+    fireEvent.click(screen.getByRole('button', { name: 'neon' }));
+    expect(getVisualTheme().id).toBe('neon');
   });
 
-  it('changes the live renderer palette for Plus members', () => {
-    mockUseAuth.mockReturnValue(authState({
-      profile: { plan: 'plus', betaTester: false },
-    }));
+  it('changes the live renderer palette', () => {
+    mockUseAuth.mockReturnValue(authState());
     render(<ProfileSidebar open onClose={() => {}} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'ocean' }));
     expect(getVisualTheme().id).toBe('ocean');
     expect(screen.getByRole('button', { name: 'ocean' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByText(/unlock all looks with plus/i)).toBeNull();
   });
 });

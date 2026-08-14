@@ -13,15 +13,11 @@ import LoopPanel from './LoopPanel';
 import FroolaLogo from './FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
 import FroolaGuide from './FroolaGuide';
-import PlayWall from './PlayWall';
 import GlassDials from './GlassDials';
-import UpgradeSheet, { type LockedFeature } from './UpgradeSheet';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { usePlayWall } from '../hooks/usePlayWall';
 import { useTheme } from '../useTheme';
-import { useAuth } from '../contexts/AuthContext';
-import { entitlementsFor } from '../entitlements';
+import { capabilities } from '../capabilities';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
   { value: 'synth',  label: 'synth'  },
@@ -55,25 +51,10 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  const { profile } = useAuth();
-  const ent = entitlementsFor(profile);
-
-  // Which locked feature the user just reached for, if any — opens the
-  // in-context upgrade sheet instead of bouncing them to /pricing.
-  const [upsell, setUpsell] = useState<LockedFeature | null>(null);
+  const ent = capabilities();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
-  // A downgrade mid-session (subscription lapses, sign-out) must not leave a
-  // locked instrument playing. Adjusted during render rather than in an
-  // effect — a pure state correction, so it can land before the invalid
-  // selection gets a frame to play through (see react.dev "Adjusting some
-  // state when a prop changes").
-  const [prevPianoUnlocked, setPrevPianoUnlocked] = useState(ent.pianoUnlocked);
-  if (prevPianoUnlocked !== ent.pianoUnlocked) {
-    setPrevPianoUnlocked(ent.pianoUnlocked);
-    if (!ent.pianoUnlocked && instrumentMode === 'piano') setInstrumentMode('synth');
-  }
   const modeRef = useRef<InstrumentMode>(instrumentMode);
   useEffect(() => { modeRef.current = instrumentMode; }, [instrumentMode]);
 
@@ -105,19 +86,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const arpRef = useRef<Arpeggiator | null>(null);
   const arpEnabledRef = useRef(true);
   const [arpEnabled, setArpEnabled] = useState(true);
-  // Same downgrade rule as piano/themes: a lapsed plan must not leave the
-  // arp running with no visible toggle to turn it off. Unlike the piano
-  // guard above, this also stops the (external, impure) arpeggiator engine —
-  // a real side effect, not just a state correction — so it stays an effect.
-  useEffect(() => {
-    if (!ent.arpUnlocked && arpEnabled) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- also stops the arpeggiator engine below, a real external side effect
-      setArpEnabled(false);
-      arpEnabledRef.current = false;
-      arpRef.current?.stop();
-    }
-  }, [ent.arpUnlocked, arpEnabled]);
-
   const changeOctave = useCallback((delta: number) => {
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
@@ -132,8 +100,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const gatedRef = useRef(false);
-  const { mode, requestCamera, cameraError, selectedRef, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined, gatedRef);
+  const { mode, requestCamera, cameraError, selectedRef, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef);
 
   // No explainer screen to click through — ask for the camera the moment
   // the page loads. Only fires once: after a denial, mode reverts to
@@ -145,38 +112,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     requestCamera();
   }, [mode, cameraError, requestCamera]);
 
-  const gated = usePlayWall(mode !== 'asking');
-  useEffect(() => { gatedRef.current = gated; }, [gated]);
 
-  useEffect(() => {
-    if (gated) engineRef.current?.suspend();
-    else engineRef.current?.resume();
-  }, [gated, engineRef]);
-
-  // React can't recover if an external actor (browser devtools) deletes a
-  // node it rendered — reconciliation throws when it tries to remove the
-  // already-gone node. So don't remount: put the exact node back where it
-  // was and React never notices. Audio/input stay gated regardless (see
-  // coordinator.ts's gatedRef), but the wall should never be removable.
-  useEffect(() => {
-    if (!gated) return;
-    const observer = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        for (const node of m.removedNodes) {
-          if (node instanceof HTMLElement &&
-              (node.classList.contains('play-wall') || node.querySelector('.play-wall'))) {
-            if (m.nextSibling && m.nextSibling.parentNode === m.target) {
-              m.target.insertBefore(node, m.nextSibling);
-            } else {
-              m.target.appendChild(node);
-            }
-          }
-        }
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [gated]);
 
   // Watch the camera feed's brightness and flag the HUD zones on <html> so
   // the glass controls flip to dark ink over bright scenes (see App.css).
@@ -359,13 +295,12 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           value={instrumentMode}
           onChange={e => {
             const next = e.target.value as InstrumentMode;
-            if (next === 'piano' && !ent.pianoUnlocked) { setUpsell('piano'); return; }
             setInstrumentMode(next);
           }}
         >
           {MODES.map(m => (
             <option key={m.value} value={m.value}>
-              {m.value === 'piano' && !ent.pianoUnlocked ? '🔒 piano · plus' : m.label}
+              {m.label}
             </option>
           ))}
         </select>
@@ -422,8 +357,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           arp {arpEnabled ? 'on' : 'off'}
         </button>}
       </div>}
-      {upsell && <UpgradeSheet feature={upsell} onClose={() => setUpsell(null)} />}
-      {gated && <PlayWall />}
     </>
   );
 }
