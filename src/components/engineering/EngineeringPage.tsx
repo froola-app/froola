@@ -11,10 +11,6 @@ import {
   type Metric,
 } from './benchmarks';
 
-// Whose work this is. Kept as a constant because it is the one thing on the
-// page that is about people rather than code.
-const AUTHORS = 'Dennis Xue and Felicia Aung';
-
 const STACK = ['TypeScript', 'MediaPipe', 'Zero dependencies', 'MIT'];
 
 type Row = { label: string; metric: Metric; note: string; render: (m: Metric) => string };
@@ -147,7 +143,7 @@ export default function EngineeringPage() {
             This is the layer in between, and what it took to make it feel solid.
           </p>
           <div className="eng__meta">
-            <span className="eng__byline">{AUTHORS}</span>
+            <span className="eng__byline">froola</span>
             <span className="eng__dot" aria-hidden="true">·</span>
             <span>2026</span>
           </div>
