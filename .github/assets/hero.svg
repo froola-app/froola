@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380" role="img" aria-label="froola — play music with your hands">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f2650f" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#f2650f" stop-opacity="0"/>
+    </radialGradient>
+    <style>
+      .wm { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif; }
+      .ui { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="380" rx="18" fill="#0b0b0d"/>
+  <rect x="0.5" y="0.5" width="1199" height="379" rx="18" fill="none" stroke="#26262c"/>
+  <ellipse cx="880" cy="190" rx="330" ry="230" fill="url(#glow)"/>
+
+  <!-- Wordmark, with the brand smile beneath it. -->
+  <text class="wm" x="72" y="176" fill="#fafaf8" font-size="104" font-weight="800" letter-spacing="-3">froola</text>
+  <path d="M96 200 Q186 236 276 200" stroke="#f2650f" stroke-width="13" stroke-linecap="round" fill="none"/>
+
+  <text class="ui" x="74" y="256" fill="#c9c9d0" font-size="23">Play music with your hands.</text>
+  <text class="ui" x="74" y="290" fill="#7c7c85" font-size="16">No instrument. No install. No account. Just a camera and a browser.</text>
+  <g class="ui" font-size="13" fill="#6f6f78">
+    <text x="74" y="330">MIT</text>
+    <text x="126" y="330">·</text>
+    <text x="146" y="330">TypeScript</text>
+    <text x="232" y="330">·</text>
+    <text x="252" y="330">On-device tracking</text>
+    <text x="392" y="330">·</text>
+    <text x="412" y="330">Zero config</text>
+  </g>
+
+  <!-- The two dials the instrument is actually played on. -->
+  <g transform="translate(838 190)">
+    <circle r="104" fill="none" stroke="#2a2a31" stroke-width="1.5"/>
+    <circle r="42" fill="none" stroke="#232329" stroke-width="1.5"/>
+    <g stroke="#2a2a31" stroke-width="1.5">
+      <line x1="0" y1="-104" x2="0" y2="-92"/><line x1="0" y1="104" x2="0" y2="92"/>
+      <line x1="-104" y1="0" x2="-92" y2="0"/><line x1="104" y1="0" x2="92" y2="0"/>
+      <line x1="-73" y1="-73" x2="-65" y2="-65"/><line x1="73" y1="73" x2="65" y2="65"/>
+      <line x1="73" y1="-73" x2="65" y2="-65"/><line x1="-73" y1="73" x2="-65" y2="65"/>
+    </g>
+    <text class="ui" y="5" fill="#5a5a63" font-size="11" text-anchor="middle" letter-spacing="1.5">NOTE</text>
+    <!-- The tracked hand, moving the way a hand actually does. -->
+    <g>
+      <animateTransform attributeName="transform" type="rotate"
+        values="-58;34;-12;62;-58" keyTimes="0;0.3;0.55;0.8;1"
+        dur="9s" calcMode="spline"
+        keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"
+        repeatCount="indefinite"/>
+      <circle cx="0" cy="-76" r="13" fill="#f2650f" opacity="0.22"/>
+      <circle cx="0" cy="-76" r="7" fill="#f2650f"/>
+    </g>
+  </g>
+
+  <g transform="translate(1064 190)" opacity="0.85">
+    <circle r="72" fill="none" stroke="#2a2a31" stroke-width="1.5"/>
+    <circle r="29" fill="none" stroke="#232329" stroke-width="1.5"/>
+    <text class="ui" y="4" fill="#5a5a63" font-size="10" text-anchor="middle" letter-spacing="1.5">CHORD</text>
+    <g>
+      <animateTransform attributeName="transform" type="rotate"
+        values="40;-30;76;40" keyTimes="0;0.4;0.72;1"
+        dur="11s" calcMode="spline"
+        keySplines="0.4 0 0.2 1;0.4 0 0.2 1;0.4 0 0.2 1"
+        repeatCount="indefinite"/>
+      <circle cx="0" cy="-52" r="10" fill="#fafaf8" opacity="0.18"/>
+      <circle cx="0" cy="-52" r="5.5" fill="#fafaf8"/>
+    </g>
+  </g>
+</svg>

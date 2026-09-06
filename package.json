@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "bench": "BENCH_REPORT=1 vitest run packages/handtrack/src/bench"
+    "bench": "BENCH_REPORT=1 vitest run packages/handtrack/src/bench",
+    "assets": "WRITE_ASSETS=1 vitest run packages/handtrack/src/bench/assets.gen.test.ts"
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",

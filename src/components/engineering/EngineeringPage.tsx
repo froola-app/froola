@@ -13,7 +13,7 @@ import {
 
 // Whose work this is. Kept as a constant because it is the one thing on the
 // page that is about people rather than code.
-const AUTHORS = 'Dennis Xue and Felicia';
+const AUTHORS = 'Dennis Xue and Felicia Aung';
 
 const STACK = ['TypeScript', 'MediaPipe', 'Zero dependencies', 'MIT'];
 
