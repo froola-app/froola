@@ -81,13 +81,20 @@ _Effort: S = small, M = medium, L = large._
   velocity prediction, and rate-independent smoothing. Jitter down 18%, lag down 65%,
   settling 9x faster, fist and slot chatter down to ~0. `npm run bench` regenerates
   `packages/handtrack/BENCHMARK.md`; a test fails if the site's quoted numbers drift.
-- **`/engineering` case study (2026-09-06):** the portfolio-facing write-up. Product
-  landing stays as it was, minus a dead `#pricing` nav anchor that pointed at a section
-  removed in the open-source pass.
-- **Watermark residue removed (2026-09-06):** the burn-in, the replay overlay, the
-  capability flags and the plumbing through `PlayShell`/`VideoRecordButton`/
-  `useVideoRecorder`. The codec keeps its flags byte for wire compatibility, so links
-  minted while the flag existed still decode.
+- **`/engineering` case study (2026-09-06):** the portfolio-facing write-up, live at
+  `/engineering`. It owns its own shell classes (`eng__wrap`, `eng__nav`) rather than
+  borrowing the landing page's, which is what broke it the first time `main` restructured.
+- **The open-source pivot actually shipped (2026-09-06):** it had lived only on
+  `open-source-repackage` while `main` kept the paywall and moved 99 commits ahead. The
+  merge kept every feature `main` had grown and removed the paywall from all of it;
+  `main` is now the open-source version and deploys to froolamusic.com.
+- **Watermarks off everywhere (2026-09-06):** nothing froola produces is watermarked.
+  Note the shape, since it changed mid-session: the plumbing was deleted outright, then
+  the merge with `main` brought back a newer export path that carries it, so watermarking
+  is now **flag-off in `capabilities.ts`** (`replayWatermark`/`exportWatermark` are
+  constant `false`) rather than absent. Ripping it out of main's export compositor is a
+  tidy-up worth doing, not a gate to remove. The gesture codec keeps its flags byte for
+  wire compatibility, so links minted while the flag existed still decode.
 - **Open-source pass (2026-08-13):** every feature unlocked and plan gating deleted, Stripe
   parked under `optional/billing/`, local IndexedDB + localStorage drivers so the app runs
   with no backend, song lessons renamed away from real titles, MIT license, engine-first
