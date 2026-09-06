@@ -14,7 +14,6 @@ type Props = {
   /** Plan-gated (ent.maxSavedRecordings): how many saved rows this user may
    *  hold; starting a take past the cap prompts a replace confirm. */
   maxSavedRecordings: number;
-  /** Locked keeps the button visible as a teaser (Plus unlocks recording). */
 };
 
 export default function RecordButton({ selectedRef, vibe, maxDurationMs, watermark = true, maxSavedRecordings }: Props) {

@@ -16,7 +16,6 @@ const EngineeringPage = lazy(() => import('./components/engineering/EngineeringP
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const TermsPage = lazy(() => import('./components/docs/TermsPage'));
 const PrivacyPage = lazy(() => import('./components/docs/PrivacyPage'));
-const RefundsPage = lazy(() => import('./components/docs/RefundsPage'));
 const AboutPage = lazy(() => import('./components/docs/AboutPage'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
@@ -50,7 +49,7 @@ function AppRoutes() {
         <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/refunds" element={<RefundsPage />} />
+        <Route path="/refunds" element={<Navigate to="/" replace />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -81,7 +80,7 @@ function AppRoutes() {
       <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/refunds" element={<RefundsPage />} />
+      <Route path="/refunds" element={<Navigate to="/" replace />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

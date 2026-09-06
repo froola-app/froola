@@ -8,8 +8,9 @@ export default function PrivacyPage() {
         This policy explains what information froola (&ldquo;we&rdquo;,
         &ldquo;us&rdquo;) collects when you use{' '}
         <a href="https://froolamusic.com">froolamusic.com</a>, and what we do
-        with it. The short version: your camera never leaves your device, and
-        we collect only what we need to run accounts and billing.
+        with it. The short version: your camera never leaves your device, there is
+        nothing to pay for, and froola works fully without an account. Signing in
+        is optional and only syncs your own work between devices.
       </p>
 
       <h2>Your camera stays on your device</h2>
@@ -42,11 +43,6 @@ export default function PrivacyPage() {
           and store nothing on our servers. MP3 exports are saved locally in
           your own browser&rsquo;s storage, not uploaded.
         </li>
-        <li>
-          <strong>Billing information.</strong> Subscriptions are processed by
-          Stripe. Your card details go directly to Stripe and never touch our
-          servers; we store only your subscription status and plan.
-        </li>
       </ul>
 
       <h2>What we don&rsquo;t collect</h2>
@@ -60,9 +56,9 @@ export default function PrivacyPage() {
       <h2>How we use your information</h2>
       <p>
         We use the information above to operate the Service: signing you in,
-        remembering your preferences, hosting your shared replays, processing
-        subscription payments, and responding when you contact support. We do
-        not use your data for advertising.
+        remembering your preferences, hosting your shared replays, and responding
+        when you contact support. We do not use your data for advertising, and we
+        take no payments, so there is no payment data to handle.
       </p>
 
       <h2>Service providers</h2>
@@ -74,9 +70,6 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Google</strong> — sign-in identity provider.
-        </li>
-        <li>
-          <strong>Stripe</strong> — payment processing.
         </li>
         <li>
           <strong>Vercel</strong> — website hosting.

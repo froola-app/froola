@@ -9,9 +9,8 @@ import { useTheme } from '../hooks/useTheme';
 import HeroDials from './HeroDials';
 import LivingLogo from './brand/LivingLogo';
 import OpenSourceSection from './OpenSourceSection';
-import ProfileButton from './account/ProfileButton';
 import SmileAccent from './brand/SmileAccent';
-import ThemeToggle from './ThemeToggle';
+import SiteNav from './SiteNav';
 import SiteFooter from './docs/SiteFooter';
 
 // Real songs from the lesson curriculum — the marquee shows the product's
@@ -130,12 +129,10 @@ export default function LandingPage() {
 
   return (
     <div className="lp4" data-theme={theme} ref={rootRef}>
-      {/* Floating corner controls — the page has no nav bar; the hero owns
-          the branding and Pricing/Contact live in their section/footer. */}
-      <div className="lp4__corner">
-        <ThemeToggle theme={theme} onToggle={toggleTheme} />
-        <ProfileButton variant="nav" />
-      </div>
+      {/* Transparent over the hero, then fades in once scrolled past, so the
+          living logo still owns the first screen while every destination
+          (including the case study) stays one click away from the top. */}
+      <SiteNav theme={theme} onToggleTheme={toggleTheme} transparentAtTop />
 
       {/* Wow hero: the living logo owns the first screen. */}
       <header className="lp4__wow">

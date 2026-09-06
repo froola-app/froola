@@ -81,7 +81,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const [scale, setScale] = useState<ScaleName>('major');
   const [chordMode, setChordMode] = useState<ChordMode>('diatonic');
 
-  // Custom chord wheels (Plus+): user-defined root+quality per slice,
+  // Custom chord wheels: user-defined root+quality per slice,
   // swapped in for the diatonic wheel in free play only (lessons use their
   // own shell and never read this musicRef — see the grep note in the PR).
   const [customWheels, setCustomWheels] = useState<CustomWheel[]>([]);
@@ -107,7 +107,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     slots: [], playing: false, bpm: DEFAULT_BPM, beatsPerSlot: DEFAULT_BEATS_PER_SLOT, currentSlot: -1,
   });
 
-  // Arpeggiator: turns a sustained chord into a repeating pattern (Plus+).
+  // Arpeggiator: turns a sustained chord into a repeating pattern.
   // Defaults on; the toggle button is an escape hatch back to a plain
   // sustained pad. Free plays a static pad only — no toggle, no arp.
   const arpRef = useRef<Arpeggiator | null>(null);
@@ -360,7 +360,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           key={`guide-${tutorialRun}`}
           loopState={loopState}
           active={tutorialDone && mode === 'camera'}
-          loopUnlocked={ent.loopUnlocked}
         />
       )}
       {audioStuck && (
@@ -394,7 +393,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
         />
       </div>}
       {/* Mobile keeps exactly one control: the profile avatar. It's the only
-          way off the play screen on a phone (sign-in, settings, upgrade), so
+          way off the play screen on a phone (sign-in, settings), so
           it stays while Learn/Share/Feedback go. "Replay tutorial" is desktop
           -only because the tutorial itself doesn't render on mobile. */}
       <div className="hud-nav">
@@ -412,7 +411,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           wheel, octave and arp stay at their defaults (synth, C major,
           in-key, octave 0, arp on) and are only reachable on a wider screen. */}
       {mode !== 'asking' && !isMobile && <div className="hud-bottom-stack">
-        {looper && mode === 'camera' && ent.loopUnlocked && (
+        {looper && mode === 'camera' && (
           <LoopPanel
             looper={looper}
             state={loopState}

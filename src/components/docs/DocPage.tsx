@@ -12,7 +12,7 @@ interface DocPageProps {
 }
 
 // Shared layout for legal / informational pages, styled to match the landing
-// page (lp4) with the same corner-home logo and theme toggle as /pricing.
+// page (lp4) with the same corner-home logo and theme toggle as the landing.
 export default function DocPage({ title, updated, children }: DocPageProps) {
   const { theme, toggleTheme } = useTheme();
   const inkColor = theme === 'dark' ? '#FAFAF8' : '#111111';

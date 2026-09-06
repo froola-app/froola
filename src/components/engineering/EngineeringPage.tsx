@@ -3,9 +3,8 @@ import { Link } from 'react-router-dom';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { useTheme } from '../../hooks/useTheme';
 import SiteFooter from '../docs/SiteFooter';
-import FroolaLogo from '../brand/FroolaLogo';
 import { REPO_URL } from '../OpenSourceSection';
-import ThemeToggle from '../ThemeToggle';
+import SiteNav from '../SiteNav';
 import {
   JITTER, LAG, SETTLING, FIST_FLIPS, SEAM_FLIPS,
   RAW_JITTER, LEGACY_CUTOFF_HZ, improvement, timesFaster,
@@ -123,27 +122,19 @@ const LIMITS = [
 export default function EngineeringPage() {
   const rootRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
-  const inkColor = theme === 'dark' ? '#FAFAF8' : '#111111';
   useScrollReveal(rootRef);
 
   return (
     <div className="lp4 eng" data-theme={theme} ref={rootRef}>
-      <nav className="eng__nav" aria-label="Main">
-        <Link className="eng__nav-brand" to="/" aria-label="Froola home">
-          <FroolaLogo size={17} color={inkColor} />
-        </Link>
-        <div className="eng__nav-links">
-          <a href="#results">Results</a>
-          <a href="#how">How it works</a>
-          <a href="#limits">Limits</a>
-        </div>
-        <div className="eng__nav-side">
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          <a className="lp4__pill eng__pill--nav" href={REPO_URL} target="_blank" rel="noreferrer">
-            Source
-          </a>
-        </div>
-      </nav>
+      <SiteNav
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        sections={[
+          { href: '#results', label: 'Results' },
+          { href: '#how', label: 'How it works' },
+          { href: '#limits', label: 'Limits' },
+        ]}
+      />
 
       {/* Header. No product hero here: this page is for someone reading the work. */}
       <header className="eng__head">

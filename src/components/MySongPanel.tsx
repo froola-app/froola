@@ -6,7 +6,7 @@ import { getMySong, saveMySong, deleteMySong, parseSheet, type MySong } from '..
 import { listLoops, type SavedLoop } from '../engine/looper';
 import SheetOverlay from './SheetOverlay';
 
-// The one-song Plus+ feature: paste lyrics+chords once, keep it forever,
+// One saved song: paste lyrics+chords once, keep it forever,
 // and snapshot the current loop library alongside it. Reuses the
 // .profile-drawer glass chrome (see App.css) for a consistent look with
 // the account/settings drawer, but is its own top-level portal — PlayShell
@@ -171,7 +171,7 @@ export default function MySongPanel({
               </button>
             </section>
           ) : (
-            <p className="profile-drawer__note">Plus unlocks pasting in your song's lyrics and chords.</p>
+            <p className="profile-drawer__note">Paste your song&rsquo;s lyrics and chords to keep them here.</p>
           )}
         </div>
       </aside>

@@ -41,37 +41,13 @@ const STEPS: Step[] = [
   },
 ];
 
-// Free plan has no loop panel, so the tour skips straight to playing and
-// recording instead of teaching a feature that isn't on screen.
-const FREE_STEPS: Step[] = [
-  {
-    text: 'Hi, I’m Froo. Move your hands over the wheels — left picks the chord, right shapes it.',
-    dwellMs: 10000,
-  },
-  {
-    text: 'Try a few different chords. I’ll keep listening.',
-    dwellMs: 12000,
-  },
-  {
-    text: 'Sounding froolish? Record, top left, captures your jam to share.',
-  },
-  {
-    text: 'That’s the tour. Froo la la.',
-    dwellMs: 4000,
-  },
-];
-
-// Shown once ever, shortly after the tour ends — the only bubble with an ×.
 const INTRO_TEXT = 'Hi, I’m Froo. I keep time down here. Tap me whenever you want a tip.';
 
-// Tapping Froo cycles through these, one per tap, wrapping around. A few
-// also surface on their own (one every few minutes) until the cycle has
-// wrapped once; after that Froo only speaks when poked. Tips marked
-// `loopOnly` reference the loop panel and are skipped on the free plan.
-const TIPS: { text: string; loopOnly?: boolean }[] = [
+// Rotating tips, shown when Froo is tapped after the tour is done.
+const TIPS: { text: string }[] = [
   { text: 'Not feeling light mode? Dark mode lives in your profile, top right.' },
   { text: 'Left wheel picks the chord, right wheel shapes it. That’s the whole instrument.' },
-  { text: 'Press Enter to drop the chord you’re holding straight into the loop.', loopOnly: true },
+  { text: 'Press Enter to drop the chord you’re holding straight into the loop.' },
   { text: 'Make a fist to lock your chord while you move around.' },
   { text: 'Try a 7th on the right wheel. Instant jazz.' },
   { text: 'Feeling moody? Switch major to minor down below.' },
@@ -79,9 +55,9 @@ const TIPS: { text: string; loopOnly?: boolean }[] = [
   { text: 'Arrow keys nudge the octave up and down.' },
   { text: 'Synth not your thing? There’s a piano in the bottom row.' },
   { text: 'arp on breaks your chord into a rolling pattern. Off gives you a soft pad.' },
-  { text: 'Loop dragging? The minus and plus around bpm set the pace. I’ll keep up.', loopOnly: true },
-  { text: 'Added a clunker? The backspace button removes the last chord.', loopOnly: true },
-  { text: 'clear wipes the loop when you want to build something new.', loopOnly: true },
+  { text: 'Loop dragging? The minus and plus around bpm set the pace. I’ll keep up.' },
+  { text: 'Added a clunker? The backspace button removes the last chord.' },
+  { text: 'clear wipes the loop when you want to build something new.' },
   { text: 'Record, top left, captures your jam as audio you can share.' },
   { text: 'Record video grabs the whole performance, wheels and all.' },
   { text: 'Share, top right, makes a link your friends can listen to.' },
@@ -109,13 +85,11 @@ interface Props {
   loopState: LooperState;
   /** Suppressed while the tutorial overlay is up or no input mode is chosen. */
   active: boolean;
-  /** Free plan has no loop panel — swaps in the loop-free tour and tips. */
-  loopUnlocked: boolean;
 }
 
-export default function FroolaGuide({ loopState, active, loopUnlocked }: Props) {
-  const steps = loopUnlocked ? STEPS : FREE_STEPS;
-  const tips = loopUnlocked ? TIPS : TIPS.filter(t => !t.loopOnly);
+export default function FroolaGuide({ loopState, active }: Props) {
+  const steps = STEPS;
+  const tips = TIPS;
 
   const [tourDone, setTourDone] = useState(() => !!localStorage.getItem(DONE_KEY));
   const [step, setStep] = useState(() => storedStep(steps.length));
