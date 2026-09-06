@@ -128,18 +128,18 @@ export default function EngineeringPage() {
 
   return (
     <div className="lp4 eng" data-theme={theme} ref={rootRef}>
-      <nav className="lp4__nav" aria-label="Main">
-        <Link className="lp4__nav-brand" to="/" aria-label="Froola home">
+      <nav className="eng__nav" aria-label="Main">
+        <Link className="eng__nav-brand" to="/" aria-label="Froola home">
           <FroolaLogo size={17} color={inkColor} />
         </Link>
-        <div className="lp4__nav-links">
+        <div className="eng__nav-links">
           <a href="#results">Results</a>
           <a href="#how">How it works</a>
           <a href="#limits">Limits</a>
         </div>
-        <div className="lp4__nav-side">
+        <div className="eng__nav-side">
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
-          <a className="lp4__pill lp4__pill--nav" href={REPO_URL} target="_blank" rel="noreferrer">
+          <a className="lp4__pill eng__pill--nav" href={REPO_URL} target="_blank" rel="noreferrer">
             Source
           </a>
         </div>
@@ -147,7 +147,7 @@ export default function EngineeringPage() {
 
       {/* Header. No product hero here: this page is for someone reading the work. */}
       <header className="eng__head">
-        <div className="lp4__wrap">
+        <div className="eng__wrap">
           <p className="eng__eyebrow">Case study</p>
           <h1 className="eng__title">Building a hand tracker that holds still.</h1>
           <p className="eng__standfirst">
@@ -168,7 +168,7 @@ export default function EngineeringPage() {
 
       {/* The problem, stated concretely enough to be checkable. */}
       <section className="eng__section">
-        <div className="lp4__wrap eng__cols">
+        <div className="eng__wrap eng__cols">
           <h2 className="eng__h2">The problem</h2>
           <div className="eng__body">
             <p>
@@ -194,7 +194,7 @@ export default function EngineeringPage() {
 
       {/* Results first: the part a skimmer should leave with. */}
       <section className="eng__section eng__section--tint" id="results" data-reveal>
-        <div className="lp4__wrap">
+        <div className="eng__wrap">
           <h2 className="eng__h2">What changed</h2>
           <p className="eng__lede">
             Measured by replaying seeded synthetic traces through the real code. The
@@ -235,7 +235,7 @@ export default function EngineeringPage() {
 
       {/* The reasoning, one stage per decision. */}
       <section className="eng__section" id="how">
-        <div className="lp4__wrap">
+        <div className="eng__wrap">
           <h2 className="eng__h2">How it works</h2>
           <p className="eng__lede">
             Five stages between a landmark and a note. Each one exists because
@@ -258,7 +258,7 @@ export default function EngineeringPage() {
 
       {/* How it is built. Short, because the point is the shape, not the detail. */}
       <section className="eng__section eng__section--tint">
-        <div className="lp4__wrap eng__cols">
+        <div className="eng__wrap eng__cols">
           <h2 className="eng__h2">Built to be testable</h2>
           <div className="eng__body">
             <p>
@@ -282,7 +282,7 @@ npm run bench   # regenerates the numbers above`}</code></pre>
 
       {/* Limits. A case study without these is a brochure. */}
       <section className="eng__section" id="limits">
-        <div className="lp4__wrap">
+        <div className="eng__wrap">
           <h2 className="eng__h2">What it does not do</h2>
           <div className="eng__limits">
             {LIMITS.map(l => (
@@ -296,7 +296,7 @@ npm run bench   # regenerates the numbers above`}</code></pre>
       </section>
 
       <section className="eng__cta">
-        <div className="lp4__wrap">
+        <div className="eng__wrap">
           <h2 className="eng__h2">Have a look</h2>
           <p className="eng__lede">
             The tracker is a library you can drop into your own project, and froola is

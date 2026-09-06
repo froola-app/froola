@@ -5990,3 +5990,63 @@ body {
    page's link underline unless told otherwise. */
 .eng .lp4__pill,
 .eng .lp4__link-btn { text-decoration: none; }
+
+/* main's landing centers its sections; this block came from the earlier
+   left-aligned layout, so centre its prose to match its own heading. */
+.lp4__os .lp4__prose {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+/* Shell for the case study. These were once borrowed from the landing page,
+   which has since restructured away from them — a reading page should not
+   depend on marketing-page internals, so it owns them now. */
+.eng__wrap {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 22px;
+}
+
+.eng__nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 max(22px, calc(50% - 510px));
+  height: 56px;
+  background: color-mix(in srgb, var(--lp-bg) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--lp-hairline);
+  transition: background 0.35s ease, border-color 0.35s ease;
+}
+
+.eng__nav-brand { display: inline-flex; align-items: center; text-decoration: none; }
+
+.eng__nav-links {
+  display: flex;
+  gap: 26px;
+  margin-right: auto;
+}
+
+.eng__nav-links a {
+  font-size: 0.86rem;
+  color: var(--lp-gray);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.eng__nav-links a:hover { color: var(--lp-ink); }
+
+.eng__nav-side { display: flex; align-items: center; gap: 12px; }
+
+.eng__pill--nav { padding: 7px 16px; font-size: 0.84rem; }
+
+@media (max-width: 700px) {
+  .eng__nav-links { display: none; }
+  .eng__nav { gap: 16px; }
+}
