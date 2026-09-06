@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "bench": "BENCH_REPORT=1 vitest run packages/handtrack/src/bench"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.35",

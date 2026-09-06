@@ -16,6 +16,7 @@ const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
+const EngineeringPage = lazy(() => import('./components/engineering/EngineeringPage'));
 const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
 const TermsPage = lazy(() => import('./components/TermsPage'));
 
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
+        <Route path="/engineering" element={<EngineeringPage />} />
         {/* Froola is free and open source; the old plan pages are gone. */}
         <Route path="/pricing" element={<Navigate to="/" replace />} />
         <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
@@ -74,6 +76,7 @@ function AppRoutes() {
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
+      <Route path="/engineering" element={<EngineeringPage />} />
       <Route path="/pricing" element={<Navigate to="/" replace />} />
       <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
       <Route path="/privacy" element={<PrivacyPage />} />

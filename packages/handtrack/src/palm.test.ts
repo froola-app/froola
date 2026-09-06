@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { palmCenter } from './palmCenter';
+import { palmCenter } from './palm';
 
 // 21 MediaPipe hand landmarks; only wrist (0) and MCPs (5, 9, 13, 17) matter.
 function makeLandmarks(overrides: Record<number, { x: number; y: number }>) {

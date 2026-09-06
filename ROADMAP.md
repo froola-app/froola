@@ -12,6 +12,8 @@ reads a plan, and there is no paid path to secure.
 
 | Pri | Item | Where |
 |---|---|---|
+| **P0** | **Live-check the reworked hand tracker on a real camera.** The filter (One Euro replacing the fixed EMA), fist detection (continuous curl + Schmitt trigger + dwell), slot assignment (hysteresis), dropout coasting and latency prediction all changed. Every claim is measured, but measured against *synthetic* traces: no real hand has touched this yet. Recipe and checklist in `docs/VERIFY.md`. | `packages/handtrack/`, `src/engine/input/` |
+| P2 | **`/engineering` on a narrow viewport** — the results table restacks below 700px via a media query that has not been seen rendering. | `src/App.css` (`.eng__tr`) |
 | P1 | **`recordings` SELECT policy is `USING(true)`** — anyone with the anon key can dump all rows (user_ids + payloads). Only affects deployments that configure Supabase, but the repo is public, so the policy is public too. Move lookup behind an RPC keyed by the share id. | `supabase/migrations/0004_recordings.sql` |
 | P1 | **Public-repo doc leak** — internal docs (pricing, marketing, cofounder brief, handoffs) are reachable in git history; untracking them didn't purge them. Open sourcing defuses most of the sensitivity, but the cofounder brief still shouldn't be there. Fix = history purge (git filter-repo + force push) or accept it. | GitHub |
 | P2 | **Verify migrations 0003/0004 are applied** on the hosted demo's Supabase project, and record the date here. | Supabase SQL editor |
@@ -72,6 +74,20 @@ _Effort: S = small, M = medium, L = large._
 
 ## ✅ Recently closed
 
+- **Hand tracking became a library (2026-09-06):** extracted to `packages/handtrack/`
+  (`@froola/handtrack`), pure and dependency-free, with the browser bits left behind in
+  `src/engine/input/`. Six substantive fixes, each benchmarked: One Euro filter, temporal
+  slot hysteresis, continuous curl with a Schmitt-triggered fist gate, dropout coasting,
+  velocity prediction, and rate-independent smoothing. Jitter down 18%, lag down 65%,
+  settling 9x faster, fist and slot chatter down to ~0. `npm run bench` regenerates
+  `packages/handtrack/BENCHMARK.md`; a test fails if the site's quoted numbers drift.
+- **`/engineering` case study (2026-09-06):** the portfolio-facing write-up. Product
+  landing stays as it was, minus a dead `#pricing` nav anchor that pointed at a section
+  removed in the open-source pass.
+- **Watermark residue removed (2026-09-06):** the burn-in, the replay overlay, the
+  capability flags and the plumbing through `PlayShell`/`VideoRecordButton`/
+  `useVideoRecorder`. The codec keeps its flags byte for wire compatibility, so links
+  minted while the flag existed still decode.
 - **Open-source pass (2026-08-13):** every feature unlocked and plan gating deleted, Stripe
   parked under `optional/billing/`, local IndexedDB + localStorage drivers so the app runs
   with no backend, song lessons renamed away from real titles, MIT license, engine-first

@@ -71,16 +71,7 @@ describe('codec', () => {
     expect(encode({ samples, totalMs: 30_000 }).length).toBeLessThan(60);
   });
 
-  it('round-trips the no-watermark flag', () => {
-    expect(decode(encode({ ...recording, watermark: false })).watermark).toBe(false);
-  });
-
-  it('defaults to watermarked when the flag is unset or omitted', () => {
-    expect(decode(encode(recording)).watermark).toBe(true);
-    expect(decode(encode({ ...recording, watermark: true })).watermark).toBe(true);
-  });
-
-  it('decodes legacy flag-less payloads as watermarked', () => {
+  it('decodes legacy flag-less payloads', () => {
     const buf = new Uint8Array(5);
     new DataView(buf.buffer).setUint16(0, 100, false);
     buf[2] = 3; buf[3] = 1; buf[4] = 0;
@@ -88,7 +79,19 @@ describe('codec', () => {
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     const decoded = decode(legacy);
     expect(decoded.samples).toEqual([sample]);
-    expect(decoded.watermark).toBe(true);
+  });
+
+  it('still accepts v1 payloads minted while the flags byte carried a flag', () => {
+    // Watermarks are gone, but links made when the low bit meant something are
+    // still out there. The version check masks the high nibble precisely so
+    // those keep decoding.
+    const buf = new Uint8Array(6);
+    buf[0] = 0x81; // version marker + the retired no-watermark bit
+    new DataView(buf.buffer).setUint16(1, 100, false);
+    buf[3] = 3; buf[4] = 1; buf[5] = 0;
+    const link = btoa(String.fromCharCode(...buf))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    expect(decode(link).samples).toEqual([sample]);
   });
 
   it('rejects a ≡1 (mod 5) payload whose first byte lacks the version marker', () => {

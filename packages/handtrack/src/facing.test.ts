@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { classifyHandFacing } from './handFacing';
+import { classifyHandFacing } from './facing';
 
 // classifyHandFacing only reads landmarks 0 (wrist), 5 (index MCP),
 // 9 (middle MCP), 17 (pinky MCP). Build a 21-point array with those set.

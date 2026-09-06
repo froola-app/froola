@@ -1,0 +1,150 @@
+# @froola/handtrack
+
+Stable, low-latency hand signals from hand landmarks.
+
+MediaPipe will tell you where 21 points on a hand are, roughly, about thirty
+times a second. That is not the same thing as a usable input device. The
+landmarks shiver when the hand is still, they arrive late, they occasionally
+miss a frame entirely, and any threshold you put on them chatters. This library
+is the layer in between: landmarks in, something you can actually control an
+instrument with out.
+
+It has no dependencies. It does not import MediaPipe, touch the DOM, or know
+what a camera is — it takes landmarks and a timestamp. That is what makes it
+testable, and everything below is measured in CI on synthetic traces rather than
+asserted.
+
+```ts
+import { HandTracker, coverTransform } from '@froola/handtrack';
+
+const tracker = new HandTracker({ slotCount: 2 });
+
+// once per inference frame
+const transform = coverTransform(video.videoWidth, video.videoHeight, w, h);
+const hands = tracker.update(
+  result.landmarks.map((landmarks, i) => ({
+    landmarks,
+    worldLandmarks: result.worldLandmarks[i],
+  })),
+  { anchors, mapPoint: p => transform.map(p), nowMs: performance.now() }
+);
+
+for (const hand of hands) {
+  // hand.slot, hand.x, hand.y, hand.vx, hand.vy
+  // hand.curl, hand.fist, hand.facing, hand.coasting
+}
+```
+
+## What it fixes, and by how much
+
+Every number below comes from `npm run bench`, which replays seeded synthetic
+traces through the real code and writes [BENCHMARK.md](BENCHMARK.md). The
+baseline in each row is what this replaced: a fixed 77 ms exponential moving
+average, which is the obvious thing to reach for and what most integrations use.
+
+| | Before | After | |
+|---|---|---|---|
+| Jitter, hand held still | 2.86 | **2.35** | 18% steadier |
+| Lag behind a moving hand | 59.6 ms | **21.1 ms** | 65% quicker |
+| Settling after a jump | 300 ms | **33 ms** | 9x faster |
+| Fist state changes, hand resting on the threshold | 108 | **1** | over 200 frames |
+| Slot changes, hand hovering between two targets | 106 | **0** | over 200 frames |
+
+Jitter is RMS spread in units of the viewport, x1000; the raw input measures
+5.73, so a perfect filter would read 0 and a passthrough 5.73.
+
+### Position: an adaptive filter, not a compromise
+
+A single exponential average has one time constant, so it is one frozen
+compromise. Smooth enough to kill the shiver and it visibly drags; quick enough
+to keep up and the resting hand shimmers. There is no setting that does both,
+because the two goals want opposite cutoffs.
+
+[One Euro](https://gery.casiez.net/1euro/) (Casiez, Roussel & Vogel, CHI 2012)
+makes the cutoff a function of speed: it low-passes the signal's own derivative
+and sets `cutoff = minCutoff + beta * |velocity|`. A still hand collapses to
+heavy smoothing, a moving hand opens the filter up. That is why the table above
+can improve jitter *and* lag at once, which no fixed cutoff can do — and the
+benchmark asserts exactly that pair, by name, so it fails loudly if the
+parameters ever drift back into being a plain low-pass.
+
+The alpha is derived from each sample's real `dt` in exponential form, so the
+filter behaves identically at 60 Hz on a desktop GPU delegate and 15 Hz on a
+phone's CPU delegate. Fixed-alpha smoothing does not have that property, which
+is why the same constants used to feel different on Safari.
+
+### Identity: position decides, but a switch has to earn it
+
+A hand's slot comes from where it is on screen, never from the model's own
+left/right label — that label flickers, and when it flips it swaps which control
+a hand is driving mid-gesture.
+
+Pure position has a seam, though. A hand resting midway between two targets is
+equidistant, so noise alone picks the winner, and it re-picks every frame. The
+assigner keeps last frame's identities unless a different assignment beats them
+by a real margin and keeps beating it for a dwell. A hand that genuinely crosses
+still switches; it just crosses once instead of twenty times.
+
+The remembered position is a running average rather than simply the previous
+frame, and that detail is the whole mechanism: when hands are closer together
+than the noise, last frame's position inverts as often as the raw ordering does,
+so matching against it inherits the very chatter it was meant to remove.
+
+### Gestures: hysteresis and dwell
+
+Curl is scored continuously per finger rather than counted past a threshold,
+then gated by a Schmitt trigger with a short dwell. Hysteresis removes the
+unstable point; the dwell rejects the one blurry frame that briefly scores as a
+fist. Engaging takes about 100 ms, which is two or three frames.
+
+### Dropouts: coast, don't blank
+
+A missed detection is not evidence the hand moved. Losing it for a frame used to
+blank the cursor and flash the idle state back; now the last position is held
+for up to 120 ms before the hand is really dropped.
+
+### Latency: predict a little
+
+Inference runs slower than the display, so a drawn position always describes
+where the hand *was*. Projecting forward along the velocity the filter already
+computes cancels most of that for free. It is capped, because prediction is
+wrong exactly when a hand reverses, and it contributes nothing at rest where the
+velocity is zero.
+
+## Honest limits
+
+- **Two hands closer together than the landmark noise cannot be told apart.**
+  Nothing here fixes that, and the benchmark deliberately does not claim it: an
+  identity the input does not contain is not recoverable by filtering.
+- **The parameters are tuned for normalized 0-1 coordinates.** `beta` looks
+  enormous next to published pixel-space values for that reason alone.
+- **Synthetic traces are not hands.** They isolate one property at a time, which
+  is what makes them useful, and it is also what makes them not a substitute for
+  trying it with a camera.
+- **Facing needs world landmarks.** Normalized landmarks give distorted
+  out-of-plane angles; passing them will produce confident nonsense.
+
+## API
+
+| Export | What it is |
+|---|---|
+| `HandTracker` | The whole pipeline. `update(hands, ctx)` per frame |
+| `OneEuroFilter`, `OneEuroPoint` | The adaptive filter, usable on its own |
+| `SlotAssigner` | Hysteretic identity assignment |
+| `FistGate` | Schmitt trigger with dwell |
+| `curlScore`, `fingerCurl` | Continuous curl from landmarks |
+| `palmCenter` | Wrist and knuckle centroid |
+| `classifyHandFacing`, `handFacingAngles` | Palm orientation from world landmarks |
+| `coverTransform` | Frame space to a `object-fit: cover` viewport |
+
+Every option is documented at its definition, including what to change if the
+tracking feels wrong in a specific way.
+
+## Tests
+
+```bash
+npm test          # unit and behavioural tests
+npm run bench     # regenerates BENCHMARK.md
+```
+
+MIT.

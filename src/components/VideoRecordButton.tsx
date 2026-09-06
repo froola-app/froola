@@ -11,8 +11,6 @@ type Props = {
   engineRef: RefObject<AudioEngine | null>;
   /** Technical ceiling, not a plan one (capabilities.maxVideoRecordMs). */
   maxDurationMs: number;
-  /** Always false now; kept so the recorder's overlay stays configurable. */
-  watermark: boolean;
 };
 
 // What happened to the finished take. "Saving" isn't a phase — it's derived
@@ -41,10 +39,10 @@ function downloadTake(take: VideoTake) {
 }
 
 export default function VideoRecordButton({
-  canvasRef, cameraVideoRef, engineRef, maxDurationMs, watermark,
+  canvasRef, cameraVideoRef, engineRef, maxDurationMs,
 }: Props) {
   const { state, elapsed, take, start, stop, clearTake } =
-    useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs, watermark);
+    useVideoRecorder(canvasRef, cameraVideoRef, engineRef, maxDurationMs);
   const [phase, setPhase] = useState<SavePhase | null>(null);
   const [copied, setCopied] = useState(false);
   // Latch so StrictMode's double effect run can't save the same take twice.

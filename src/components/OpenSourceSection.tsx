@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import SmileAccent from './SmileAccent';
 
 export const REPO_URL = 'https://github.com/froola-app/froola';
@@ -8,7 +9,7 @@ export const REPO_URL = 'https://github.com/froola-app/froola';
 const PIECES = [
   {
     title: 'Hand tracking',
-    body: 'MediaPipe on-device, palm centers and facing resolved into two stable hands.',
+    body: 'A dependency-free tracker that turns shivering landmarks into signals steady enough to play.',
   },
   {
     title: 'Music',
@@ -61,6 +62,9 @@ export default function OpenSourceSection() {
         </div>
 
         <div className="lp4__ctas lp4__os-ctas">
+          <Link className="lp4__link-btn" to="/engineering">
+            How the hand tracking works<span aria-hidden="true"> ›</span>
+          </Link>
           <a className="lp4__link-btn" href={REPO_URL} target="_blank" rel="noreferrer">
             View the source<span aria-hidden="true"> ›</span>
           </a>

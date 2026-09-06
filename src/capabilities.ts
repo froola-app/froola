@@ -18,12 +18,8 @@ export interface Capabilities {
   maxRecordings: number;
   /** Hard stop for the video recorder, see MAX_VIDEO_RECORD_MS. */
   maxVideoRecordMs: number;
-  /** No recording is ever watermarked. */
-  recordingWatermark: boolean;
   /** MP3/MP4 export of a stored recording. */
   exportUnlocked: boolean;
-  /** No export is ever watermarked. */
-  exportWatermark: boolean;
   /** Record the camera full-frame without the dials layer. The camera itself
       can never be hidden: recordings are video-only by design. */
   hideDialsUnlocked: boolean;
@@ -40,9 +36,7 @@ export const FULL_ACCESS: Capabilities = {
   visualThemesUnlocked: true,
   maxRecordings: Infinity,
   maxVideoRecordMs: MAX_VIDEO_RECORD_MS,
-  recordingWatermark: false,
   exportUnlocked: true,
-  exportWatermark: false,
   hideDialsUnlocked: true,
   loopUnlocked: true,
   loopSlots: Infinity,

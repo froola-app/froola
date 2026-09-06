@@ -8,6 +8,9 @@
     "skipLibCheck": true,
 
     /* Bundler mode */
+    "paths": {
+      "@froola/handtrack": ["./packages/handtrack/src/index.ts"]
+    },
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -21,6 +24,12 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/test-setup.test.ts"]
+  "include": ["src", "packages/handtrack/src"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/test-setup.test.ts",
+    "packages/**/*.test.ts",
+    "packages/handtrack/src/bench"
+  ]
 }

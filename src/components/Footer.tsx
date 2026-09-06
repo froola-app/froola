@@ -25,6 +25,7 @@ const COLUMNS: { head: string; links: FooterLink[] }[] = [
   {
     head: 'Open source',
     links: [
+      { label: 'Hand tracking case study', to: '/engineering' },
       { label: 'Source on GitHub', href: REPO_URL },
       { label: 'MIT license', href: `${REPO_URL}/blob/main/LICENSE` },
       { label: 'Contributing', href: `${REPO_URL}/blob/main/CONTRIBUTING.md` },

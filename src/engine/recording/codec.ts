@@ -28,13 +28,17 @@ function runLengthMerge(samples: RecordingSample[]): RecordingSample[] {
 // all-samples format because their length is ≡1 (mod 5) instead of ≡0. The
 // high bits form a version marker so a corrupt legacy payload that happens
 // to be ≡1 (mod 5) still fails validation instead of decoding as v1.
+//
+// The low bits used to carry a no-watermark flag. Watermarks are gone, but the
+// byte stays: links minted while it existed are still out there, and the
+// version marker is what tells them apart from legacy payloads. Old flag bits
+// are simply ignored, which is why the version check masks the high nibble.
 const FLAGS_VERSION = 0x80;
-const FLAG_NO_WATERMARK = 0x01;
 
 export function encode(recording: Recording): string {
   const samples = runLengthMerge(recording.samples);
   const buf = new Uint8Array(1 + samples.length * 5);
-  buf[0] = FLAGS_VERSION | (recording.watermark === false ? FLAG_NO_WATERMARK : 0);
+  buf[0] = FLAGS_VERSION;
   const view = new DataView(buf.buffer);
   samples.forEach((s, i) => {
     view.setUint16(1 + i * 5, s.dt, false);
@@ -52,12 +56,9 @@ export function decode(data: string): Recording {
   const buf = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
 
-  // Legacy links carry no flags byte — every one predates paid plans, so
-  // they play back watermarked.
-  let watermark = true;
+  // Legacy links carry no flags byte at all; v1 links carry one to skip.
   let offset = 0;
   if (buf.length % 5 === 1 && (buf[0] & 0xf0) === FLAGS_VERSION) {
-    watermark = (buf[0] & FLAG_NO_WATERMARK) === 0;
     offset = 1;
   } else if (buf.length === 0 || buf.length % 5 !== 0) {
     throw new Error('Invalid recording data');
@@ -84,5 +85,5 @@ export function decode(data: string): Recording {
     totalMs += dt;
   }
 
-  return { samples, totalMs, watermark };
+  return { samples, totalMs };
 }

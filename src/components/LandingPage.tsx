@@ -68,7 +68,7 @@ export default function LandingPage() {
         <div className="lp4__nav-links">
           <a href="#how">How it works</a>
           <a href="#songs">Songs</a>
-          <a href="#pricing">Pricing</a>
+          <a href="#open-source">Open source</a>
         </div>
         <div className="lp4__nav-side">
           <ThemeToggle theme={theme} onToggle={toggleTheme} />

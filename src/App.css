@@ -955,26 +955,6 @@ body {
   transition: width 0.1s linear;
 }
 
-/* Free-plan replays play back branded (see Recording.watermark). */
-.replay-watermark {
-  position: fixed;
-  top: 1.1rem;
-  right: 1.25rem;
-  z-index: 30;
-  font-size: 0.8rem;
-  letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.72);
-  text-decoration: none;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-.replay-watermark strong { font-weight: 700; color: #fff; }
-.replay-watermark:hover { color: #fff; }
-
 /* ── Landing v4 — Apple design language ─────────────────────── */
 
 .lp4 {
@@ -4664,3 +4644,311 @@ body {
     transform: none;
   }
 }
+
+/* ── Engineering case study (/engineering) ──────────────────── */
+/* Reuses the lp4 shell and its tokens so the theme toggle, hairlines and type
+   scale stay identical to the product pages. Only the layout is different:
+   this one is built for reading, not for converting. */
+
+.eng__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--lp-accent);
+  margin: 0 0 1.1rem;
+}
+
+.eng__head {
+  padding: clamp(6rem, 14vh, 9.5rem) 0 clamp(2.5rem, 6vh, 4rem);
+}
+
+.eng__title {
+  font-size: clamp(2.35rem, 6.2vw, 4.25rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  margin: 0;
+  max-width: 16ch;
+}
+
+.eng__standfirst {
+  font-size: clamp(1.05rem, 1.9vw, 1.3rem);
+  line-height: 1.55;
+  color: var(--lp-gray);
+  max-width: 52ch;
+  margin: 1.6rem 0 0;
+}
+
+.eng__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+  color: var(--lp-gray);
+}
+
+.eng__byline { color: var(--lp-ink); font-weight: 500; }
+.eng__dot { color: var(--lp-faint); }
+
+.eng__stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+}
+
+.eng__stack li {
+  font-size: 0.78rem;
+  color: var(--lp-gray);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 999px;
+  padding: 0.3rem 0.72rem;
+}
+
+.eng__section {
+  padding: clamp(3.5rem, 9vh, 6rem) 0;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.eng__section--tint { background: var(--lp-bg-alt); }
+
+.eng__h2 {
+  font-size: clamp(1.5rem, 2.9vw, 2.05rem);
+  font-weight: 650;
+  letter-spacing: -0.022em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.eng__lede {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--lp-gray);
+  max-width: 58ch;
+  margin: 1rem 0 0;
+}
+
+/* Heading left, prose right. Collapses to one column on narrow screens. */
+.eng__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.eng__body p {
+  font-size: 1.02rem;
+  line-height: 1.68;
+  color: var(--lp-gray);
+  max-width: 62ch;
+  margin: 0 0 1.1rem;
+}
+
+.eng__body p:last-child { margin-bottom: 0; }
+
+.eng__aside {
+  border-left: 2px solid var(--lp-accent);
+  padding-left: 1rem;
+  color: var(--lp-faint) !important;
+  font-size: 0.93rem !important;
+}
+
+/* Results table. A grid rather than a <table> so it can restack on mobile
+   without a horizontal scroll. */
+.eng__table {
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.eng__tr {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) repeat(2, minmax(0, 0.7fr)) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+  padding: 1.05rem 0;
+  border-bottom: 1px solid var(--lp-hairline);
+}
+
+.eng__tr--head {
+  padding: 0.7rem 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--lp-faint);
+}
+
+.eng__cell-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--lp-ink);
+  font-size: 0.98rem;
+}
+
+.eng__cell-label em {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--lp-faint);
+}
+
+.eng__num {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.02rem;
+}
+
+.eng__num--before { color: var(--lp-faint); text-decoration: line-through; text-decoration-thickness: 1px; }
+.eng__num--after { color: var(--lp-ink); font-weight: 600; }
+
+.eng__delta {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--lp-accent);
+}
+
+.eng__footnote {
+  margin: 1.5rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--lp-faint);
+  max-width: 62ch;
+}
+
+/* Numbered stages down a hairline rail. */
+.eng__rail {
+  list-style: none;
+  padding: 0;
+  margin: 2.5rem 0 0;
+}
+
+.eng__stage {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 0 1.25rem;
+  padding: 0 0 2.25rem;
+  position: relative;
+}
+
+.eng__stage::before {
+  content: '';
+  position: absolute;
+  left: 0.55rem;
+  top: 1.75rem;
+  bottom: 0;
+  width: 1px;
+  background: var(--lp-hairline);
+}
+
+.eng__stage:last-child { padding-bottom: 0; }
+.eng__stage:last-child::before { display: none; }
+
+.eng__stage-num {
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--lp-accent);
+  padding-top: 0.22rem;
+}
+
+.eng__stage-title {
+  font-size: 1.06rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  margin: 0 0 0.55rem;
+  color: var(--lp-ink);
+}
+
+.eng__stage-body p {
+  font-size: 0.98rem;
+  line-height: 1.66;
+  color: var(--lp-gray);
+  max-width: 60ch;
+  margin: 0;
+}
+
+.eng__stage-stat {
+  margin-top: 0.7rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 600;
+  color: var(--lp-ink) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.eng__code {
+  margin: 1.6rem 0 0;
+  padding: 1.05rem 1.2rem;
+  border: 1px solid var(--lp-hairline);
+  border-radius: 12px;
+  background: var(--lp-card);
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  font-size: 0.83rem;
+  line-height: 1.75;
+  color: var(--lp-gray);
+}
+
+.eng__limits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.75rem;
+  margin-top: 2.25rem;
+}
+
+.eng__limit h3 {
+  font-size: 0.99rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.5rem;
+  color: var(--lp-ink);
+}
+
+.eng__limit p {
+  font-size: 0.93rem;
+  line-height: 1.62;
+  color: var(--lp-gray);
+  margin: 0;
+}
+
+.eng__cta {
+  padding: clamp(3.5rem, 9vh, 6rem) 0;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.eng__cta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+}
+
+@media (max-width: 860px) {
+  .eng__cols { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+}
+
+@media (max-width: 700px) {
+  /* Restack each result row into a labelled block; a four-column grid at this
+     width would either overflow or shrink the numbers past reading. */
+  .eng__tr--head { display: none; }
+  .eng__tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 1rem;
+    padding: 1.1rem 0;
+  }
+  .eng__cell-label { grid-column: 1 / -1; }
+  .eng__num--before::after { content: ' → '; text-decoration: none; }
+  .eng__num--before { text-decoration: none; }
+  .eng__num--before, .eng__num--after { font-size: 0.95rem; }
+  .eng__num--after { justify-self: start; }
+  .eng__delta { grid-column: 2; grid-row: 2; justify-self: end; }
+  .eng__stage { grid-template-columns: 2.5rem minmax(0, 1fr); }
+  .eng__stage::before { left: 0.4rem; }
+}
+
+/* The nav CTA is an anchor here rather than a button, so it picks up the
+   page's link underline unless told otherwise. */
+.eng .lp4__pill,
+.eng .lp4__link-btn { text-decoration: none; }

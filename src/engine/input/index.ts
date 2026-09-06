@@ -1,9 +1,24 @@
-// src/engine/input/index.ts
+// Camera and MediaPipe plumbing for the hand tracker.
+//
+// The tracking *algorithms* do not live here. Filtering, slot assignment, fist
+// gating, coasting and prediction are all in `@froola/handtrack`, which is pure
+// and covered by benchmarks that run without a camera. What is left in this
+// file is the part that genuinely needs a browser: acquiring a stream, loading
+// and babysitting the MediaPipe landmarker, choosing a delegate, pacing
+// inference, and releasing hardware when the tab goes away.
+//
+// Keeping the split at that line is deliberate. Everything on the far side of
+// it can be tested; everything on this side has to be verified on a device.
+
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  HandTracker,
+  coverTransform,
+  type HandFrame,
+  type Point,
+} from '@froola/handtrack';
 import type { GestureSignal } from '../types';
-import { classifyHandFacing, handFacingAngles } from './handFacing';
-import { palmCenter } from './palmCenter';
-import { wheelGeometry, type WheelGeometry } from '../renderer/geometry';
+import { wheelGeometry } from '../renderer/geometry';
 
 export type InputMode = 'asking' | 'camera';
 
@@ -47,32 +62,8 @@ const isWebKit =
   typeof navigator !== 'undefined' &&
   navigator.vendor === 'Apple Computer, Inc.';
 
-// A single detected hand can only be on one wheel at a time, so we label it
-// by which wheel center it's nearest — on the desktop/landscape side-by-side
-// layout that's equivalent to a left/right screen-half split, but on the
-// portrait diagonal layout (see wheelGeometry) the two wheels sit close
-// together on the x-axis, so an x-only split would misassign hands reaching
-// for the vertically-staggered wheel.
-export function assignHandIds(
-  points: { rx: number; ry: number }[],
-  geo: WheelGeometry,
-  dw: number,
-  dh: number
-): ('left' | 'right')[] {
-  const distTo = (p: { rx: number; ry: number }, cx: number, cy: number) =>
-    Math.hypot(p.rx * dw - cx, p.ry * dh - cy);
-
-  if (points.length === 1) {
-    const p = points[0];
-    return [distTo(p, geo.leftCx, geo.leftCy) <= distTo(p, geo.rightCx, geo.rightCy) ? 'left' : 'right'];
-  }
-  // Two hands: pick whichever left/right pairing has the lower total
-  // distance instead of assuming index 0 is always the left wheel.
-  const [a, b] = points;
-  const straight = distTo(a, geo.leftCx, geo.leftCy) + distTo(b, geo.rightCx, geo.rightCy);
-  const swapped = distTo(a, geo.rightCx, geo.rightCy) + distTo(b, geo.leftCx, geo.leftCy);
-  return straight <= swapped ? ['left', 'right'] : ['right', 'left'];
-}
+/** Slot 0 drives the note wheel, slot 1 the extension wheel. */
+const SLOT_TO_HAND: ('left' | 'right')[] = ['left', 'right'];
 
 export function useGestureInput(initialMode: InputMode = 'asking'): {
   signalRef: React.RefObject<GestureSignal[]>;
@@ -212,36 +203,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
         return;
       }
 
-      // Per-hand EMA + fist-lock state.
-      // Time constant (ms) for the fingertip EMA; the per-update alpha is
-      // 1 - exp(-dt/tau), which matches the old fixed alpha (0.35 per 33 ms
-      // tick) at the nominal rate but stays rate-independent. With a fixed
-      // alpha, slower inference (Safari's CPU delegate) meant fewer blend
-      // steps per second, so the orb converged slower — "lags behind".
-      const SMOOTH_TAU = 77;
-      // How long (ms) a hand must be absent before we re-initialize its EMA
-      // on the next appearance instead of blending from the stale position.
-      // Prevents the orb from snapping to the 0.5,0.5 default when a hand
-      // first appears or briefly drops out (e.g. due to handedness flipping).
-      const REAPPEAR_GAP_MS = 300;
-      type HandState = { x: number; y: number; lastSeenMs: number; wasFist: boolean; frozenX: number | null; frozenY: number | null };
-      const smooth: Record<'left' | 'right', HandState> = {
-        left:  { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
-        right: { x: 0.5, y: 0.5, lastSeenMs: -Infinity, wasFist: false, frozenX: null, frozenY: null },
-      };
-
-      function isFist(lm: { x: number; y: number; z: number }[]): boolean {
-        const wrist = lm[0];
-        const tipIdx = [8, 12, 16, 20];
-        const mcpIdx = [5,  9, 13, 17];
-        const d = (a: typeof wrist, b: typeof wrist) =>
-          Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
-        let curled = 0;
-        for (let k = 0; k < 4; k++) {
-          if (d(lm[tipIdx[k]], wrist) < d(lm[mcpIdx[k]], wrist) * 0.95) curled++;
-        }
-        return curled >= 3;
-      }
+      // Everything stateful about the hands themselves lives here, and it is
+      // all portable: no DOM, no camera, no React. The two wheels are its two
+      // slots.
+      const tracker = new HandTracker({ slotCount: 2 });
 
       // Set localStorage 'froola.debugFacing' = '1' to log per-hand tilt
       // angles (for tuning the tilt-popup thresholds against a real camera).
@@ -316,105 +281,51 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
           lastInferenceTime = now;
           handDelay = Math.max(INFERENCE_INTERVAL, (performance.now() - now) * 1.5);
 
-          if (!result || result.landmarks.length === 0) {
-            // No hands in frame: explicitly clear so the renderer's guardrail
-            // check (signals.some(s => s.present)) returns false and the
-            // pulsing guide rings reappear.
-            signalRef.current = [];
-          } else {
-            // Remap from video-native coords to viewport coords (object-fit:cover compensation)
-            const vw = video.videoWidth;
-            const vh = video.videoHeight;
+          // A failed detect carries no information about where the hands are,
+          // so leave the last signals standing rather than telling the tracker
+          // the hands are gone.
+          if (result) {
             const dw = window.innerWidth;
             const dh = window.innerHeight;
-            const scale = Math.max(dw / vw, dh / vh);
-            const offsetX = (dw - vw * scale) / 2;
-            const offsetY = (dh - vh * scale) / 2;
+            const geo = wheelGeometry(dw, dh);
+            // The wheel centers, in the same 0-1 space the tracker reports in.
+            const anchors: Point[] = [
+              { x: geo.leftCx / dw, y: geo.leftCy / dh },
+              { x: geo.rightCx / dw, y: geo.rightCy / dh },
+            ];
+            const transform = coverTransform(video.videoWidth, video.videoHeight, dw, dh);
 
-            // handId comes from mirrored screen position, not MediaPipe's
-            // handedness label: handedness flickers frame-to-frame, which
-            // swapped the wheel a hand was driving mid-play, and two
-            // detections with the same label collided the per-hand EMA state
-            // and left one wheel unreachable. Each hand is assigned to
-            // whichever wheel center it's nearest (see assignHandIds).
-            const detections = result.landmarks.slice(0, 2).map((lm, i) => {
-              const fist = isFist(lm);
-              // Open hand tracks the index fingertip; a fist tracks the palm
-              // center, so where the curled index finger ends up can't drag
-              // the lock into a neighboring zone.
-              const p = fist ? palmCenter(lm) : lm[8];
-              return {
-                rx: ((1 - p.x) * vw * scale + offsetX) / dw,
-                ry: (p.y * vh * scale + offsetY) / dh,
-                fist,
-                // World landmarks (metric 3D) — required for facing angles;
-                // normalized landmarks give distorted out-of-plane angles.
-                worldLm: result.worldLandmarks[i],
-              };
+            const hands: HandFrame[] = result.landmarks.slice(0, 2).map((landmarks, i) => ({
+              landmarks,
+              // World landmarks (metric 3D) — required for facing angles;
+              // normalized landmarks give distorted out-of-plane angles.
+              worldLandmarks: result.worldLandmarks[i],
+            }));
+
+            const tracked = tracker.update(hands, {
+              anchors,
+              mapPoint: p => transform.map(p),
+              nowMs: now,
             });
-            const wheelGeo = wheelGeometry(dw, dh);
-            const handIds = assignHandIds(detections, wheelGeo, dw, dh);
 
-            const signals: GestureSignal[] = [];
-            for (let i = 0; i < detections.length; i++) {
-              const { rx, ry, fist, worldLm } = detections[i];
-              const handId = handIds[i];
-              const s = smooth[handId];
+            signalRef.current = tracked.map(h => ({
+              x: h.x,
+              y: h.y,
+              present: true,
+              handId: SLOT_TO_HAND[h.slot] ?? 'left',
+              fist: h.fist,
+              facing: h.facing,
+            }));
 
-              // Jump EMA to actual position on first appearance or after a tracking
-              // gap — prevents the orb from drifting in from center (0.5, 0.5).
-              const dt = now - s.lastSeenMs;
-              const isNew = dt > REAPPEAR_GAP_MS;
-              s.lastSeenMs = now;
-
-              if (!fist) {
-                if (isNew) {
-                  s.x = rx; s.y = ry;
-                } else {
-                  const alpha = 1 - Math.exp(-dt / SMOOTH_TAU);
-                  s.x = alpha * rx + (1 - alpha) * s.x;
-                  s.y = alpha * ry + (1 - alpha) * s.y;
-                }
-              } else if (isNew) {
-                // Fist on reappearance: seed EMA at actual position so the freeze
-                // captures the real hand location, not the stale center default.
-                s.x = rx; s.y = ry;
+            if (facingDebug && tracked.length > 0 && now - lastFacingLogMs > 500) {
+              lastFacingLogMs = now;
+              for (const h of tracked) {
+                console.log(
+                  `[hand] ${SLOT_TO_HAND[h.slot]} facing=${h.facing} curl=${h.curl.toFixed(2)}` +
+                  `${h.fist ? ' fist' : ''}${h.coasting ? ' coasting' : ''}`
+                );
               }
-
-              // Freeze reported position on fist-close; unfreeze on fist-open.
-              // Snap to this frame's palm center rather than the EMA — the EMA
-              // still holds the fingertip position from the open-hand frames.
-              if (fist && !s.wasFist) {
-                s.x = rx;
-                s.y = ry;
-                s.frozenX = rx;
-                s.frozenY = ry;
-              } else if (!fist && s.wasFist) {
-                s.frozenX = null;
-                s.frozenY = null;
-              }
-              s.wasFist = fist;
-
-              const reportX = s.frozenX ?? s.x;
-              const reportY = s.frozenY ?? s.y;
-
-              const facing = classifyHandFacing(worldLm);
-              if (facingDebug && now - lastFacingLogMs > 500) {
-                lastFacingLogMs = now;
-                const a = handFacingAngles(worldLm);
-                console.log(`[facing] ${handId} turn=${a.turn.toFixed(0)}° pitch=${a.pitch.toFixed(0)}° → ${facing}`);
-              }
-
-              signals.push({
-                x: Math.max(0, Math.min(1, reportX)),
-                y: Math.max(0, Math.min(1, reportY)),
-                present: true,
-                handId,
-                fist,
-                facing,
-              });
             }
-            signalRef.current = signals;
           }
         }
         animFrameId = requestAnimationFrame(loop);
@@ -474,6 +385,10 @@ export function useGestureInput(initialMode: InputMode = 'asking'): {
             video.srcObject = stream;
             await video.play();
             if (cancelled || document.hidden) return;
+            // The hands have had minutes to move. Anything the tracker
+            // remembers about them is stale, so start clean.
+            tracker.reset();
+            signalRef.current = [];
             paused = false;
             animFrameId = requestAnimationFrame(loop);
           } catch {

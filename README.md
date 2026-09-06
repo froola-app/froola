@@ -43,6 +43,31 @@ are never uploaded anywhere. Two circular dials sit on the canvas:
 On top of that sit a chord looper, an arpeggiator whose rate follows hand height, video
 recording, and a lesson path with spaced-repetition review.
 
+## The hand tracker
+
+The part most worth taking is
+[`packages/handtrack`](packages/handtrack) — a dependency-free library that turns
+MediaPipe's landmarks into signals steady enough to play an instrument with. It never
+imports MediaPipe, touches the DOM, or knows what a camera is, so all of its behaviour is
+tested headless in CI.
+
+Raw landmarks shiver when a hand is still, arrive late, drop the odd frame, and chatter
+against any threshold you put near them. Measured against the exponential moving average
+most integrations reach for:
+
+| | Before | After | |
+|---|---|---|---|
+| Jitter, hand held still | 2.86 | **2.35** | 18% steadier |
+| Lag behind a moving hand | 59.6 ms | **21.1 ms** | 65% quicker |
+| Settling after a jump | 300 ms | **33 ms** | 9x faster |
+| Fist flicker on a hand at the threshold | 108 | **1** | over 200 frames |
+| Slot flicker on a hand between targets | 106 | **0** | over 200 frames |
+
+Improving jitter and lag together is the claim, and it is not something a fixed cutoff can
+do. `npm run bench` regenerates every number above from seeded synthetic traces;
+[BENCHMARK.md](packages/handtrack/BENCHMARK.md) is its output and
+[the case study](https://froola.vercel.app/engineering) is the long version.
+
 ## The engine
 
 Everything musical lives in `src/engine/`, independent of the React app that renders it.
@@ -51,7 +76,7 @@ React at all.
 
 | Module | What it owns |
 |---|---|
-| `engine/input/` | MediaPipe landmarks to stable per-hand signals: palm centre, facing, and hand ids assigned by screen position |
+| `engine/input/` | Camera and MediaPipe lifecycle: stream, delegate choice and fallback, inference pacing. The tracking itself is `@froola/handtrack` |
 | `engine/music/` | Keys, scales, chord voicings, and the gesture-to-chord mapping |
 | `engine/audio/` | Web Audio synth and sampler, tempo clock, backing arrangements |
 | `engine/looper/` | Chord looper with beat-quantised slots |

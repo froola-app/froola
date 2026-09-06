@@ -27,28 +27,12 @@ const MIME_CANDIDATES: { candidate: string; mime: VideoMime }[] = [
 // composite; the encoder output looks identical at share sizes.
 const MAX_COMPOSITE_WIDTH = 1920;
 
-function drawWatermark(ctx2d: CanvasRenderingContext2D, w: number, h: number) {
-  // Big corner wordmark (free tier). Bottom-left; the camera PiP owns the
-  // bottom-right corner.
-  const size = Math.round(w * 0.07);
-  ctx2d.save();
-  ctx2d.font = `700 ${size}px Inter, -apple-system, system-ui, sans-serif`;
-  ctx2d.textBaseline = 'alphabetic';
-  ctx2d.shadowColor = 'rgba(0,0,0,0.45)';
-  ctx2d.shadowBlur = size * 0.15;
-  ctx2d.fillStyle = 'rgba(255,255,255,0.9)';
-  ctx2d.fillText('froola', Math.round(w * 0.02), h - Math.round(w * 0.02));
-  ctx2d.restore();
-}
-
 export function useVideoRecorder(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   cameraVideoRef: RefObject<HTMLVideoElement | null>,
   engineRef: RefObject<AudioEngine | null>,
-  // Plan-gated (see src/entitlements.ts maxVideoRecordMs).
+  // A technical ceiling, not a plan one (see capabilities.maxVideoRecordMs).
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
-  // Plan-gated (recordingWatermark): free takes get the mark burned in.
-  watermark: boolean = false,
 ) {
   const [state, setState] = useState<VideoRecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
@@ -138,8 +122,6 @@ export function useVideoRecorder(
           ctx2d.restore();
         }
 
-        if (watermark) drawWatermark(ctx2d, composite.width, composite.height);
-
         animIdRef.current = requestAnimationFrame(drawFrame);
       }
       drawFrame();
@@ -194,7 +176,7 @@ export function useVideoRecorder(
       cleanup();
       setState('idle');
     }
-  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs, watermark]);
+  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs]);
 
   return { state, elapsed, take, start, stop, clearTake };
 }

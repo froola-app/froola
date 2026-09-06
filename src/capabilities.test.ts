@@ -12,12 +12,6 @@ describe('capabilities', () => {
     expect(c.hideDialsUnlocked).toBe(true);
   });
 
-  it('never watermarks a recording or an export', () => {
-    const c = capabilities();
-    expect(c.recordingWatermark).toBe(false);
-    expect(c.exportWatermark).toBe(false);
-  });
-
   it('leaves recordings and loop slots unbounded', () => {
     const c = capabilities();
     expect(c.maxRecordings).toBe(Infinity);
