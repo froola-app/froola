@@ -1,13 +1,21 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '../useScrollReveal';
-import { useTheme } from '../useTheme';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useTheme } from '../../hooks/useTheme';
 import CheckoutResult from './CheckoutResult';
+<<<<<<<< HEAD:optional/billing/src/components/PricingPage.tsx
 import Footer from './Footer';
 import FroolaLogo from './FroolaLogo';
 import PricingSection from './PricingSection';
 import ProfileButton from './ProfileButton';
 import ThemeToggle from './ThemeToggle';
+========
+import FroolaLogo from '../brand/FroolaLogo';
+import PricingSection from './PricingSection';
+import ProfileButton from '../account/ProfileButton';
+import ThemeToggle from '../ThemeToggle';
+import SiteFooter from '../docs/SiteFooter';
+>>>>>>>> origin/main:src/components/pricing/PricingPage.tsx
 
 // Standalone /pricing route, styled to match the landing page (lp4) so
 // it reads as a real page rather than an onboarding step.
@@ -32,7 +40,11 @@ export default function PricingPage() {
       <PricingSection />
       <CheckoutResult />
 
+<<<<<<<< HEAD:optional/billing/src/components/PricingPage.tsx
       <Footer />
+========
+      <SiteFooter />
+>>>>>>>> origin/main:src/components/pricing/PricingPage.tsx
     </div>
   );
 }

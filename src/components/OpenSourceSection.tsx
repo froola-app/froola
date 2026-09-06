@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import SmileAccent from './SmileAccent';
+import SmileAccent from './brand/SmileAccent';
 
 export const REPO_URL = 'https://github.com/froola-app/froola';
 

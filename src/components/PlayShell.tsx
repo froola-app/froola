@@ -2,21 +2,27 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { InstrumentMode } from '../engine/types';
 import { storeInputMode, type InputMode } from '../engine/input';
-import { KEYS, SCALE_NAMES, buildCommand, type ScaleName, type MusicConfig } from '../engine/music';
-import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, type LooperState } from '../engine/looper';
+import { KEYS, SCALE_NAMES, buildCommand, wheelChord, type ScaleName, type ChordMode, type MusicConfig, type CustomWheel } from '../engine/music';
+import { listWheels, saveWheel, deleteWheel } from '../engine/music/customWheelStore';
+import WheelEditor from './WheelEditor';
+import { ChordLooper, DEFAULT_BPM, DEFAULT_BEATS_PER_SLOT, listLoops, saveLoop, deleteLoop, type LooperState, type SavedLoop } from '../engine/looper';
 import { Arpeggiator } from '../engine/arp';
 import { useCoordinator } from '../coordinator';
-import ShareButton from './ShareButton';
-import VideoRecordButton from './VideoRecordButton';
-import ProfileButton from './ProfileButton';
+import ShareButton from './recording/ShareButton';
+import FeedbackButton from './FeedbackButton';
+import RecordButton from './recording/RecordButton';
+import VideoRecordButton from './recording/VideoRecordButton';
+import AudioExportButton from './recording/AudioExportButton';
+import ProfileButton from './account/ProfileButton';
 import LoopPanel from './LoopPanel';
-import FroolaLogo from './FroolaLogo';
+import FroolaLogo from './brand/FroolaLogo';
 import BeginnerTutorial from './BeginnerTutorial';
-import FroolaGuide from './FroolaGuide';
+import FroolaGuide from './brand/FroolaGuide';
 import GlassDials from './GlassDials';
+import MySongPanel from './MySongPanel';
 import { useAmbientLuminance } from '../hooks/useAmbientLuminance';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { useTheme } from '../useTheme';
+import { useTheme } from '../hooks/useTheme';
 import { capabilities } from '../capabilities';
 
 const MODES: { value: InstrumentMode; label: string }[] = [
@@ -52,6 +58,7 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const isMobile = useIsMobile();
 
   const ent = capabilities();
+  const [mySongOpen, setMySongOpen] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [instrumentMode, setInstrumentMode] = useState<InstrumentMode>('synth');
@@ -68,10 +75,30 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   useEffect(() => { octaveRef.current = octave; }, [octave]);
 
   // Key (tonic, 0–11 semitones above C) + scale select the 7 wheel notes.
+  // Chord mode picks what the right wheel offers: in-key extensions
+  // (triad/7th/sus…) or universal fixed qualities (maj/min/7/dim7…).
   const [keyOffset, setKeyOffset] = useState(0);
   const [scale, setScale] = useState<ScaleName>('major');
-  const musicRef = useRef<MusicConfig>({ keyOffset, scale });
-  useEffect(() => { musicRef.current = { keyOffset, scale }; }, [keyOffset, scale]);
+  const [chordMode, setChordMode] = useState<ChordMode>('diatonic');
+
+  // Custom chord wheels (Plus+): user-defined root+quality per slice,
+  // swapped in for the diatonic wheel in free play only (lessons use their
+  // own shell and never read this musicRef — see the grep note in the PR).
+  const [customWheels, setCustomWheels] = useState<CustomWheel[]>([]);
+  const [activeWheelId, setActiveWheelId] = useState<string | null>(null);
+  const [wheelEditor, setWheelEditor] = useState<'closed' | 'new' | 'edit'>('closed');
+  const activeWheel = customWheels.find(w => w.id === activeWheelId) ?? null;
+
+  const musicRef = useRef<MusicConfig>({ keyOffset, scale, chordMode, customWheel: activeWheel ?? undefined });
+  useEffect(() => {
+    musicRef.current = { keyOffset, scale, chordMode, customWheel: activeWheel ?? undefined };
+  }, [keyOffset, scale, chordMode, activeWheel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    listWheels().then(ws => { if (!cancelled) setCustomWheels(ws); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Chord looper: drives the chord pad while the hand solos over it. The ref
   // lets the coordinator's hot loop know when the loop owns the pad.
@@ -86,21 +113,40 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   const arpRef = useRef<Arpeggiator | null>(null);
   const arpEnabledRef = useRef(true);
   const [arpEnabled, setArpEnabled] = useState(true);
+  // Same downgrade rule as piano/themes: a lapsed plan must not leave the
+  // arp running with no visible toggle to turn it off. Unlike the piano
+  // guard above, this also stops the (external, impure) arpeggiator engine —
+  // a real side effect, not just a state correction — so it stays an effect.
   const changeOctave = useCallback((delta: number) => {
     setOctave(o => Math.max(OCTAVE_MIN, Math.min(OCTAVE_MAX, o + delta)));
   }, []);
 
-  // Arrow keys are a quick shortcut for the on-screen octave stepper.
+  // Arrow keys are a quick shortcut for the on-screen octave stepper
+  // (ignored while a control is focused, e.g. arrow keys moving the cursor
+  // in the My Song textarea).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'ArrowUp')        { e.preventDefault(); changeOctave(1); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); changeOctave(-1); }
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+        t.tagName === 'BUTTON' || t.isContentEditable)) return;
+      e.preventDefault();
+      if (e.key === 'ArrowUp') changeOctave(1);
+      else changeOctave(-1);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [changeOctave]);
 
-  const { mode, requestCamera, cameraError, selectedRef, preloadSampler, cameraVideoRef, engineRef, signalRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef);
+  const { mode, requestCamera, cameraError, selectedRef, vibe, preloadSampler, cameraVideoRef, engineRef, signalRef, sustainedRef } = useCoordinator(canvasRef, modeRef, initialInput, octaveRef, undefined, musicRef, undefined, loopPlayingRef, arpRef, arpEnabledRef, undefined);
+
+  // Live chord label for the video export chip: reads the current wheel
+  // selection per frame via a stable getter (both refs are stable), so the
+  // export chip always names the chord actually sounding.
+  const getChordLabel = useCallback(
+    () => wheelChord(selectedRef.current.noteIdx, selectedRef.current.qualIdx, musicRef.current).label,
+    [selectedRef],
+  );
 
   // No explainer screen to click through — ask for the camera the moment
   // the page loads. Only fires once: after a denial, mode reverts to
@@ -111,8 +157,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     autoRequestedRef.current = true;
     requestCamera();
   }, [mode, cameraError, requestCamera]);
-
-
 
   // Watch the camera feed's brightness and flag the HUD zones on <html> so
   // the glass controls flip to dark ink over bright scenes (see App.css).
@@ -196,8 +240,18 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
   useEffect(() => {
     const a = new Arpeggiator({
       createClock: (cb, opts) => engineRef.current!.createClock(cb, opts),
-      playNoteAt: (midi, when) => engineRef.current!.playNoteAt(midi, when),
-      silence: () => engineRef.current!.silenceMelody(),
+      // Duck the sustained pad under the arp — the pattern is inaudible if the
+      // full-volume drone (the same pitches) keeps playing on top of it.
+      playNoteAt: (midi, when, duration) => {
+        const e = engineRef.current!;
+        e.setPadDuck(true);
+        e.playNoteAt(midi, when, duration);
+      },
+      silence: () => {
+        const e = engineRef.current!;
+        e.setPadDuck(false);
+        e.silenceMelody();
+      },
     });
     arpRef.current = a;
     return () => a.stop();
@@ -220,6 +274,60 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     looper.add(buildCommand(noteIdx, qualIdx, 0.5, octaveRef.current, musicRef.current));
   }, [looper, selectedRef, loopState.slots.length, ent.loopSlots]);
 
+  // Record-arm: while armed, poll the sustained-fist ref and capture the
+  // current chord on each rising edge (fresh fist lock), so a player can lock
+  // in a whole progression hands-free instead of reaching for "+ chord" each
+  // time. Auto-disarms once the loop fills to the plan's slot cap.
+  const [loopArmed, setLoopArmed] = useState(false);
+  const prevSustainedRef = useRef(false);
+  const toggleLoopArm = useCallback(() => {
+    setLoopArmed(v => {
+      // Seed with the live sustained value (not a hardcoded false) so a fist
+      // already held at the moment of arming isn't mistaken for a fresh
+      // rising edge on the first poll tick — only a *new* squeeze after
+      // arming should capture.
+      prevSustainedRef.current = sustainedRef.current;
+      return !v;
+    });
+  }, [sustainedRef]);
+
+  // addCurrentChord's identity changes on every capture (it closes over
+  // loopState.slots.length), so this effect tears down and restarts the
+  // interval each time a chord lands. That's harmless by design: the
+  // rising-edge state lives in prevSustainedRef, not in this effect's
+  // closure, so a restart never causes a double-capture or a missed edge.
+  useEffect(() => {
+    if (!loopArmed || !looper) return;
+    const id = setInterval(() => {
+      const sustained = sustainedRef.current;
+      if (sustained && !prevSustainedRef.current) addCurrentChord();
+      prevSustainedRef.current = sustained;
+    }, 100);
+    return () => clearInterval(id);
+  }, [loopArmed, looper, addCurrentChord, sustainedRef]);
+
+  useEffect(() => {
+    if (loopArmed && loopState.slots.length >= ent.loopSlots) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- disarming is a derived correction to external loop-fill state, same pattern as the arp downgrade guard above
+      setLoopArmed(false);
+    }
+  }, [loopArmed, loopState.slots.length, ent.loopSlots]);
+
+  // Saved-loop library: read once on mount, refreshed after save/delete.
+  const [savedLoops, setSavedLoops] = useState<SavedLoop[]>(() => listLoops());
+  const handleSaveLoop = useCallback((name: string) => {
+    if (!looper) return;
+    saveLoop({ name, bpm: loopState.bpm, beatsPerSlot: loopState.beatsPerSlot, slots: looper.getSlots(), savedAt: Date.now() });
+    setSavedLoops(listLoops());
+  }, [looper, loopState.bpm, loopState.beatsPerSlot]);
+  const handleLoadLoop = useCallback((loop: SavedLoop) => {
+    looper?.load(loop);
+  }, [looper]);
+  const handleDeleteLoop = useCallback((name: string) => {
+    deleteLoop(name);
+    setSavedLoops(listLoops());
+  }, []);
+
   // Enter is a quick shortcut for "+ chord" (ignored while a control is focused).
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -238,15 +346,12 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
     <>
       <canvas ref={canvasRef} className="main-canvas" />
       {mode === 'camera' && <GlassDials />}
-      {/* Unlike Froo's post-tutorial tour and the loop panel (still
-          mobile-hidden below), this teaches hand positioning — "no
-          tutorial, no warning of the hand not being well positioned" was
-          the actual complaint, so mobile keeps it. */}
-      {showTutorial && mode === 'camera' && (
+      {/* Mobile is a bare canvas: no tutorial, no guide, no HUD — just the
+          camera and the wheels. Every control below is desktop-only. */}
+      {!isMobile && showTutorial && mode === 'camera' && (
         <BeginnerTutorial
           key={`tutorial-${tutorialRun}`}
           signalRef={signalRef}
-          selectedRef={selectedRef}
           onDone={() => setTutorialDone(true)}
         />
       )}
@@ -267,27 +372,61 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
       {/* The permission screen (mode 'asking') is a full-viewport layer below
           the HUD's z-index, so hide the HUD until camera access is granted. */}
       {mode !== 'asking' && <>
-      <ShareButton />
-      <VideoRecordButton
-        canvasRef={canvasRef}
-        cameraVideoRef={cameraVideoRef}
-        engineRef={engineRef}
-        maxDurationMs={ent.maxVideoRecordMs}
-      />
-      <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
-      <ProfileButton
-        play={mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
-      />
-      </>}
-      {!isMobile && looper && mode === 'camera' && ent.loopUnlocked && (
-        <LoopPanel looper={looper} state={loopState} onAddChord={addCurrentChord} maxSlots={ent.loopSlots} />
-      )}
-      {/* Mobile keeps only the two controls that shape which notes are on
-          the wheels — instrument/octave/arp stay at their defaults
-          (synth, octave 0, arp on) and are only reachable on a wider
-          screen, so the phone HUD doesn't crowd the canvas. */}
-      {mode !== 'asking' && <div className="hud-bottom">
+      {!isMobile && <div className="hud-capture">
+        <RecordButton
+          selectedRef={selectedRef}
+          vibe={vibe}
+          maxDurationMs={ent.maxReplayRecordMs}
+          watermark={ent.replayWatermark}
+          maxSavedRecordings={ent.maxSavedRecordings}
+        />
+        <VideoRecordButton
+          canvasRef={canvasRef}
+          cameraVideoRef={cameraVideoRef}
+          engineRef={engineRef}
+          maxDurationMs={ent.maxVideoRecordMs}
+          watermark={ent.exportWatermark}
+          getChordLabel={getChordLabel}
+        />
+        <AudioExportButton
+          engineRef={engineRef}
+          maxDurationMs={ent.maxVideoRecordMs}
+        />
+      </div>}
+      {/* Mobile keeps exactly one control: the profile avatar. It's the only
+          way off the play screen on a phone (sign-in, settings, upgrade), so
+          it stays while Learn/Share/Feedback go. "Replay tutorial" is desktop
+          -only because the tutorial itself doesn't render on mobile. */}
+      <div className="hud-nav">
         {!isMobile && <>
+        <button className="learn-nav-btn" onClick={() => navigate('/learn')}>Learn</button>
+        <ShareButton />
+        <FeedbackButton />
+        </>}
+        <ProfileButton
+          play={!isMobile && mode === 'camera' ? { onReplayTutorial: replayTutorial } : undefined}
+        />
+      </div>
+      </>}
+      {/* Mobile gets no controls at all — instrument, key, scale, chord mode,
+          wheel, octave and arp stay at their defaults (synth, C major,
+          in-key, octave 0, arp on) and are only reachable on a wider screen. */}
+      {mode !== 'asking' && !isMobile && <div className="hud-bottom-stack">
+        {looper && mode === 'camera' && ent.loopUnlocked && (
+          <LoopPanel
+            looper={looper}
+            state={loopState}
+            onAddChord={addCurrentChord}
+            maxSlots={ent.loopSlots}
+            armed={loopArmed}
+            onToggleArm={toggleLoopArm}
+            savedLoops={savedLoops}
+            onSaveLoop={handleSaveLoop}
+            onLoadLoop={handleLoadLoop}
+            onDeleteLoop={handleDeleteLoop}
+          />
+        )}
+        <div className="hud-bottom">
         <select
           className="instrument-select"
           value={instrumentMode}
@@ -303,7 +442,6 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           ))}
         </select>
         {pianoLoading && <span className="instrument-loading">loading piano…</span>}
-        </>}
         <select
           className="instrument-select"
           value={keyOffset}
@@ -324,7 +462,34 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
-        {!isMobile && <div className="octave-control" role="group" aria-label="Octave">
+        <select
+          className="instrument-select"
+          value={chordMode}
+          onChange={e => setChordMode(e.target.value as ChordMode)}
+          aria-label="Chord mode"
+          title="in-key: extensions on the scale's own chords · universal: maj/min/7/dim7… on any root"
+        >
+          <option value="diatonic">in-key</option>
+          <option value="universal">universal</option>
+        </select>
+        <select
+          className="instrument-select"
+          value={activeWheelId ?? ''}
+          aria-label="Wheel"
+          onChange={e => {
+            const v = e.target.value;
+            if (v === '__new') { setWheelEditor('new'); return; }
+            setActiveWheelId(v || null);
+          }}
+        >
+          <option value="">in-key wheel</option>
+          {customWheels.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+          <option value="__new">+ new wheel…</option>
+        </select>
+        {activeWheel && ent.customWheelsUnlocked && (
+          <button className="octave-btn" onClick={() => setWheelEditor('edit')} aria-label="Edit wheel">✎</button>
+        )}
+        <div className="octave-control" role="group" aria-label="Octave">
           <button
             className="octave-btn"
             onClick={() => changeOctave(-1)}
@@ -344,8 +509,8 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           >
             +
           </button>
-        </div>}
-        {!isMobile && ent.arpUnlocked && <button
+        </div>
+        <button
           className="octave-btn arp-btn"
           onClick={toggleArp}
           aria-pressed={arpEnabled}
@@ -353,8 +518,46 @@ export default function PlayShell({ initialInput = 'asking' }: { initialInput?: 
           title="When held, arpeggiate the sustained chord instead of a static pad"
         >
           arp {arpEnabled ? 'on' : 'off'}
-        </button>}
+        </button>
+        <button
+          className="octave-btn my-song-btn"
+          onClick={() => setMySongOpen(true)}
+          aria-label="My Song"
+          title="Your saved lyrics+chords sheet and stored loops"
+        >
+          My Song
+        </button>
+        </div>
       </div>}
+      {mySongOpen && (
+        <MySongPanel
+          open={mySongOpen}
+          onClose={() => setMySongOpen(false)}
+          onLoadLoop={loop => looper?.load(loop)}
+        />
+      )}
+      {wheelEditor !== 'closed' && (
+        <WheelEditor
+          keyOffset={keyOffset}
+          scale={scale}
+          initial={wheelEditor === 'edit' ? activeWheel : null}
+          onClose={() => setWheelEditor('closed')}
+          onSave={async (name, slices, id) => {
+            const saved = await saveWheel(name, slices, id);
+            if (saved) {
+              setCustomWheels(ws => id ? ws.map(w => (w.id === id ? saved : w)) : [...ws, saved]);
+              setActiveWheelId(saved.id);
+            }
+            setWheelEditor('closed');
+          }}
+          onDelete={async id => {
+            await deleteWheel(id);
+            setCustomWheels(ws => ws.filter(w => w.id !== id));
+            setActiveWheelId(null);
+            setWheelEditor('closed');
+          }}
+        />
+      )}
     </>
   );
 }

@@ -310,14 +310,18 @@ body {
    now: when the scene behind a zone fights the fill (bright scene
    under dark glass, dark scene under light glass) the fill
    thickens slightly. Ink never flips with the scene. */
+/* Fill shade + alpha are pinned to the dial material — LIGHT_PALETTE.disc /
+   DARK_PALETTE.disc in src/engine/renderer/index.ts — so every glass surface
+   on /play (buttons and dials alike) reads as the same material. Keep the
+   two in sync if either changes. */
 :root, :root[data-theme='light'] {
   /* shared ink accents */
   --lg-on-ink: #fafaf8;           /* text on an ink-colored chip */
   /* top zone — corner buttons + center badges */
   --lg-top-ink: rgba(24, 22, 19, 0.92);
   --lg-top-ink-dim: rgba(24, 22, 19, 0.66);
-  --lg-top-fill: rgba(252, 250, 246, 0.60);
-  --lg-top-fill-hover: rgba(255, 253, 250, 0.78);
+  --lg-top-fill: rgba(250, 249, 246, 0.38);
+  --lg-top-fill-hover: rgba(255, 253, 250, 0.50);
   --lg-top-stroke: rgba(24, 22, 19, 0.12);
   --lg-top-rim: rgba(255, 255, 255, 0.90);
   --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
@@ -327,8 +331,8 @@ body {
   /* bottom zone — hud-bottom row + loop panel */
   --lg-bottom-ink: rgba(24, 22, 19, 0.92);
   --lg-bottom-ink-dim: rgba(24, 22, 19, 0.66);
-  --lg-bottom-fill: rgba(252, 250, 246, 0.60);
-  --lg-bottom-fill-hover: rgba(255, 253, 250, 0.78);
+  --lg-bottom-fill: rgba(250, 249, 246, 0.38);
+  --lg-bottom-fill-hover: rgba(255, 253, 250, 0.50);
   --lg-bottom-stroke: rgba(24, 22, 19, 0.12);
   --lg-bottom-rim: rgba(255, 255, 255, 0.90);
   --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
@@ -341,8 +345,8 @@ body {
   --lg-on-ink: #131317;
   --lg-top-ink: rgba(255, 255, 255, 0.92);
   --lg-top-ink-dim: rgba(255, 255, 255, 0.70);
-  --lg-top-fill: rgba(19, 21, 27, 0.55);
-  --lg-top-fill-hover: rgba(31, 34, 43, 0.68);
+  --lg-top-fill: rgba(22, 22, 24, 0.34);
+  --lg-top-fill-hover: rgba(34, 34, 38, 0.44);
   --lg-top-stroke: rgba(255, 255, 255, 0.16);
   --lg-top-rim: rgba(255, 255, 255, 0.25);
   --lg-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
@@ -351,8 +355,8 @@ body {
   --lg-top-inner-hover: rgba(255, 255, 255, 0.24);
   --lg-bottom-ink: rgba(255, 255, 255, 0.92);
   --lg-bottom-ink-dim: rgba(255, 255, 255, 0.70);
-  --lg-bottom-fill: rgba(19, 21, 27, 0.55);
-  --lg-bottom-fill-hover: rgba(31, 34, 43, 0.68);
+  --lg-bottom-fill: rgba(22, 22, 24, 0.34);
+  --lg-bottom-fill-hover: rgba(34, 34, 38, 0.44);
   --lg-bottom-stroke: rgba(255, 255, 255, 0.16);
   --lg-bottom-rim: rgba(255, 255, 255, 0.25);
   --lg-bottom-shadow: 0 4px 16px rgba(0, 0, 0, 0.40);
@@ -410,13 +414,58 @@ body {
     var(--lg-top-shadow-hover);
 }
 
-/* bottom-center HUD row — holds instrument / key / scale / theme pickers */
-.hud-bottom {
+/* below Share, closing out the right column the way Learn closes the left */
+.feedback-btn {
+  position: fixed;
+  top: 6rem;
+  right: 1rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--lg-top-ink);
+  text-decoration: none;
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  z-index: 20;
+}
+
+.feedback-btn:hover {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
+}
+
+/* bottom stack: loop strip snug above the music bar, one anchored column */
+.hud-bottom-stack {
   position: fixed;
   bottom: 1.5rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+}
+
+/* bottom-center HUD row — laid out by .hud-bottom-stack */
+.hud-bottom {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -532,9 +581,10 @@ body {
   cursor: default;
 }
 
-/* arp toggle — stands alone on the video (not inside a pill), so it
-   carries the full glass treatment itself */
-.arp-btn {
+/* arp toggle + My Song — stand alone on the video (not inside a pill),
+   so they carry the full glass treatment themselves */
+.arp-btn,
+.my-song-btn {
   width: auto;
   height: auto;
   font-size: 0.85rem;
@@ -552,38 +602,27 @@ body {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
-.arp-btn:hover:not(:disabled) {
+.arp-btn:hover:not(:disabled),
+.my-song-btn:hover:not(:disabled) {
   background:
     linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
     var(--lg-bottom-fill-hover);
 }
 
-/* chord looper — frosted panel sitting above the bottom HUD row */
+
+/* chord looper — horizontal strip in .hud-bottom-stack: slots and
+   controls inline, saved loops wrap onto their own line below */
 .loop-panel {
-  position: fixed;
-  bottom: 4.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   max-width: calc(100vw - 2rem);
   font-family: 'DM Sans', system-ui, sans-serif;
   color: var(--lg-bottom-ink);
   transition: color 0.3s;
-}
-
-/* At medium widths .hud-bottom's pills wrap to 2 rows, and at narrow widths
-   to 3+ rows. Adjust .loop-panel bottom offset to clear the variable height
-   instead of assuming a fixed single-row layout. */
-@media (max-width: 800px) {
-  .loop-panel { bottom: 7rem; }
-}
-
-@media (max-width: 480px) {
-  .loop-panel { bottom: 9.5rem; }
 }
 
 .loop-slots {
@@ -667,6 +706,45 @@ body {
   color: var(--lg-on-ink);
 }
 
+/* armed = same inverted treatment, with a subtle pulse so it reads as "live" */
+.loop-btn--arm.is-armed {
+  background: var(--lg-bottom-ink);
+  color: var(--lg-on-ink);
+  animation: loop-arm-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes loop-arm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.loop-saved {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.loop-saved-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--lg-bottom-fill);
+  border: 1px solid var(--lg-bottom-stroke);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.8rem;
+  font-size: 0.78rem;
+}
+
+.loop-saved-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 10rem;
+}
+
 .loop-bpm {
   display: inline-flex;
   align-items: center;
@@ -681,10 +759,19 @@ body {
   -webkit-user-select: none;
 }
 
+/* HUD pills: buttons default to UA letter-spacing (normal) while link-styled
+   pills inherit the body's 0.18px — pin one explicit value so all pills track
+   identically. */
+.record-btn,
+.vid-record-btn,
+.audio-export-btn,
+.learn-nav-btn,
+.share-btn,
+.feedback-btn,
+
+/* record/video/MP3 buttons render only inside .hud-capture, which owns
+   placement — the segment overrides near the end of this file anchor them */
 .record-btn {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -700,7 +787,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
 }
 
@@ -789,12 +875,16 @@ body {
   background: #7c3aed;
 }
 
+/* Audio export progress bar stacks above both, in case a video/replay take
+   is also running */
+.record-progress--audio {
+  bottom: 6px;
+  background: #059669;
+}
+
 /* ── Video record button ───────────────────────────────────── */
 
 .vid-record-btn {
-  position: fixed;
-  top: 3.5rem;
-  left: 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -810,7 +900,6 @@ body {
     inset 0 -1px 1px rgba(0, 0, 0, 0.08),
     var(--lg-top-shadow);
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  z-index: 20;
   border: 1px solid transparent;
   white-space: nowrap;
 }
@@ -854,77 +943,65 @@ body {
   border-color: rgba(255, 255, 255, 0.85);
 }
 
-/* post-record result: share/download pill + a small dismiss, sitting where
-   the record button lives. The pill drops position:fixed inside the group. */
-.vid-record-result {
-  position: fixed;
-  top: 3.5rem;
-  left: 1rem;
-  display: flex;
+/* ── Audio export button ───────────────────────────────────── */
+
+.audio-export-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  z-index: 20;
-}
-
-.vid-record-result .vid-record-btn {
-  position: static;
-}
-
-.vid-record-btn--done {
-  color: #fbbf24;
-  background: rgba(17, 17, 17, 0.72);
-  border-color: rgba(245, 158, 11, 0.55);
-}
-
-.vid-record-btn--done:hover {
-  background: rgba(34, 26, 8, 0.88);
-  color: #fcd34d;
-}
-
-.vid-record-dismiss {
-  width: 1.7rem;
-  height: 1.7rem;
+  gap: 0.45rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.85rem;
   border-radius: 999px;
-  border: 1px solid var(--lg-top-stroke);
-  background: var(--lg-top-fill);
-  color: var(--lg-top-ink);
-  font-size: 0.95rem;
-  line-height: 1;
+  padding: 0.4rem 1rem;
   cursor: pointer;
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow);
+  transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
 
-/* ── Watch page (shared recording playback) ────────────────── */
-
-.watch-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: #0A0E1A;
-  gap: 1.5rem;
-  padding: 1.5rem;
+.audio-export-btn:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    var(--lg-top-shadow-hover);
 }
 
-.watch-video {
-  width: min(92vw, 960px);
-  max-height: 70vh;
-  border-radius: 16px;
-  background: #000;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+.audio-export-btn--idle {
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
 }
 
-.watch-note {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 1rem;
-  max-width: 32rem;
-  text-align: center;
+.audio-export-btn--idle:hover {
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0) 45%),
+    var(--lg-top-fill-hover);
 }
 
-.watch-brand {
-  display: inline-flex;
+.audio-export-btn--encoding {
+  color: var(--lg-top-ink-dim);
+  background: var(--lg-top-fill);
+  border-color: var(--lg-top-stroke);
+  cursor: wait;
+}
+
+.audio-export-btn--recording {
+  color: #ffffff;
+  background: rgba(5, 150, 105, 0.72);
+  border-color: rgba(52, 211, 153, 0.65);
+}
+
+.audio-export-btn--recording .rec-dot--live {
+  background: #34d399;
+  border-color: rgba(255, 255, 255, 0.85);
 }
 
 /* ── Replay playback controls ──────────────────────────────── */
@@ -953,6 +1030,39 @@ body {
   height: 100%;
   background: #f59e0b;
   transition: width 0.1s linear;
+}
+
+/* Free-plan replays play back branded (see Recording.watermark). */
+.replay-watermark {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 30;
+  font-size: 1.6rem;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.replay-watermark strong { font-weight: 700; color: #fff; }
+.replay-watermark:hover { color: #fff; }
+
+:root[data-theme='light'] .replay-watermark {
+  color: rgba(0, 0, 0, 0.75);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme='light'] .replay-watermark strong {
+  color: rgba(0, 0, 0, 0.92);
+}
+
+:root[data-theme='light'] .replay-watermark:hover {
+  color: rgba(0, 0, 0, 0.92);
 }
 
 /* ── Landing v4 — Apple design language ─────────────────────── */
@@ -1010,7 +1120,7 @@ body {
   gap: 14px;
 }
 
-/* Floating home link on the legal pages — mirrors .lp4__corner on the left */
+/* Floating home link (pricing page) — mirrors .lp4__corner on the left */
 .lp4__corner-home {
   position: fixed;
   top: 16px;
@@ -1079,62 +1189,72 @@ body {
 .theme-toggle.is-dark .theme-toggle__icon--sun { opacity: 0; }
 .theme-toggle.is-dark .theme-toggle__icon--moon { opacity: 1; }
 
-/* Sticky nav: wordmark, section links, one CTA. Blur + hairline keep it
-   quiet over any section it floats above. */
-.lp4__nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+/* Wow hero — the living logo owns the first screen */
+.lp4__wow {
+  position: relative;
+  /* Fill the first screen exactly: the section boundary sits at the fold
+     and the labeled cue at the bottom makes "this scrolls" obvious. */
+  min-height: 100svh;
+  padding: 0 22px 76px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 28px;
-  padding: 0 max(22px, calc(50% - 510px));
-  height: 56px;
-  background: color-mix(in srgb, var(--lp-bg) 78%, transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  backdrop-filter: blur(14px) saturate(1.4);
-  border-bottom: 1px solid var(--lp-hairline);
-  transition: background 0.35s ease, border-color 0.35s ease;
+  justify-content: center;
+  text-align: center;
 }
 
-.lp4__nav-brand {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 4px;
+.lp4__wow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* The ellipse terminus must sit fully off-viewport: any on-screen end of
+     the fade — hard stop or not — reads as an oval ring over the corner
+     controls. Oversize the ellipse past every corner, and fade the bottom
+     clip edge with a mask so the section boundary doesn't seam. */
+  background: radial-gradient(140% 120% at 50% 42%, rgba(212, 80, 10, 0.08), rgba(212, 80, 10, 0.04) 45%, rgba(212, 80, 10, 0.012) 75%, rgba(212, 80, 10, 0));
+  mask-image: linear-gradient(to bottom, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+  pointer-events: none;
 }
 
-.lp4__nav-links {
+.lp4__wow > * {
+  position: relative;
+}
+
+.lp4__wow-ctas {
+  margin-top: clamp(36px, 6vh, 64px);
+  animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.35s both;
+}
+
+.lp4__scroll-cue {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 24px;
-}
-
-.lp4__nav-links a {
-  font-size: 13.5px;
+  gap: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
   font-weight: 500;
   color: var(--lp-gray);
-  text-decoration: none;
+  padding: 8px 14px;
+  /* Keeps the button centered when reduced-motion disables the animation. */
+  transform: translateX(-50%);
+  animation: lp4-cue 2.4s ease-in-out infinite;
   transition: color 0.2s ease;
 }
 
-.lp4__nav-links a:hover { color: var(--lp-ink); }
+.lp4__scroll-cue:hover { color: var(--lp-accent); }
 
-.lp4__nav-side {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+.lp4__scroll-cue svg { width: 20px; height: 20px; }
 
-.lp4__pill--nav {
-  font-size: 13.5px;
-  font-weight: 600;
-  padding: 7px 16px;
-}
-
-@media (max-width: 640px) {
-  .lp4__nav { gap: 16px; }
-  .lp4__nav-links { display: none; }
+@keyframes lp4-cue {
+  0%, 100% { transform: translate(-50%, 0); opacity: 0.65; }
+  50% { transform: translate(-50%, 6px); opacity: 1; }
 }
 
 /* Living logo: the wordmark as a face. The o's are eyes, the smile is the
@@ -1247,7 +1367,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .living-logo,
   .living-logo__face.is-nodding,
-  .living-logo__face.is-poked { animation: none; }
+  .living-logo__face.is-poked,
+  .lp4__scroll-cue,
+  .lp4__wow-ctas { animation: none; }
   .living-logo__eye,
   .living-logo__smile { transition: none; }
 }
@@ -1293,17 +1415,12 @@ body {
 }
 
 .lp4__headline {
-  /* Display type in the wordmark's face (DM Sans 900): the headline carries
-     the brand genetics now that the living logo lives in the closing band. */
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: clamp(52px, 8.5vw, 92px);
-  line-height: 1.02;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-size: clamp(40px, 7vw, 64px);
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
-
-.lp4__headline-dot { color: var(--lp-accent); }
 
 .lp4__subhead {
   margin-top: 18px;
@@ -1335,11 +1452,11 @@ body {
   font-weight: 500;
   padding: 12px 26px;
   border-radius: 980px;
-  transition: filter 0.2s, transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: filter 0.2s;
 }
 
-.lp4__pill:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.lp4__pill:active { filter: brightness(0.94); transform: scale(0.97); }
+.lp4__pill:hover { filter: brightness(1.08); }
+.lp4__pill:active { filter: brightness(0.94); }
 
 .lp4__link-btn {
   border: none;
@@ -1349,11 +1466,9 @@ body {
   font-size: 17px;
   color: var(--lp-accent);
   padding: 12px 0;
-  text-decoration: none;
-  display: inline-block;
 }
 
-.lp4__link-btn:hover { text-decoration: underline; text-underline-offset: 4px; }
+.lp4__link-btn:hover { text-decoration: underline; }
 
 /* Hero product stage */
 .lp4__stage {
@@ -1434,6 +1549,82 @@ body {
 }
 
 /* How-it-works cards */
+.lp4__cards {
+  margin-top: 44px;
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .lp4__cards { grid-template-columns: 1fr; }
+}
+
+.lp4__card {
+  background: var(--lp-card);
+  border-radius: 18px;
+  padding: 36px 28px;
+  text-align: left;
+  box-shadow: var(--lp-card-shadow);
+  transition: background 0.35s ease, box-shadow 0.35s ease;
+}
+
+.lp4__card-icon {
+  display: block;
+  width: 30px;
+  height: 30px;
+  color: var(--lp-accent);
+  margin-bottom: 22px;
+}
+
+.lp4__card-icon svg { width: 100%; height: 100%; }
+
+.lp4__card-step {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lp-faint);
+  margin-bottom: 6px;
+}
+
+.lp4__card-title {
+  font-size: 21px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.lp4__card-body {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--lp-gray);
+}
+
+/* Hero trust line — three quiet value props under the CTAs. */
+.lp4__trust {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--lp-faint);
+  animation: lp4-rise 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.2s both;
+}
+.lp4__trust span { display: inline-flex; align-items: center; gap: 7px; }
+.lp4__trust span::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lp-accent);
+  opacity: 0.75;
+}
+
 /* Songs marquee — full-width drifting rows of the real songs you learn,
    so the page shows the product's soul instead of empty margins. */
 .lp4__songs {
@@ -1486,6 +1677,29 @@ body {
 .lp4__song-artist { font-size: 13px; color: var(--lp-faint); }
 .lp4__songs-cta { margin-top: 36px; padding: 0 22px; }
 
+/* Feature trio — supports the privacy statement with real value props. */
+.lp4__features {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+@media (max-width: 768px) { .lp4__features { grid-template-columns: 1fr; } }
+.lp4__feature {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 18px;
+  padding: 30px 26px;
+  text-align: left;
+  box-shadow: var(--lp-card-shadow);
+}
+.lp4__feature-icon { display: block; width: 26px; height: 26px; color: var(--lp-accent); margin-bottom: 16px; }
+.lp4__feature-icon svg { width: 100%; height: 100%; }
+.lp4__feature-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; color: var(--lp-ink); }
+.lp4__feature-body { font-size: 14px; line-height: 1.5; color: var(--lp-gray); }
+
 /* Final CTA band — ends the page on a confident accent block instead of
    trailing off into empty white above the footer. */
 .lp4__cta-band-wrap { padding: 0 22px clamp(48px, 7vh, 84px); }
@@ -1521,129 +1735,500 @@ body {
   .lp4__marquee-row--b { animation: none; }
 }
 
-/* Footer: scaled-down Apple sitemap. Link columns, hairline, legal bar. */
+/* Pricing section */
+.lp4__pricing-grid {
+  margin-top: 44px;
+  width: 100%;
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .lp4__pricing-grid { grid-template-columns: 1fr; }
+}
+
+.lp4__pricing-card {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 18px;
+  padding: 32px 28px;
+  box-shadow: var(--lp-card-shadow);
+  transition: background 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.lp4__pricing-card--highlight {
+  border-color: rgba(212, 80, 10, 0.35);
+  background: linear-gradient(180deg, rgba(212, 80, 10, 0.09), var(--lp-card) 65%);
+}
+
+.lp4__pricing-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.lp4__pricing-name {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__pricing-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--lp-accent);
+  background: rgba(212, 80, 10, 0.1);
+  border: 1px solid rgba(212, 80, 10, 0.25);
+  border-radius: 999px;
+  padding: 0.12rem 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.lp4__pricing-price {
+  margin-top: 18px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lp-ink);
+}
+
+.lp4__pricing-period {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  margin-left: 0.15rem;
+}
+
+.lp4__pricing-features {
+  list-style: none;
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lp4__pricing-features li {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--lp-gray);
+  padding-left: 1.3rem;
+  position: relative;
+}
+
+.lp4__pricing-features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--lp-accent);
+  font-weight: 700;
+}
+
+.lp4__pricing-cta {
+  margin-top: 24px;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  background: var(--lp-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: 999px;
+  transition: filter 0.2s;
+}
+
+.lp4__pricing-cta:hover:not(:disabled) { filter: brightness(1.08); }
+.lp4__pricing-cta:active:not(:disabled) { filter: brightness(0.94); }
+.lp4__pricing-cta:disabled { opacity: 0.6; cursor: default; }
+
+.lp4__pricing-current {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--lp-gray);
+}
+
+.lp4__pricing-toggle {
+  margin-top: 28px;
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--lp-hairline);
+  border-radius: 999px;
+  background: var(--lp-card);
+}
+
+.lp4__pricing-toggle-btn {
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--lp-gray);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 18px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.lp4__pricing-toggle-btn.is-active {
+  background: var(--lp-ink);
+  color: var(--lp-bg);
+}
+
+.lp4__pricing-toggle-save {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--lp-accent);
+  background: rgba(212, 80, 10, 0.1);
+  border: 1px solid rgba(212, 80, 10, 0.25);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lp4__pricing-toggle-btn.is-active .lp4__pricing-toggle-save {
+  color: var(--lp-bg);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: transparent;
+}
+
+.lp4__pricing-note {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lp-accent);
+}
+
+.lp4__pricing-note--muted {
+  color: var(--lp-gray);
+}
+
+.lp4__pricing-note--link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* Pricing comparison table: plan headers with price + CTA, feature rows
+   beneath. Old grid/card classes above are kept for PricingMockups. */
+.lp4__cmp-scroll {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 1020px;
+  overflow-x: auto;
+}
+
+.lp4__cmp {
+  min-width: 720px;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 20px;
+  box-shadow: var(--lp-card-shadow);
+  text-align: left;
+  overflow: hidden;
+}
+
+.lp4__cmp-row {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr 1fr;
+  border-top: 1px solid var(--lp-hairline);
+}
+
+.lp4__cmp-row--head { border-top: none; }
+
+.lp4__cmp-lead {
+  padding: 14px 20px 14px 28px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--lp-ink);
+  display: flex;
+  align-items: center;
+}
+
+.lp4__cmp-cell {
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--lp-gray);
+  display: flex;
+  align-items: center;
+}
+
+.lp4__cmp-check { color: var(--lp-ink); font-weight: 600; }
+.lp4__cmp-dash { color: var(--lp-faint); }
+
+/* The Plus column reads as one continuous band down the table. */
+.lp4__cmp .is-plus {
+  background: var(--lp-col-tint);
+  border-left: 1px solid var(--lp-hairline);
+  border-right: 1px solid var(--lp-hairline);
+}
+
+.lp4__cmp-plan {
+  padding: 28px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.lp4__cmp-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__cmp-price {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--lp-ink);
+  animation: lp4-price-pop 0.3s ease;
+}
+
+@keyframes lp4-price-pop {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp4__cmp-price { animation: none; }
+}
+
+.lp4__cmp-price--muted {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  /* Keep header heights aligned with the $-price columns. */
+  line-height: 36px;
+  animation: none;
+}
+
+.lp4__cmp-period {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--lp-gray);
+  margin-left: 0.1rem;
+}
+
+.lp4__cmp-sub {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--lp-faint);
+  min-height: 2.2em;
+}
+
+.lp4__cmp-cta {
+  margin-top: 8px;
+  width: 100%;
+  padding: 9px 16px;
+  font-size: 14px;
+}
+
+.lp4__cmp-plan .lp4__pricing-current { margin-top: 8px; text-align: left; }
+
+.lp4__pricing-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.lp4__pricing-name-row .lp4__pricing-badge { white-space: nowrap; }
+
+/* Privacy lock */
+.lp4__lock {
+  width: 44px;
+  height: 44px;
+  color: var(--lp-accent);
+  margin-bottom: 22px;
+}
+
+.lp4__lock svg { width: 100%; height: 100%; }
+
+/* Footer */
 .lp4__footer {
   background: var(--lp-bg-alt);
   border-top: 1px solid var(--lp-hairline);
   transition: background 0.35s ease, border-color 0.35s ease;
 }
 
-.lp4__footer-inner {
+.sf {
   max-width: 980px;
   margin: 0 auto;
-  padding: 34px 22px 26px;
-  font-size: 12px;
+  padding: 40px 22px 18px;
+  font-size: 13px;
   color: var(--lp-faint);
 }
 
-.lp4__footer-cols {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  padding-bottom: 28px;
-}
-
-.lp4__footer-col h3 {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 600;
+.sf__brand {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
   color: var(--lp-ink);
+  margin-bottom: 26px;
 }
 
-.lp4__footer-col ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.sf__cols {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 28px 20px;
 }
 
-.lp4__footer a {
-  color: var(--lp-gray);
-  text-decoration: none;
-  transition: color 0.15s ease;
-}
-
-.lp4__footer a:hover {
-  color: var(--lp-ink);
-  text-decoration: underline;
-}
-
-.lp4__footer-legal {
-  border-top: 1px solid var(--lp-hairline);
-  padding-top: 16px;
+.sf__col {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
-.lp4__footer-legal-row {
+.sf__col h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--lp-ink);
+  margin: 0 0 2px;
+}
+
+.sf__col a {
+  color: inherit;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.sf__col a:hover { color: var(--lp-accent); }
+
+.sf__bottom {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  font-size: 12px;
+  margin-top: 34px;
+  padding-top: 16px;
+  border-top: 1px solid var(--lp-hairline);
 }
 
-.lp4__footer-sep {
-  margin: 0 8px;
-  color: var(--lp-faint);
+.sf__bottom a { color: inherit; }
+
+/* Doc pages (/terms, /privacy, /refunds, /about) */
+.doc {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-@media (max-width: 560px) {
-  .lp4__footer-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-/* Legal pages (/privacy, /terms): narrow reading column, quiet type. */
-.lp4__legal {
-  max-width: 660px;
+.doc__body {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 110px 22px 90px;
+  padding: 96px 22px 72px;
+  font-size: 15px;
+  line-height: 1.65;
 }
 
-.lp4__legal-title {
-  margin: 0 0 8px;
-  font-size: clamp(34px, 6vw, 46px);
-  font-weight: 800;
+.doc__body h1 {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 900;
   letter-spacing: -0.02em;
+  margin: 0 0 6px;
 }
 
-.lp4__legal-updated {
-  margin: 0 0 34px;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--lp-hairline);
-  font-size: 14px;
+.doc__updated {
   color: var(--lp-faint);
+  font-size: 13px;
+  margin: 0 0 28px;
 }
 
-.lp4__legal h2 {
-  margin: 34px 0 10px;
+.doc__body h2 {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  margin: 32px 0 10px;
 }
 
-.lp4__legal p,
-.lp4__legal li {
-  margin: 0 0 12px;
-  font-size: 15px;
-  line-height: 1.65;
-  color: var(--lp-gray);
+.doc__body p { margin: 0 0 14px; }
+
+.doc__body ul {
+  margin: 0 0 14px;
+  padding-left: 22px;
 }
 
-.lp4__legal ul {
-  margin: 0 0 12px;
-  padding-left: 20px;
-}
+.doc__body li { margin-bottom: 8px; }
 
-.lp4__legal li { margin-bottom: 6px; }
-
-.lp4__legal a {
+.doc__body a {
   color: var(--lp-accent);
   text-decoration: none;
 }
 
-.lp4__legal a:hover { text-decoration: underline; }
+.doc__body a:hover { text-decoration: underline; }
+
+/* Post-checkout success overlay + cancel toast */
+.lp4__checkout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--lp-bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: lp4-checkout-fade 0.35s ease both;
+}
+
+.lp4__confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lp4__checkout-card {
+  position: relative;
+  max-width: 430px;
+  width: 100%;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 28px;
+  box-shadow: var(--lp-card-shadow-hover);
+  padding: 44px 40px 36px;
+  text-align: center;
+  animation: lp4-checkout-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) 0.05s both;
+}
+
+.lp4__checkout-title {
+  font-size: clamp(30px, 5vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 0.24em;
+}
+
+.lp4__checkout-word { display: inline-flex; }
+.lp4__checkout-word--accent { color: var(--lp-accent); }
+
+/* Each letter bounces in like a note landing on a staff — springy overshoot,
+   staggered per character via inline animation-delay. */
+.lp4__checkout-char {
+  display: inline-block;
+  animation: lp4-char-pop 0.6s cubic-bezier(0.2, 1.6, 0.35, 1) both;
+}
 
 @keyframes lp4-char-pop {
   from { opacity: 0; transform: translateY(0.65em) scale(0.6) rotate(-8deg); }
@@ -1654,6 +2239,65 @@ body {
    trigger that normally animates it never fires inside a modal. */
 .lp4__checkout-card .lp4__smile-accent path {
   animation: lp4-smile-draw 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.45s both;
+}
+
+.lp4__checkout-lede {
+  margin: 20px 0 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--lp-ink);
+}
+
+.lp4__checkout-fine {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--lp-gray);
+}
+
+.lp4__checkout-cta { max-width: 260px; }
+
+.lp4__checkout-later {
+  display: block;
+  margin: 14px auto 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  color: var(--lp-faint);
+  transition: color 0.2s;
+}
+
+.lp4__checkout-later:hover { color: var(--lp-ink); }
+
+.lp4__checkout-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 999px;
+  box-shadow: var(--lp-card-shadow);
+  padding: 10px 18px;
+  font-size: 13px;
+  color: var(--lp-gray);
+  animation: lp4-checkout-fade 0.3s ease both;
+}
+
+.lp4__checkout-toast-close {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--lp-faint);
+  padding: 0 2px;
 }
 
 @keyframes lp4-checkout-fade {
@@ -1685,7 +2329,7 @@ body {
 
 /* Staggered child reveals: cards pop in one after another once their
    section is in view, then keep a springy hover lift afterwards. */
-.lp4 [data-reveal] :is(.lp4__os-card, .lp4__step) {
+.lp4 [data-reveal] :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
   opacity: 0;
   transform: translateY(26px) scale(0.98);
   transition:
@@ -1696,18 +2340,46 @@ body {
     border-color 0.3s ease;
 }
 
-.lp4 [data-reveal].is-in :is(.lp4__os-card, .lp4__step) {
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
   opacity: 1;
   transform: none;
 }
 
-.lp4 [data-reveal].is-in :is(.lp4__os-card, .lp4__step):nth-child(2) { transition-delay: 0.1s; }
-.lp4 [data-reveal].is-in :is(.lp4__os-card, .lp4__step):nth-child(3) { transition-delay: 0.2s; }
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):nth-child(2) { transition-delay: 0.1s; }
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):nth-child(3) { transition-delay: 0.2s; }
 
-.lp4 [data-reveal].is-in :is(.lp4__os-card):hover {
+.lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover {
   transform: translateY(-6px);
   box-shadow: var(--lp-card-shadow-hover);
   transition-delay: 0s;
+}
+
+/* Card icons come alive on hover */
+.lp4__card:hover .lp4__card-icon {
+  animation: lp4-wiggle 0.7s ease;
+  transform-origin: 50% 85%;
+}
+
+.lp4__feature:hover .lp4__feature-icon {
+  animation: lp4-bounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lp4__card-step { transition: color 0.25s ease; }
+.lp4__card:hover .lp4__card-step { color: var(--lp-accent); }
+
+@keyframes lp4-wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  55% { transform: rotate(8deg); }
+  80% { transform: rotate(-4deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@keyframes lp4-bounce {
+  0% { transform: none; }
+  40% { transform: translateY(-7px) scale(1.12); }
+  75% { transform: translateY(1px) scale(0.96); }
+  100% { transform: none; }
 }
 
 /* Song chips: the marquee pauses while you browse, chips pop on hover */
@@ -1749,216 +2421,6 @@ body {
   stroke-dashoffset: 0;
 }
 
-/* Editorial (left-aligned) layout grammar */
-.lp4__wrap {
-  width: 100%;
-  max-width: 1080px;
-  margin: 0 auto;
-}
-
-.lp4__hero--left {
-  max-width: 1124px;
-  align-items: stretch;
-  text-align: left;
-}
-
-.lp4__hero--left .lp4__smile-accent { margin: 18px 0 0; }
-.lp4__hero--left .lp4__ctas { justify-content: flex-start; }
-.lp4__hero--left .lp4__subhead { margin-left: 0; }
-
-.lp4__hero--left .lp4__stage {
-  max-width: 1080px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.lp4__section--left {
-  align-items: stretch;
-  text-align: left;
-}
-
-.lp4__songs--left { text-align: left; }
-
-/* Open-source section: what the engine is made of, and how to run it. Sits
-   where the pricing table used to, and answers the same question. */
-.lp4__os-grid {
-  margin-top: 44px;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
-
-@media (max-width: 900px) { .lp4__os-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .lp4__os-grid { grid-template-columns: 1fr; } }
-
-.lp4__os-card {
-  padding: 22px;
-  border-radius: 18px;
-  background: var(--lp-card);
-  border: 1px solid var(--lp-hairline);
-  box-shadow: var(--lp-card-shadow);
-}
-
-.lp4__os-card-title {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--lp-ink);
-}
-
-.lp4__os-card-body {
-  margin-top: 8px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--lp-gray);
-}
-
-.lp4__os-run { margin-top: 40px; }
-
-.lp4__os-run-label {
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--lp-faint);
-}
-
-.lp4__os-code {
-  margin-top: 12px;
-  padding: 20px 22px;
-  border-radius: 18px;
-  background: var(--lp-bg-alt);
-  border: 1px solid var(--lp-hairline);
-  overflow-x: auto;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--lp-ink);
-}
-
-.lp4__os-run-note {
-  margin-top: 12px;
-  font-size: 14px;
-  color: var(--lp-faint);
-}
-
-.lp4__os-ctas { margin-top: 28px; }
-
-.lp4__songs--left .lp4__songs-head,
-.lp4__songs--left .lp4__songs-cta {
-  width: 100%;
-  max-width: 1124px;
-  margin: 0 auto;
-  padding: 0 22px;
-}
-
-/* Facts strip: privacy + credibility as one quiet line, not a section. */
-.lp4__strip {
-  border-top: 1px solid var(--lp-hairline);
-  border-bottom: 1px solid var(--lp-hairline);
-  padding: 20px 22px;
-}
-
-.lp4__strip-inner {
-  max-width: 1080px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  gap: 14px 32px;
-  flex-wrap: wrap;
-}
-
-.lp4__strip-inner span {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--lp-gray);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.lp4__strip-inner span::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--lp-accent);
-}
-
-/* The hero has no data-reveal (it's above the fold), so its smile draws
-   itself in on load instead. */
-.lp4__hero .lp4__smile-accent path {
-  animation: lp4-smile-draw 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) 0.5s both;
-}
-
-/* Anchor targets stop short of the sticky nav. */
-.lp4__section,
-.lp4__songs,
-.lp4__hero { scroll-margin-top: 56px; }
-
-.lp4 ::selection { background: var(--lp-accent); color: #fff; }
-
-.lp4 :focus-visible {
-  outline: 2px solid var(--lp-accent);
-  outline-offset: 3px;
-}
-
-/* How it works — editorial numbered steps, no icon cards */
-.lp4__steps {
-  list-style: none;
-  margin-top: 44px;
-  width: 100%;
-  max-width: 980px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 40px;
-  text-align: left;
-}
-
-@media (max-width: 768px) {
-  .lp4__steps { grid-template-columns: 1fr; gap: 26px; }
-}
-
-.lp4__step {
-  border-top: 1px solid var(--lp-hairline);
-  padding-top: 18px;
-}
-
-.lp4__step-num {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--lp-accent);
-}
-
-.lp4__step-title {
-  margin-top: 10px;
-  font-size: 19px;
-  font-weight: 600;
-  color: var(--lp-ink);
-}
-
-.lp4__step-body {
-  margin-top: 6px;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--lp-gray);
-}
-
-/* Privacy — statement + facts, two columns */
-.lp4__split {
-  width: 100%;
-  max-width: 980px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: start;
-  text-align: left;
-}
-
-@media (max-width: 768px) {
-  .lp4__split { grid-template-columns: 1fr; gap: 32px; }
-}
-
 /* Mini living face reprise in the CTA band — white on the orange field */
 .lp4__cta-band .living-logo {
   font-size: clamp(40px, 5.5vw, 64px);
@@ -1977,16 +2439,22 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .lp4 [data-reveal] { opacity: 1; transform: none; transition: none; }
-  .lp4 [data-reveal] :is(.lp4__os-card, .lp4__step) {
+  .lp4 [data-reveal] :is(.lp4__card, .lp4__feature, .lp4__pricing-card) {
     opacity: 1;
     transform: none;
     transition: none;
   }
+  .lp4__card:hover .lp4__card-icon,
+  .lp4__feature:hover .lp4__feature-icon { animation: none; }
   .lp4__song-chip { transition: none; }
   .lp4__song-chip:hover,
   .lp4__song-chip:nth-child(even):hover { transform: none; }
-  .lp4 [data-reveal].is-in :is(.lp4__os-card):hover { transform: none; }
+  .lp4 [data-reveal].is-in :is(.lp4__card, .lp4__feature, .lp4__pricing-card):hover { transform: none; }
   .lp4__smile-accent path { stroke-dashoffset: 0; transition: none; animation: none; }
+  .lp4__checkout-overlay,
+  .lp4__checkout-card,
+  .lp4__checkout-char,
+  .lp4__checkout-toast { animation: none; }
   .lp4__headline,
   .lp4__subhead,
   .lp4__ctas,
@@ -2303,6 +2771,94 @@ body {
 
 .tip-icon { font-size: 1.2rem; flex-shrink: 0; }
 
+/* Pricing cards */
+.pricing-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.pricing-card {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  border-radius: 16px;
+  padding: 1.4rem;
+  text-align: left;
+  box-shadow: var(--lp-card-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.pricing-card:hover {
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+}
+
+.pricing-card--pro {
+  border-color: rgba(212, 80, 10, 0.35);
+  background: linear-gradient(180deg, rgba(212, 80, 10, 0.05), rgba(212, 80, 10, 0.01)), var(--lp-card);
+}
+
+.pricing-card--pro:hover {
+  border-color: var(--lp-accent);
+  box-shadow: 0 12px 34px rgba(212, 80, 10, 0.18);
+}
+
+.pricing-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--lp-ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pro-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #D4500A;
+  background: rgba(212, 80, 10, 0.1);
+  border: 1px solid rgba(212, 80, 10, 0.25);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pricing-card-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--lp-ink);
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.pricing-card-period {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--lp-gray);
+  margin-left: 0.15rem;
+}
+
+.pricing-card ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.pricing-card li {
+  font-size: 0.85rem;
+  color: var(--lp-gray);
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  line-height: 1.35;
+}
+
 .check { color: var(--lp-accent); font-weight: 700; flex-shrink: 0; }
 
 /* On-brand onboarding button — the landing's rounded accent pill. */
@@ -2327,6 +2883,10 @@ body {
 }
 
 .onboarding-btn:active { transform: translateY(0); filter: brightness(0.94); }
+
+@media (max-width: 720px) {
+  .pricing-cards { grid-template-columns: 1fr; }
+}
 
 /* ── Lesson system ─────────────────────────────────────────── */
 
@@ -2363,7 +2923,7 @@ body {
 /* ── Learn system — "The Journey" ───────────────────────────────
    Warm Froola personality: a paper-warm ground, confident brand
    orange (design/tokens.json), DM Sans. The catalog is one ordered
-   path from your first chord to the last song lesson — a spine that fills
+   path from your first chord to Wonderwall — a spine that fills
    orange as you go, a bold "continue" card, technique waypoints and
    song milestones. Playful and warm, but disciplined: orange is the
    one bold move; everything else stays quiet and typographic. */
@@ -4324,85 +4884,6 @@ body {
   background: var(--pd-glass-btn-hover);
 }
 
-/* Looks is a compact gallery rather than another settings row: the swatches
-   show the canvas palette before the player commits to it. */
-.profile-drawer__looks {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
-  margin: 0.65rem 0 0.5rem;
-}
-.profile-drawer__look {
-  position: relative;
-  min-width: 0;
-  padding: 0.3rem;
-  color: var(--pd-ink);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 0.7rem;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.16s, background 0.16s;
-}
-.profile-drawer__look:hover { transform: translateY(-2px); }
-.profile-drawer__look:focus-visible {
-  outline: 2px solid var(--pd-accent);
-  outline-offset: 2px;
-}
-.profile-drawer__look.is-selected {
-  background: var(--pd-accent-tint);
-  border-color: var(--looks-note);
-}
-.profile-drawer__look-art {
-  position: relative;
-  display: block;
-  height: 2.7rem;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--looks-note) 42%, transparent);
-  border-radius: 0.48rem;
-  background:
-    linear-gradient(145deg, #0e1015, #22252d);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-.profile-drawer__look-chip {
-  position: absolute;
-  top: 50%;
-  width: 0.48rem;
-  height: 1.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  border-radius: 0.22rem;
-  background: var(--looks-note);
-  transform: translateY(-50%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36);
-}
-.profile-drawer__look-chip--left { left: 19%; background: var(--looks-left); border-color: var(--looks-left); }
-.profile-drawer__look-chip--right { right: 19%; background: var(--looks-right); border-color: var(--looks-right); }
-.profile-drawer__look-spine {
-  position: absolute;
-  width: 0.22rem;
-  height: 1.62rem;
-  left: 50%;
-  top: 50%;
-  border-radius: 99px;
-  background: var(--looks-note);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-}
-.profile-drawer__look-label {
-  display: block;
-  margin: 0.33rem 0.1rem 0;
-  overflow: hidden;
-  font-size: 0.64rem;
-  font-weight: 600;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: capitalize;
-}
-.profile-drawer__look.is-locked { opacity: 0.56; }
-.profile-drawer__look.is-locked:hover { transform: none; }
-
 /* Sign-in controls inside the drawer trade the flat white SignInPrompt
    styling for the drawer's glass vocabulary. The standalone overlay
    keeps its own look. */
@@ -4445,6 +4926,65 @@ body {
 }
 .profile-drawer .signin-prompt__email-sent {
   color: var(--pd-gray);
+}
+
+/* ── My Song (Plus+ lyrics+chords import + stored loops) ──── */
+/* .my-song-panel reuses .profile-drawer's glass chrome (same variables,
+   scrim, header, row classes) — it's just a second top-level drawer
+   instance, not nested under the account/settings one. */
+.my-song-panel .my-song-import {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.my-song-input,
+.my-song-textarea {
+  font: inherit;
+  color: var(--pd-ink);
+  background: var(--pd-glass-btn);
+  border: 1px solid var(--pd-glass-btn-border);
+  border-radius: 10px;
+  padding: 0.5rem 0.7rem;
+}
+.my-song-textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+.my-song-delete {
+  color: var(--pd-error);
+}
+.my-song-error {
+  color: var(--pd-error);
+  white-space: normal;
+}
+
+.sheet-overlay {
+  max-height: 60vh;
+  overflow-y: auto;
+  background: var(--pd-glass-btn);
+  border: 1px solid var(--pd-glass-btn-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+.sheet-line {
+  min-height: 1.4em;
+  white-space: pre-wrap;
+}
+.sheet-token {
+  display: inline-block;
+  vertical-align: top;
+  position: relative;
+  padding-top: 1.1em;
+}
+.sheet-chord {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--pd-accent);
+  font-weight: 600;
+  font-size: 0.85em;
+  white-space: nowrap;
 }
 
 /* ── OAuth popup landing page ────────────────────────────── */
@@ -4539,6 +5079,7 @@ body {
   text-align: center;
 }
 
+
 /* ── Liquid glass v2 — curvature ─────────────────────────────────
    The v1 recipe was legible but read flat next to Apple's glass:
    a uniform 1px stroke and a straight top rim don't say "curved
@@ -4561,16 +5102,16 @@ body {
 /* Saturation stays modest (130%) — the old 200% pulled the scene's color
    (usually skin tone) into every pill, which is what made the HUD look
    randomly tinted. The fill is opaque enough to carry the material now. */
-.share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint,
 .instrument-select {
   backdrop-filter: blur(24px) saturate(130%);
   -webkit-backdrop-filter: blur(24px) saturate(130%);
 }
 
-.share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+.share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
 .nod-hint {
   transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s,
     transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -4580,15 +5121,15 @@ body {
    controls. The HUD pills above are position: fixed with top/right
    offsets; forcing them relative drops them into flow and their old
    offsets scatter them diagonally. Fixed boxes anchor pseudos already. */
-.octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip {
+.octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip {
   position: relative;
 }
 
 /* the rim: a 1px gradient ring just inside the hairline border,
    painted via the two-layer mask trick (fill minus content box) */
-.share-btn::before, .record-btn::before, .vid-record-btn::before,
-.learn-nav-btn::before, .profile-btn::before, .octave-control::before,
-.arp-btn::before, .loop-controls::before, .loop-slot::before,
+.share-btn::before, .record-btn::before, .vid-record-btn::before, .audio-export-btn::before,
+.learn-nav-btn::before, .feedback-btn::before, .profile-btn::before, .octave-control::before,
+.arp-btn::before, .my-song-btn::before, .loop-controls::before, .loop-slot::before,
 .tutorial-skip::before, .nod-hint::before {
   content: '';
   position: absolute;
@@ -4611,14 +5152,14 @@ body {
 
 /* motion: hover floats, press squishes — the spring curve in the
    grouped transition above gives the release its bounce */
-.share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled),
-.learn-nav-btn:hover, .profile-btn:hover, .arp-btn:hover,
+.share-btn:hover, .record-btn:hover, .vid-record-btn:hover:not(:disabled), .audio-export-btn:hover:not(:disabled),
+.learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover, .my-song-btn:hover,
 .tutorial-skip:hover {
   transform: translateY(-1px);
 }
 
-.share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled),
-.learn-nav-btn:active, .profile-btn:active, .arp-btn:active,
+.share-btn:active, .record-btn:active, .vid-record-btn:active:not(:disabled), .audio-export-btn:active:not(:disabled),
+.learn-nav-btn:active, .feedback-btn:active, .profile-btn:active, .arp-btn:active, .my-song-btn:active,
 .tutorial-skip:active {
   transform: scale(0.95);
 }
@@ -4633,18 +5174,515 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .share-btn, .record-btn, .vid-record-btn, .learn-nav-btn, .profile-btn,
-  .octave-control, .arp-btn, .loop-controls, .loop-slot, .tutorial-skip,
+  .share-btn, .record-btn, .vid-record-btn, .audio-export-btn, .learn-nav-btn, .feedback-btn, .profile-btn,
+  .octave-control, .arp-btn, .my-song-btn, .loop-controls, .loop-slot, .tutorial-skip,
   .octave-btn, .loop-btn, .permission-btn-primary, .permission-btn-secondary {
     transition-property: color, background, border-color, box-shadow;
   }
-  .share-btn:hover, .record-btn:hover, .vid-record-btn:hover,
-  .learn-nav-btn:hover, .profile-btn:hover, .arp-btn:hover,
+  .share-btn:hover, .record-btn:hover, .vid-record-btn:hover, .audio-export-btn:hover,
+  .learn-nav-btn:hover, .feedback-btn:hover, .profile-btn:hover, .arp-btn:hover, .my-song-btn:hover,
   .tutorial-skip:hover, .permission-btn-primary:hover, .permission-btn-secondary:hover {
     transform: none;
   }
 }
 
+/* ── Locks & upgrade sheet ──────────────────────────────────────
+   Locked premium controls stay visible in the HUD with a small
+   "plus" chip; tapping one opens the in-context upgrade sheet
+   below instead of navigating away to /pricing. */
+
+.lock-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 0.22rem 0.5rem;
+  border-radius: 999px;
+  background: var(--lg-top-ink);
+  color: var(--lg-on-ink);
+  margin-left: 0.15rem;
+}
+
+.loop-btn--locked .lock-chip {
+  background: var(--lg-bottom-ink);
+  font-size: 0.58rem;
+  padding: 0.18rem 0.42rem;
+}
+
+/* Free-plan teaser pill sitting where the loop panel lives for paid plans —
+   same glass material as the HUD pills it neighbors. */
+
+/* ── HUD clusters ─────────────────────────────────────────────
+   Capture (top-left) and nav (top-right) capsules. Containers carry
+   border + shadow only — NO backdrop-filter/transform, so the
+   position:fixed .record-progress bars rendered inside stay
+   viewport-anchored. Each child segment keeps its own glass blur;
+   together they tile the capsule. */
+.hud-capture,
+.hud-nav {
+  position: fixed;
+  top: 1rem;
+  z-index: 20;
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 999px;
+  box-shadow: var(--lg-top-shadow);
+}
+.hud-capture { left: 1rem; }
+.hud-nav { right: 1rem; }
+
+/* Children become static segments: kill their own fixed offsets,
+   borders, and outer shadows; keep fills, blur, and state colors. */
+.hud-capture .record-btn,
+.hud-capture .vid-record-btn,
+.hud-capture .audio-export-btn,
+.hud-nav .learn-nav-btn,
+.hud-nav .share-btn,
+.hud-nav .feedback-btn,
+.hud-nav .profile-btn {
+  position: relative; /* rim ::before needs a positioned box (was fixed) */
+  top: auto;
+  left: auto;
+  right: auto;
+  z-index: auto;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* rounded capsule ends — keyed to classes, not child index, because
+   the recording buttons render their .record-progress bar as a
+   preceding sibling while recording (see RecordButton.tsx etc.),
+   which would otherwise become :first-child and steal the end-cap. */
+.hud-capture .record-btn,
+.hud-nav .learn-nav-btn {
+  border-radius: 999px 0 0 999px;
+  padding-left: 1.1rem;
+}
+.hud-capture .audio-export-btn,
+.hud-nav .profile-btn {
+  border-radius: 0 999px 999px 0;
+  padding-right: 1.1rem;
+}
+
+/* Feedback is an <a>, so it inherits the body's line-height while the
+   sibling <button>s compute `normal` — left alone it inflates the nav
+   capsule ~6px taller than the capture capsule across the screen. */
+.hud-nav .feedback-btn {
+  line-height: normal;
+}
+
+/* hairline dividers between segments */
+.hud-capture .vid-record-btn,
+.hud-capture .export-format-toggle,
+.hud-capture .audio-export-btn,
+.hud-nav .share-btn,
+.hud-nav .feedback-btn,
+.hud-nav .profile-btn {
+  border-left: 1px solid var(--lg-top-stroke);
+}
+
+/* .record-progress never participates in end-caps/dividers above (it
+   matches none of those class selectors), but pin down its box model
+   explicitly so it can never inherit capsule segment styling. */
+.hud-capture .record-progress {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* Export format mini-toggle — a capsule segment of three tiny radio pills */
+.export-format-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0 0.5rem;
+}
+
+.export-format-opt {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--lg-top-ink);
+  opacity: 0.55;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.18rem 0.45rem;
+  cursor: pointer;
+  transition: color 0.3s, background 0.3s, opacity 0.3s;
+}
+
+.export-format-opt.is-active {
+  opacity: 1;
+  background: var(--lg-top-inner, rgba(127, 127, 127, 0.18));
+  border-color: var(--lg-top-stroke);
+}
+
+.export-format-opt:disabled { cursor: default; opacity: 0.3; }
+
+/* done state: amber, matching .record-btn--done */
+.vid-record-btn--done {
+  color: #fbbf24;
+  background: rgba(17, 17, 17, 0.72);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.vid-record-btn--done:hover {
+  background: rgba(34, 26, 8, 0.88);
+  color: #fcd34d;
+}
+
+/* segments must not float/squish out of the capsule */
+.hud-capture .record-btn:hover, .hud-capture .record-btn:active,
+.hud-capture .vid-record-btn:hover, .hud-capture .vid-record-btn:active,
+.hud-capture .audio-export-btn:hover, .hud-capture .audio-export-btn:active,
+.hud-nav .learn-nav-btn:hover, .hud-nav .learn-nav-btn:active,
+.hud-nav .share-btn:hover, .hud-nav .share-btn:active,
+.hud-nav .feedback-btn:hover, .hud-nav .feedback-btn:active,
+.hud-nav .profile-btn:hover, .hud-nav .profile-btn:active {
+  transform: none;
+}
+
+/* profile avatar as the capsule's end cap: keep the avatar glyph
+   centered, widen the hit area to match sibling segments */
+.hud-nav .profile-btn {
+  width: 2.6rem;
+  height: auto;
+}
+
+/* Narrow screens: capsules revert to vertical stacks of standalone
+   pills (the horizontal row would overflow half the viewport). */
+@media (max-width: 640px) {
+  .hud-capture,
+  .hud-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    gap: 0.4rem;
+  }
+  .hud-nav { align-items: flex-end; }
+  .hud-capture > :not(.record-progress),
+  .hud-nav > :not(.record-progress) {
+    border-radius: 999px !important;
+    border: 1px solid var(--lg-top-stroke) !important;
+  }
+  .hud-capture > .export-format-toggle {
+    border: none !important;
+  }
+}
+
+.upsheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: upsheet-fade 0.25s ease-out;
+}
+
+.upsheet {
+  position: relative;
+  width: min(30rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  border-radius: 22px;
+  padding: 1.6rem 1.5rem 1.2rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--lg-top-ink);
+  background:
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 40%),
+    var(--lg-top-fill);
+  border: 1px solid var(--lg-top-stroke);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--lg-top-rim),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.08),
+    0 18px 48px rgba(0, 0, 0, 0.30);
+  animation: upsheet-rise 0.3s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+@keyframes upsheet-fade { from { opacity: 0; } }
+@keyframes upsheet-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upsheet-overlay, .upsheet { animation: none; }
+}
+
+.upsheet__close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--lg-top-ink-dim);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.upsheet__close:hover { color: var(--lg-top-ink); }
+
+.upsheet__title {
+  margin: 0.8rem 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.upsheet__body {
+  margin: 0 0 1.1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--lg-top-ink-dim);
+}
+
+/* One recommended plan carries the sheet; the alternate tier is a single
+   quiet row below it, so the moment reads as an invitation, not a paywall
+   grid. */
+.upsheet__hero {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  padding: 1rem 1rem 0.85rem;
+  border: 1px solid var(--lg-top-ink-dim);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 var(--lg-top-rim);
+}
+
+.upsheet__plan-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.upsheet__plan-name { font-weight: 650; font-size: 1.05rem; }
+.upsheet__plan-price { font-size: 0.85rem; color: var(--lg-top-ink-dim); }
+
+.upsheet__perks {
+  list-style: none;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  flex: 1;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--lg-top-ink-dim);
+}
+.upsheet__perks li { padding-left: 1.25em; position: relative; }
+.upsheet__perks li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--lg-top-ink);
+}
+
+.upsheet__assure {
+  margin: 0.55rem 0 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--lg-top-ink-dim);
+}
+
+.upsheet__alt {
+  display: block;
+  width: 100%;
+  margin-top: 0.7rem;
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 12px;
+  padding: 0.55rem 0.8rem;
+  font-family: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  line-height: 1.4;
+  cursor: pointer;
+  background: transparent;
+  color: var(--lg-top-ink-dim);
+  transition: background 0.2s, color 0.2s;
+}
+.upsheet__alt:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); color: var(--lg-top-ink); }
+.upsheet__alt:disabled { opacity: 0.55; cursor: default; }
+.upsheet__alt strong { color: var(--lg-top-ink); font-weight: 650; }
+
+.upsheet__cta {
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--lg-top-ink);
+  transition: background 0.2s, color 0.2s;
+}
+.upsheet__cta:hover:not(:disabled) { background: rgba(255, 255, 255, 0.10); }
+
+.upsheet__cta--rec {
+  background: var(--lg-top-ink);
+  color: var(--lg-on-ink);
+  border-color: transparent;
+}
+.upsheet__cta--rec:hover:not(:disabled) { background: var(--lg-top-ink); opacity: 0.88; }
+.upsheet__cta:disabled { opacity: 0.55; cursor: default; }
+
+.upsheet__foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.upsheet__link {
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--lg-top-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.upsheet__link--dim { color: var(--lg-top-ink-dim); text-decoration: none; }
+
+/* Modifier on .upsheet: the wheel editor reuses the upgrade sheet's glass
+   panel styles and only narrows the width. */
+.wheel-editor {
+  width: min(26rem, 100%);
+}
+
+.wheel-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--lg-top-ink-dim);
+  margin-bottom: 1rem;
+}
+
+.wheel-editor input,
+.wheel-editor select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: var(--lg-top-ink);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+}
+
+.wheel-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0;
+}
+
+.wheel-editor-slice {
+  width: 1.4rem;
+  font-size: 0.78rem;
+  color: var(--lg-top-ink-dim);
+  text-align: center;
+}
+
+.wheel-editor-row select { flex: 1; }
+
+.wheel-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+.wheel-editor-actions button {
+  border: 1px solid var(--lg-top-stroke);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--lg-top-ink);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+.wheel-editor-actions button:hover { background: rgba(255, 255, 255, 0.10); }
+
+/* ── Open source section (replaced the pricing table) ──────── */
+.lp4__os-grid {
+  margin-top: 44px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+@media (max-width: 900px) { .lp4__os-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .lp4__os-grid { grid-template-columns: 1fr; } }
+
+.lp4__os-card {
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-hairline);
+  box-shadow: var(--lp-card-shadow);
+}
+
+.lp4__os-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+
+.lp4__os-card-body {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--lp-gray);
+}
+
+.lp4__os-run { margin-top: 40px; }
+
+.lp4__os-run-label {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-faint);
+}
+
+.lp4__os-code {
+  margin-top: 12px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: var(--lp-bg-alt);
+  border: 1px solid var(--lp-hairline);
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--lp-ink);
+}
+
+.lp4__os-run-note {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--lp-faint);
+}
+
+.lp4__os-ctas { margin-top: 28px; }
 /* ── Engineering case study (/engineering) ──────────────────── */
 /* Reuses the lp4 shell and its tokens so the theme toggle, hairlines and type
    scale stay identical to the product pages. Only the layout is different:

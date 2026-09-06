@@ -59,7 +59,10 @@ export function scoreChords(spans: ChordSpan[], frames: LiveFrame[], noteOnly: b
     const inWindow = frames.filter(f => f.tMs >= span.startMs - grace && f.tMs <= span.endMs + grace);
     const noteHit = inWindow.some(f => f.noteIdx === span.noteIdx);
     const qualHit = inWindow.some(f => f.qualIdx === span.qualIdx);
-    const fullHit = noteOnly ? noteHit : inWindow.some(f => f.noteIdx === span.noteIdx && f.qualIdx === span.qualIdx);
+    // Note and quality don't need to land on the same logged frame — a player
+    // correcting one wheel then the other should still get credit as long as
+    // both were right at some point in the window.
+    const fullHit = noteOnly ? noteHit : (noteHit && qualHit);
     if (noteHit) noteHits++;
     if (noteOnly ? noteHit : qualHit) qualHits++;
     if (fullHit) fullHits++;

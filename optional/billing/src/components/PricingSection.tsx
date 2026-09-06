@@ -1,8 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { startCheckout, warmCheckoutApi, type PlanId } from '../billing';
-import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../pricingTiers';
-import SmileAccent from './SmileAccent';
+import { useAuth } from '../../contexts/AuthContext';
+import { startCheckout, warmCheckoutApi, type PlanId } from '../../billing';
+import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../../pricingTiers';
+import SmileAccent from '../brand/SmileAccent';
 
 const PLUS_TIER = PRICING_TIERS.find(t => t.planId === 'plus')!;
 
@@ -12,9 +12,9 @@ const PLUS_TIER = PRICING_TIERS.find(t => t.planId === 'plus')!;
 const FEATURE_ROWS: { label: string; free: ReactNode | boolean; plus: ReactNode | boolean; studio: ReactNode | boolean }[] = [
   { label: 'Instruments', free: 'Synth', plus: 'Synth + Piano', studio: 'Synth + Piano' },
   { label: 'Camera hand tracking', free: true, plus: true, studio: true },
-  { label: 'Shareable replay links', free: '20s, watermarked', plus: 'Longer, no watermark', studio: 'Longer, no watermark' },
-  { label: 'Video recording & download', free: false, plus: 'Up to 3 minutes', studio: 'Unlimited length' },
-  { label: 'Chord looper', free: false, plus: '8 slots', studio: 'Unlimited slots' },
+  { label: 'Song lessons & drills', free: true, plus: true, studio: true },
+  { label: 'Recording & shareable replays', free: false, plus: '3 min, no watermark', studio: '5 min, no watermark' },
+  { label: 'Chord looper & arpeggiator', free: false, plus: '8 slots', studio: 'Unlimited slots' },
   { label: 'Visual themes', free: false, plus: true, studio: true },
   { label: 'Continuous instant-replay recording', free: false, plus: false, studio: true },
   { label: 'Audio & MIDI export', free: false, plus: false, studio: 'MP3 · WAV · MIDI' },

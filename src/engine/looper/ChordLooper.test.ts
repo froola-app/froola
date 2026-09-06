@@ -206,3 +206,83 @@ describe('ChordLooper — playback', () => {
     expect(h.looper.playing).toBe(false)
   })
 })
+
+describe('ChordLooper — slot serialization', () => {
+  it('round-trips slots through getSlots/load', () => {
+    const h1 = harness()
+    h1.looper.add(cmd('Cmaj7'))
+    h1.looper.add(cmd('Am'))
+    h1.looper.setBpm(120)
+    h1.looper.setBeatsPerSlot(2)
+
+    const h2 = harness()
+    h2.looper.load({ bpm: h1.looper.getBpm(), beatsPerSlot: h1.looper.getBeatsPerSlot(), slots: h1.looper.getSlots() })
+    expect(h2.looper.getState().slots).toEqual(['Cmaj7', 'Am'])
+    expect(h2.looper.getBpm()).toBe(120)
+    expect(h2.looper.getBeatsPerSlot()).toBe(2)
+  })
+
+  it('load stops playback and truncates past MAX_SLOTS', () => {
+    const h = harness()
+    h.looper.add(cmd('C'))
+    h.looper.start()
+    const nine = Array.from({ length: 9 }, (_, i) => cmd(`X${i}`))
+    h.looper.load({ bpm: 90, beatsPerSlot: 4, slots: nine })
+    expect(h.looper.playing).toBe(false)
+    expect(h.looper.getState().slots).toHaveLength(8) // MAX_SLOTS
+  })
+
+  it('load emits exactly once while playing and once while stopped with new values', () => {
+    const h = harness()
+    let callCount = 0
+    h.looper.add(cmd('C'))
+    h.looper.start()
+
+    const newSlots = [cmd('F'), cmd('G')]
+    const looperWithCounter = new ChordLooper({
+      createClock: (cb: StepCallback, opts?: TempoClockOptions) => new TempoClock(h.audio, cb, opts),
+      playAt: () => {},
+      silence: () => {},
+      onChange: () => { callCount++ },
+    })
+    looperWithCounter.start()
+
+    // load() while playing should emit exactly once
+    looperWithCounter.load({ bpm: 120, beatsPerSlot: 2, slots: newSlots })
+    expect(callCount).toBe(1)
+    expect(looperWithCounter.getState().bpm).toBe(120)
+    expect(looperWithCounter.getState().beatsPerSlot).toBe(2)
+    expect(looperWithCounter.getState().slots).toEqual(['F', 'G'])
+    expect(looperWithCounter.playing).toBe(false)
+
+    // load() while stopped should emit exactly once
+    callCount = 0
+    looperWithCounter.load({ bpm: 100, beatsPerSlot: 1, slots: [cmd('A')] })
+    expect(callCount).toBe(1)
+    expect(looperWithCounter.getState().bpm).toBe(100)
+    expect(looperWithCounter.getState().beatsPerSlot).toBe(1)
+    expect(looperWithCounter.getState().slots).toEqual(['A'])
+  })
+
+  it('getSlots returns defensive copies; mutations do not affect looper state', () => {
+    const h = harness()
+    const c1 = cmd('C')
+    h.looper.add(c1)
+    h.looper.add(cmd('F'))
+
+    const slots = h.looper.getSlots()
+    // Mutate the returned slot object and its voicing array
+    slots[0].chord = 'MUTATED'
+    slots[0].voicing[0] = 999
+    slots[0].register = 0.1
+    slots[1].voicing.push(999)
+
+    // Verify internal state is unchanged
+    expect(h.looper.getState().slots).toEqual(['C', 'F'])
+    const currentSlots = h.looper.getSlots()
+    expect(currentSlots[0].chord).toBe('C')
+    expect(currentSlots[0].voicing).toEqual([60, 64, 67])
+    expect(currentSlots[0].register).toBe(0.5)
+    expect(currentSlots[1].voicing).toEqual([60, 64, 67])
+  })
+})

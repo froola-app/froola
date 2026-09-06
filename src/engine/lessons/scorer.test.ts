@@ -109,6 +109,15 @@ describe('scoreChords', () => {
     expect(s.score).toBe(0);
   });
 
+  it('hits a chord when note and quality land correctly at different frames in the window', () => {
+    // Root corrected at 500ms, quality corrected later at 800ms — never
+    // simultaneously right, as happens when a player adjusts one wheel at a
+    // time. Both are individually correct within the C span's window, so
+    // the chord should still count as a full hit.
+    const frames = [frame(500, 0, 3), frame(800, 4, 0)];
+    expect(scoreChords(spans, frames, false).score).toBe(50); // C hit, F never attempted
+  });
+
   it('ignores quality when noteOnly is set (fist-solo)', () => {
     const frames = [frame(500, 0, 3), frame(2500, 3, 3)];
     expect(scoreChords(spans, frames, true)).toEqual({ score: 100, noteAccuracy: 100, qualAccuracy: 100 });

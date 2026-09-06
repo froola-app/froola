@@ -2,34 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { RefObject } from 'react';
 import type { GestureSignal } from '../engine/types';
-import type { DialSelection } from '../engine/renderer';
 import { wheelGeometry } from '../engine/renderer/geometry';
-import FroolaMascot from './FroolaMascot';
+import FroolaMascot from './brand/FroolaMascot';
 
 const TUTORIAL_KEY = 'froola.tutorialSeen';
 
-const CAMERA_STEPS = [
-  {
-    headline: 'Hold your hands up',
-    body: 'Lift both hands in front of your camera so Froola can see them.',
-  },
-  {
-    headline: 'Touch the left circle',
-    body: 'Move your left hand onto the big circle on the left. You should hear a chord.',
-  },
-  {
-    headline: 'Slide around to change the chord',
-    body: 'Keep your hand on the circle and move it around. The music changes as you go.',
-  },
-  {
-    headline: 'Try the right circle',
-    body: 'Put your right hand on the right circle to change the flavor of the chord.',
-  },
-] as const;
+// One prompt, one success: the card dissolves when the first chord sounds
+// (left hand held on the left wheel — the same condition that makes sound).
+// HOLD_MS only debounces single-frame detection noise; there is no minimum
+// display time — reaching the aha IS completing the tutorial.
+const HOLD_MS = 300;
+// How long the success checkmark flashes before the card dissolves.
+const FLASH_MS = 800;
 
 interface Props {
   signalRef: RefObject<GestureSignal[]>;
-  selectedRef: RefObject<DialSelection>;
   /** Fired once when the tutorial leaves the screen (finished or skipped). */
   onDone?: () => void;
 }
@@ -62,78 +49,51 @@ function playSuccessSound() {
   } catch { /* ignore — audio unavailable */ }
 }
 
-export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Props) {
-  const STEPS = CAMERA_STEPS;
-  const [step, setStep] = useState(0);
-  const [doneMessage, setDoneMessage] = useState(false);
+export default function BeginnerTutorial({ signalRef, onDone }: Props) {
   const [gone, setGone] = useState(false);
   const [flashComplete, setFlashComplete] = useState(false);
-  const visitedRef = useRef(new Set<number>());
   // Prevents the interval from firing the advance logic more than once
   // while the checkmark flash is playing.
   const advancingRef = useRef(false);
-  // The finish timeout fires up to ~2.3s after the last step completes — a
-  // ref keeps it calling whatever onDone is current then, not whichever one
-  // was in scope when the interval closure was created.
+  // The finish timeout fires up to FLASH_MS after success — a ref keeps it
+  // calling whatever onDone is current then, not whichever one was in scope
+  // when the interval closure was created.
   const onDoneRef = useRef(onDone);
   useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
-    if (doneMessage || gone || step >= STEPS.length) return;
+    if (gone) return;
+
+    let heldSince: number | null = null;
 
     const id = setInterval(() => {
       if (advancingRef.current) return;
 
-      const signals = signalRef.current;
-      const { outerR, innerR, leftCx, rightCx, leftCy, rightCy } = wheelGeometry(
+      const { outerR, innerR, leftCx, leftCy } = wheelGeometry(
         window.innerWidth,
         window.innerHeight,
       );
 
-      const inRing = (x: number, y: number, cx: number, cy: number) => {
-        const d = Math.hypot(x * window.innerWidth - cx, y * window.innerHeight - cy);
+      const left = signalRef.current.find(s => s.handId === 'left');
+      const met = !!left?.present && (() => {
+        const d = Math.hypot(left.x * window.innerWidth - leftCx, left.y * window.innerHeight - leftCy);
         return d >= innerR && d <= outerR;
-      };
+      })();
 
-      const left = signals.find(s => s.handId === 'left');
-      const right = signals.find(s => s.handId === 'right');
-
-      let advance = false;
-      if (step === 0) {
-        advance = signals.length > 0;
-      } else if (step === 1) {
-        advance = !!left?.present && inRing(left.x, left.y, leftCx, leftCy);
-      } else if (step === 2) {
-        if (left?.present && inRing(left.x, left.y, leftCx, leftCy)) {
-          visitedRef.current.add(selectedRef.current.noteIdx);
-        }
-        advance = visitedRef.current.size >= 3;
-      } else if (step === 3) {
-        advance = !!right?.present && inRing(right.x, right.y, rightCx, rightCy);
-      }
-
-      if (advance) {
+      if (!met) { heldSince = null; return; }
+      const now = Date.now();
+      if (heldSince === null) heldSince = now;
+      if (now - heldSince >= HOLD_MS) {
         advancingRef.current = true;
         playSuccessSound();
+        localStorage.setItem(TUTORIAL_KEY, 'true');
         setFlashComplete(true);
-
-        setTimeout(() => {
-          setFlashComplete(false);
-          const next = step + 1;
-          if (next >= STEPS.length) {
-            localStorage.setItem(TUTORIAL_KEY, 'true');
-            setDoneMessage(true);
-            setTimeout(() => { setGone(true); onDoneRef.current?.(); }, 1500);
-          } else {
-            setStep(next);
-          }
-          advancingRef.current = false;
-        }, 800);
+        setTimeout(() => { setGone(true); onDoneRef.current?.(); }, FLASH_MS);
       }
     }, 100);
 
     return () => clearInterval(id);
-  }, [step, doneMessage, gone, signalRef, selectedRef, STEPS.length]);
+  }, [gone, signalRef]);
 
   function skip() {
     localStorage.setItem(TUTORIAL_KEY, 'true');
@@ -143,17 +103,6 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
 
   if (gone) return null;
 
-  if (doneMessage) {
-    return (
-      <div className="tutorial-overlay">
-        <div className="tutorial-card">
-          <FroolaMascot size={56} mood="happy" />
-          <h2 className="tutorial-headline">You're ready. Have fun!</h2>
-        </div>
-      </div>
-    );
-  }
-
   if (flashComplete) {
     return (
       <div className="tutorial-overlay">
@@ -161,26 +110,19 @@ export default function BeginnerTutorial({ signalRef, selectedRef, onDone }: Pro
           <FroolaMascot size={56} mood="happy" />
           <span className="tutorial-checkmark">✓</span>
         </div>
+        {/* Keep the skip target rendered so it can't dodge a click that
+            lands mid-flash. */}
+        <button className="tutorial-skip" onClick={skip}>Skip tutorial</button>
       </div>
     );
   }
 
-  const current = STEPS[step];
   return (
     <div className="tutorial-overlay">
       <div className="tutorial-card">
         <FroolaMascot size={56} />
-        <p className="tutorial-step-count">{step + 1} / {STEPS.length}</p>
-        <h2 className="tutorial-headline">{current.headline}</h2>
-        <p className="tutorial-body">{current.body}</p>
-        <div className="tutorial-dots">
-          {STEPS.map((_, i) => (
-            <span
-              key={i}
-              className={`tutorial-dot${i === step ? ' tutorial-dot--active' : ''}`}
-            />
-          ))}
-        </div>
+        <h2 className="tutorial-headline">Hold your hands up</h2>
+        <p className="tutorial-body">Lift both hands in front of your camera so Froola can see them.</p>
       </div>
       <button className="tutorial-skip" onClick={skip}>Skip tutorial</button>
     </div>

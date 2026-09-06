@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '../../useScrollReveal';
-import { useTheme } from '../../useTheme';
-import Footer from '../Footer';
-import FroolaLogo from '../FroolaLogo';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useTheme } from '../../hooks/useTheme';
+import SiteFooter from '../docs/SiteFooter';
+import FroolaLogo from '../brand/FroolaLogo';
 import { REPO_URL } from '../OpenSourceSection';
 import ThemeToggle from '../ThemeToggle';
 import {
@@ -312,7 +312,7 @@ npm run bench   # regenerates the numbers above`}</code></pre>
         </div>
       </section>
 
-      <Footer />
+      <SiteFooter />
     </div>
   );
 }

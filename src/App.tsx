@@ -8,17 +8,18 @@ import './App.css';
 // `/` is the marketing page; the instrument and everything else off the
 // critical path load on demand.
 const PlayShell = lazy(() => import('./components/PlayShell'));
-// Legacy gesture-replay links keep playing; new recordings share /watch.
-const ReplayShell = lazy(() => import('./components/ReplayShell'));
-const WatchShell = lazy(() => import('./components/WatchShell'));
-const AuthPopup = lazy(() => import('./components/AuthPopup'));
+const ReplayShell = lazy(() => import('./components/recording/ReplayShell'));
+const AuthPopup = lazy(() => import('./components/account/AuthPopup'));
 const OnboardingFlow = lazy(() => import('./components/onboarding/OnboardingFlow'));
+const WatchShell = lazy(() => import('./components/WatchShell'));
+const EngineeringPage = lazy(() => import('./components/engineering/EngineeringPage'));
 const LessonCatalog = lazy(() => import('./components/learn/LessonCatalog'));
+const TermsPage = lazy(() => import('./components/docs/TermsPage'));
+const PrivacyPage = lazy(() => import('./components/docs/PrivacyPage'));
+const RefundsPage = lazy(() => import('./components/docs/RefundsPage'));
+const AboutPage = lazy(() => import('./components/docs/AboutPage'));
 const LearnShell = lazy(() => import('./components/learn/LearnShell'));
 const ReviewSession = lazy(() => import('./components/learn/ReviewSession'));
-const EngineeringPage = lazy(() => import('./components/engineering/EngineeringPage'));
-const PrivacyPage = lazy(() => import('./components/PrivacyPage'));
-const TermsPage = lazy(() => import('./components/TermsPage'));
 
 function AppRoutes() {
   const { user, profile, loading, authReady } = useAuth();
@@ -39,16 +40,18 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/play" element={<PlayShell initialInput={storedInputMode() ?? 'asking'} />} />
         <Route path="/replay" element={<ReplayShell />} />
-        <Route path="/watch" element={<WatchShell />} />
         <Route path="/learn" element={<LessonCatalog />} />
         <Route path="/learn/:lessonId" element={<LearnShell />} />
         <Route path="/learn/review" element={<ReviewSession />} />
+        <Route path="/watch" element={<WatchShell />} />
         <Route path="/engineering" element={<EngineeringPage />} />
         {/* Froola is free and open source; the old plan pages are gone. */}
         <Route path="/pricing" element={<Navigate to="/" replace />} />
         <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/refunds" element={<RefundsPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -59,9 +62,6 @@ function AppRoutes() {
     return (
       <Routes>
         <Route path="/onboarding" element={<OnboardingFlow />} />
-        {/* Legal stays readable even mid-onboarding. */}
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
         <Route path="*" element={<Navigate to="/onboarding" replace />} />
       </Routes>
     );
@@ -72,15 +72,17 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/play" element={<PlayShell initialInput={storedInputMode() ?? 'asking'} />} />
       <Route path="/replay" element={<ReplayShell />} />
-      <Route path="/watch" element={<WatchShell />} />
       <Route path="/learn" element={<LessonCatalog />} />
       <Route path="/learn/:lessonId" element={<LearnShell />} />
       <Route path="/learn/review" element={<ReviewSession />} />
+      <Route path="/watch" element={<WatchShell />} />
       <Route path="/engineering" element={<EngineeringPage />} />
       <Route path="/pricing" element={<Navigate to="/" replace />} />
       <Route path="/pricing-mockups" element={<Navigate to="/" replace />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/refunds" element={<RefundsPage />} />
+      <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

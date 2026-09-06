@@ -2,6 +2,7 @@ import type { MusicalCommand, InstrumentMode } from '../types'
 import { midiToHz } from '../music/scales'
 import { TempoClock, type StepCallback, type TempoClockOptions } from './TempoClock'
 import { SongBackingTrack } from './SongBackingTrack'
+import { takeUnlockedContext, restashUnlockedContext } from './unlockedContext'
 import type Soundfont from 'soundfont-player'
 
 type Player = Awaited<ReturnType<typeof Soundfont.instrument>>
@@ -14,6 +15,9 @@ type SampleNode = { stop(when?: number): void }
 const VOICES = 5                 // soundgo used 4; we use 5 so a 9th chord's top note isn't dropped
 const SYNTH_LOWPASS_HZ = 1800    // soundgo chordFilter cutoff
 const CHORD_GLIDE = 0.12         // soundgo o.frequency.rampTo(freq, 0.12)
+// Glide only when a voice moves a small interval; larger moves jump instantly
+// (a 120ms sweep across a big interval reads as an irritating glissando).
+const GLIDE_MAX_SEMITONES = 2
 const CHORD_GAIN_RAMP = 0.06     // soundgo chordGain.gain.rampTo(_, 0.06)
 const SYNTH_TOTAL_GAIN = 0.2     // soundgo targetChordGain cap
 const SYNTH_VOICE_GAIN = SYNTH_TOTAL_GAIN / VOICES
@@ -32,6 +36,15 @@ const REVERB_SEND = 0.18
 // lowpass timbre as the pad, but louder than one pad voice so it reads on top.
 const MELODY_GAIN = 0.12
 
+// Arp notes run a little hotter than the melody lead and are plucked (decay
+// within the step) so the pattern reads rhythmically instead of as a drone.
+const ARP_GAIN = 0.17
+// While the arp runs, the pad ducks to this fraction — "arpeggiate the chord
+// instead of a static pad": the drone gets out of the arp's way but leaves a
+// quiet harmonic bed underneath.
+const ARP_PAD_DUCK = 0.25
+const PAD_DUCK_RAMP = 0.08
+
 export class AudioEngine {
   private ctx: AudioContext
   private oscillators: OscillatorNode[]
@@ -42,12 +55,21 @@ export class AudioEngine {
   private samplerGain: GainNode
   private melodyOsc: OscillatorNode
   private melodyGain: GainNode
+  private padBus: GainNode
   private samplers: Partial<Record<'piano', Player>> = {}
   private samplerLoadPromises: Partial<Record<'piano', Promise<void>>> = {}
   private activeSampleNodes: SampleNode[] = []
+  // Last MIDI note each pad voice was sent — glide-vs-jump decisions measure
+  // distance against this (reading frequency.value mid-ramp is unreliable).
+  private lastVoiceMidi: (number | null)[] = Array<number | null>(VOICES).fill(null)
+  private adoptedFromUnlock: boolean
 
   constructor() {
-    this.ctx = new AudioContext()
+    // Adopt the context the landing CTA click already unlocked, if any —
+    // it is created inside a user gesture, so it starts out running.
+    const adopted = takeUnlockedContext()
+    this.adoptedFromUnlock = adopted !== null
+    this.ctx = adopted ?? new AudioContext()
 
     // Master is unity now; the synth sits at soundgo's gentle 0.2 on its own,
     // and the sampler keeps its previous 0.7 level on a dedicated gain stage.
@@ -89,6 +111,12 @@ export class AudioEngine {
     this.synthFilter.connect(this.masterGain)
     this.synthFilter.connect(reverbSend)
 
+    // All pad voices sum into one bus so the whole pad can be ducked as a unit
+    // while the arp plays, without disturbing per-voice envelopes.
+    this.padBus = this.ctx.createGain()
+    this.padBus.gain.value = 1
+    this.padBus.connect(this.synthFilter)
+
     this.oscillators = []
     this.voiceGains = []
 
@@ -103,7 +131,7 @@ export class AudioEngine {
       panner.pan.value = VOICE_PAN[i]
       osc.connect(gain)
       gain.connect(panner)
-      panner.connect(this.synthFilter)
+      panner.connect(this.padBus)
       osc.start()
       this.oscillators.push(osc)
       this.voiceGains.push(gain)
@@ -139,13 +167,23 @@ export class AudioEngine {
 
   // Always return exactly VOICES notes so every oscillator is driven each chord
   // (an undriven oscillator would keep sounding the previous chord's note). Short
-  // chords are padded by octave-doubling from the bottom — soundgo padded a triad
-  // to 4 voices the same way, by adding the root an octave up.
+  // chords are padded by octave-doubling — soundgo padded a triad to 4 voices the
+  // same way. Voicings may arrive inverted (voice-leading), so padding can't
+  // assume any index holds a particular chord tone: double the lowest note an
+  // octave up first (reinforces the bass — reads as an open voicing), then the
+  // highest, then the inner notes low-to-high, wrapping up an extra octave per
+  // full cycle. For a root-position triad this yields the same root-then-5th
+  // doubling as before (doubling root+3rd instead buried the lone 5th — a C6
+  // triad read as an Am first inversion).
   private voicingFor(cmd: MusicalCommand): number[] {
-    const len = cmd.voicing.length
-    const out = cmd.voicing.slice(0, VOICES)
-    for (let i = len; i < VOICES; i++) {
-      out.push(cmd.voicing[i % len] + 12 * Math.floor(i / len))
+    const notes = [...cmd.voicing].sort((a, b) => a - b)
+    const out = notes.slice(0, VOICES)
+    const fillOrder = notes.length > 1
+      ? [notes[0], notes[notes.length - 1], ...notes.slice(1, -1)]
+      : notes
+    for (let i = notes.length; i < VOICES; i++) {
+      const k = i - notes.length
+      out.push(fillOrder[k % fillOrder.length] + 12 * (Math.floor(k / fillOrder.length) + 1))
     }
     return out
   }
@@ -197,6 +235,7 @@ export class AudioEngine {
       const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
+        this.lastVoiceMidi[i] = midi
         this.oscillators[i].frequency.cancelScheduledValues(now)
         this.oscillators[i].frequency.setValueAtTime(hz, now)
         this.voiceGains[i].gain.cancelScheduledValues(now)
@@ -210,9 +249,15 @@ export class AudioEngine {
     // chord pad: gentle per-voice gain, notes glide to pitch over CHORD_GLIDE.
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
+      const prev = this.lastVoiceMidi[i]
+      this.lastVoiceMidi[i] = midi
       this.oscillators[i].frequency.cancelScheduledValues(now)
-      this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
-      this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
+      if (prev !== null && Math.abs(midi - prev) <= GLIDE_MAX_SEMITONES) {
+        this.oscillators[i].frequency.setValueAtTime(this.oscillators[i].frequency.value, now)
+        this.oscillators[i].frequency.linearRampToValueAtTime(hz, now + CHORD_GLIDE)
+      } else {
+        this.oscillators[i].frequency.setValueAtTime(hz, now)
+      }
       this.voiceGains[i].gain.cancelScheduledValues(now)
       this.voiceGains[i].gain.setValueAtTime(this.voiceGains[i].gain.value, now)
       this.voiceGains[i].gain.linearRampToValueAtTime(SYNTH_VOICE_GAIN, now + CHORD_GAIN_RAMP)
@@ -240,6 +285,7 @@ export class AudioEngine {
       const fadeIn = 0.25
       this.voicingFor(cmd).forEach((midi, i) => {
         const hz = midiToHz(midi)
+        this.lastVoiceMidi[i] = midi
         this.oscillators[i].frequency.cancelScheduledValues(when)
         this.oscillators[i].frequency.setValueAtTime(hz, when)
         this.voiceGains[i].gain.cancelScheduledValues(when)
@@ -252,6 +298,7 @@ export class AudioEngine {
     // Synth path
     this.voicingFor(cmd).forEach((midi, i) => {
       const hz = midiToHz(midi)
+      this.lastVoiceMidi[i] = midi
       this.oscillators[i].frequency.cancelScheduledValues(when)
       this.oscillators[i].frequency.setValueAtTime(hz, when)
       this.voiceGains[i].gain.cancelScheduledValues(when)
@@ -273,14 +320,26 @@ export class AudioEngine {
 
   /** Schedule a single note at AudioContext time `when` on the melody lead
    *  voice. Used by the arpeggiator to step through a held chord's voicing
-   *  one note at a time. */
-  playNoteAt(midi: number, when: number): void {
+   *  one note at a time. `duration` (seconds until the next step) shapes a
+   *  pluck: attack, then decay inside the step so each note articulates. */
+  playNoteAt(midi: number, when: number, duration = 0.5): void {
     const hz = midiToHz(midi)
     this.melodyOsc.frequency.cancelScheduledValues(when)
     this.melodyOsc.frequency.setValueAtTime(hz, when)
     this.melodyGain.gain.cancelScheduledValues(when)
     this.melodyGain.gain.setValueAtTime(0, when)
-    this.melodyGain.gain.linearRampToValueAtTime(MELODY_GAIN, when + 0.012)
+    this.melodyGain.gain.linearRampToValueAtTime(ARP_GAIN, when + 0.012)
+    const decayTau = Math.min(0.35, Math.max(0.05, duration * 0.3))
+    this.melodyGain.gain.setTargetAtTime(0, when + 0.012, decayTau)
+  }
+
+  /** Duck (or restore) the whole chord pad. The arpeggiator ducks the pad
+   *  while it runs so its pattern isn't masked by the sustained drone. */
+  setPadDuck(ducked: boolean): void {
+    const now = this.ctx.currentTime
+    this.padBus.gain.cancelScheduledValues(now)
+    this.padBus.gain.setValueAtTime(this.padBus.gain.value, now)
+    this.padBus.gain.linearRampToValueAtTime(ducked ? ARP_PAD_DUCK : 1, now + PAD_DUCK_RAMP)
   }
 
   /** Fade the melody lead out (chord, if latched, keeps sounding). */
@@ -360,6 +419,19 @@ export class AudioEngine {
     }
   }
 
+  // Creates a MediaStream of the instrument output alone — no mic — for
+  // audio-only export (mp3). Mirrors createRecordingStream minus the mic tap.
+  createInstrumentStream(): { stream: MediaStream; stop: () => void } {
+    const dest = this.ctx.createMediaStreamDestination()
+    this.analyser.connect(dest)
+    return {
+      stream: dest.stream,
+      stop: () => {
+        try { this.analyser.disconnect(dest) } catch { /* ok */ }
+      },
+    }
+  }
+
   resume(): void {
     this.ctx.resume()
   }
@@ -373,5 +445,12 @@ export class AudioEngine {
 
   suspend(): void {
     this.ctx.suspend()
+  }
+
+  /** If this engine's context came from the click-unlock stash and was
+   *  never really used, hand it back so a StrictMode remount (or any
+   *  quick re-construction) can adopt it instead of falling back cold. */
+  releaseIfAdopted(): void {
+    if (this.adoptedFromUnlock) restashUnlockedContext(this.ctx)
   }
 }

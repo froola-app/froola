@@ -1,17 +1,30 @@
-export { createMapper } from './mapGesture';
 export { buildCommand, melodyMidi } from './buildCommand';
+export { applyVoiceLeading } from './voiceLeading';
 export {
   scaleNotes,
   diatonicChord,
   degreeRootMidi,
+  soundedSuffix,
   SCALES,
   SCALE_NAMES,
   KEYS,
   EXTENSIONS,
+  UNIVERSAL_CHORDS,
+  chordSet,
   DEFAULT_MUSIC,
+  activeWheel,
+  wheelNotes,
+  wheelChord,
+  customChord,
+  diatonicSlices,
+  intervalLabel,
   type ScaleName,
   type ScaleNote,
   type Extension,
   type Chord,
+  type ChordMode,
   type MusicConfig,
+  type TriadQuality,
+  type WheelSlice,
+  type CustomWheel,
 } from './keyScale';

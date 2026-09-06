@@ -2,6 +2,12 @@
 
 _Direction locked 2026-07-09; tokens verified 2026-07-11._
 
+_Note: this describes the original editorial light-mode design language. The
+shipped app now defaults to a dark liquid-glass theme (2026-07-08, see
+`docs/DECISIONS.md`); light mode is still available via manual toggle and
+still uses this palette. Treat this file as the light-theme/brand-identity
+spec, not the current default._
+
 ## Direction
 
 **"Like Apple designed it."** Froola is a fun tool for professionals — premium,
@@ -19,6 +25,8 @@ Aesthetic reference: Apple's marketing site — value prop on fold one, satisfyi
 micro-interactions, "more a psychological experience than anything".
 
 ## Color
+
+Canon is `tokens.json` — the table below is a convenience copy, keep it in sync.
 
 | Token | Value | Use |
 |-------|-------|-----|

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchSharedVideo } from '../engine/recording/videoRecordingStore';
-import FroolaLogo from './FroolaLogo';
+import FroolaLogo from './brand/FroolaLogo';
 
 // Public playback for shared recordings (/watch?v=<id>). The video itself is
 // the pitch — a person playing music with their hands — so the page stays

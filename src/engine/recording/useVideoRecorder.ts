@@ -1,44 +1,28 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import type { RefObject } from 'react';
 import type { AudioEngine } from '../audio/AudioEngine';
-import type { VideoMime } from './videoRecordingStore';
+import { layoutFor, drawExportFrame, type ExportFormat } from './exportFrame';
 
-export type VideoRecorderState = 'idle' | 'requesting' | 'recording';
-
-/** A finished capture, ready to save or download. */
-export interface VideoTake {
-  blob: Blob;
-  mime: VideoMime;
-  durationMs: number;
-}
+export type VideoRecorderState = 'idle' | 'requesting' | 'recording' | 'done';
 
 const DEFAULT_MAX_DURATION_MS = 180_000; // 3 minutes
-
-// mp4 first: it's the only container iOS Safari will play back from a share
-// link, and Safari's MediaRecorder can't produce webm at all.
-const MIME_CANDIDATES: { candidate: string; mime: VideoMime }[] = [
-  { candidate: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', mime: 'video/mp4' },
-  { candidate: 'video/mp4', mime: 'video/mp4' },
-  { candidate: 'video/webm;codecs=vp8,opus', mime: 'video/webm' },
-  { candidate: 'video/webm', mime: 'video/webm' },
-];
-
-// Encoding a full-retina canvas is wasted work and bandwidth — cap the
-// composite; the encoder output looks identical at share sizes.
-const MAX_COMPOSITE_WIDTH = 1920;
 
 export function useVideoRecorder(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   cameraVideoRef: RefObject<HTMLVideoElement | null>,
   engineRef: RefObject<AudioEngine | null>,
-  // A technical ceiling, not a plan one (see capabilities.maxVideoRecordMs).
+  // Plan-gated (see src/entitlements.ts maxVideoRecordMs).
   maxDurationMs: number = DEFAULT_MAX_DURATION_MS,
+  // Plan-gated (replayWatermark): free downloads get "made with froola"
+  // burned into the video frames.
+  watermark = false,
+  format: ExportFormat = '16:9',
+  // Live chord label for the portrait chip; a getter so the rAF loop reads
+  // the current value without re-subscribing. Omitted (or '') draws no chip.
+  getChordLabel?: () => string,
 ) {
   const [state, setState] = useState<VideoRecorderState>('idle');
   const [elapsed, setElapsed] = useState(0);
-  // The finished capture. Set when the recorder stops; the owning component
-  // decides what happens next (save + share, or plain download).
-  const [take, setTake] = useState<VideoTake | null>(null);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -47,6 +31,8 @@ export function useVideoRecorder(
   const micStreamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(0);
+  const blobRef = useRef<Blob | null>(null);
+  const fileNameRef = useRef('');
 
   const cleanup = useCallback(() => {
     if (animIdRef.current !== null) { cancelAnimationFrame(animIdRef.current); animIdRef.current = null; }
@@ -64,11 +50,8 @@ export function useVideoRecorder(
     recorderRef.current?.stop();
   }, []);
 
-  const clearTake = useCallback(() => setTake(null), []);
-
   const start = useCallback(async () => {
     if (state !== 'idle') return;
-    setTake(null);
     setState('requesting');
 
     let micStream: MediaStream;
@@ -83,100 +66,107 @@ export function useVideoRecorder(
     const canvas = canvasRef.current;
     const engine = engineRef.current;
     if (!canvas || !engine) {
-      cleanup();
+      micStream.getTracks().forEach(t => t.stop());
+      micStreamRef.current = null;
       setState('idle');
       return;
     }
 
-    // Everything past the mic prompt can throw (no supported codec, capture
-    // stream refused, recorder start rejected — the Safari failure mode).
-    // One catch path so the mic is never left live behind a stuck button.
-    try {
-      // Composite canvas: draw the Froola UI, then overlay the camera as a PiP
-      // in the bottom-right corner (mirrored to match the on-screen feed). The
-      // camera is always part of the frame by design — recordings show the
-      // player, not just the dials.
-      const srcW = canvas.width || window.innerWidth;
-      const srcH = canvas.height || window.innerHeight;
-      const scale = Math.min(1, MAX_COMPOSITE_WIDTH / srcW);
-      const composite = document.createElement('canvas');
-      composite.width = Math.round(srcW * scale);
-      composite.height = Math.round(srcH * scale);
-      const ctx2d = composite.getContext('2d')!;
+    // Output dimensions are locked at start (they must match the frozen
+    // composite canvas); only the portrait/square wheel SOURCE circles are
+    // refreshed per frame so sampling tracks a live canvas resize. 16:9
+    // stretches the whole canvas, so it needs no refresh.
+    const initialLayout = layoutFor(format, canvas.width || window.innerWidth, canvas.height || window.innerHeight);
+    const composite = document.createElement('canvas');
+    composite.width = initialLayout.width;
+    composite.height = initialLayout.height;
+    const ctx2d = composite.getContext('2d')!;
 
-      function drawFrame() {
-        ctx2d.clearRect(0, 0, composite.width, composite.height);
-        ctx2d.drawImage(canvas!, 0, 0, composite.width, composite.height);
-
-        const camVideo = cameraVideoRef.current;
-        if (camVideo && camVideo.readyState >= 2 && camVideo.videoWidth > 0) {
-          const pw = Math.floor(composite.width * 0.22);
-          const ph = Math.floor(pw * (camVideo.videoHeight / camVideo.videoWidth));
-          const px = composite.width - pw - 16;
-          const py = composite.height - ph - 16;
-          // Mirror horizontally to match the CSS scaleX(-1) applied to the live feed
-          ctx2d.save();
-          ctx2d.translate(px + pw, py);
-          ctx2d.scale(-1, 1);
-          ctx2d.drawImage(camVideo, 0, 0, pw, ph);
-          ctx2d.restore();
-        }
-
-        animIdRef.current = requestAnimationFrame(drawFrame);
+    function drawFrame() {
+      let layout = initialLayout;
+      if (format !== '16:9') {
+        const live = layoutFor(format, canvas!.width || window.innerWidth, canvas!.height || window.innerHeight);
+        layout = {
+          ...initialLayout,
+          wheels: initialLayout.wheels!.map((w, i) => ({ src: live.wheels![i].src, dst: w.dst })),
+        };
       }
-      drawFrame();
-
-      // Mix instrument + mic into one stream via the engine's own AudioContext
-      const { stream: audioStream, stop: stopAudio } = engine.createRecordingStream(micStream);
-      stopAudioRef.current = stopAudio;
-
-      const videoStream = (composite as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }).captureStream(30);
-      const combined = new MediaStream([
-        ...videoStream.getVideoTracks(),
-        ...audioStream.getAudioTracks(),
-      ]);
-
-      const picked = MIME_CANDIDATES.find(c => MediaRecorder.isTypeSupported(c.candidate))
-        ?? MIME_CANDIDATES[MIME_CANDIDATES.length - 1];
-      chunksRef.current = [];
-      const recorder = new MediaRecorder(combined, { mimeType: picked.candidate });
-      recorderRef.current = recorder;
-
-      recorder.ondataavailable = e => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        cleanup();
-        const durationMs = performance.now() - startTimeRef.current;
-        const blob = new Blob(chunksRef.current, { type: picked.mime });
-        chunksRef.current = [];
-        setTake({ blob, mime: picked.mime, durationMs });
-        setState('idle');
-        setElapsed(0);
-      };
-
-      recorder.onerror = () => {
-        cleanup();
-        chunksRef.current = [];
-        setState('idle');
-        setElapsed(0);
-      };
-
-      recorder.start(200);
-      startTimeRef.current = performance.now();
-      setState('recording');
-
-      intervalRef.current = setInterval(() => {
-        const secs = (performance.now() - startTimeRef.current) / 1000;
-        setElapsed(secs);
-        if (secs * 1000 >= maxDurationMs) stop();
-      }, 100);
-    } catch {
-      cleanup();
-      setState('idle');
+      drawExportFrame(ctx2d, layout, {
+        canvas: canvas!,
+        camVideo: cameraVideoRef.current,
+        chordLabel: getChordLabel?.() ?? '',
+        watermark,
+      });
+      animIdRef.current = requestAnimationFrame(drawFrame);
     }
-  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs]);
+    drawFrame();
 
-  return { state, elapsed, take, start, stop, clearTake };
+    // Mix instrument + mic into one stream via the engine's own AudioContext
+    const { stream: audioStream, stop: stopAudio } = engine.createRecordingStream(micStream);
+    stopAudioRef.current = stopAudio;
+
+    const videoStream = (composite as HTMLCanvasElement & { captureStream(fps?: number): MediaStream }).captureStream(30);
+    const combined = new MediaStream([
+      ...videoStream.getVideoTracks(),
+      ...audioStream.getAudioTracks(),
+    ]);
+
+    chunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+      ? 'video/webm;codecs=vp8,opus'
+      : 'video/webm';
+    const recorder = new MediaRecorder(combined, { mimeType });
+    recorderRef.current = recorder;
+
+    recorder.ondataavailable = e => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      cleanup();
+      blobRef.current = new Blob(chunksRef.current, { type: 'video/webm' });
+      fileNameRef.current = `froola-${new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-')}.webm`;
+      setState('done');
+    };
+
+    recorder.start(200);
+    startTimeRef.current = performance.now();
+    setState('recording');
+
+    intervalRef.current = setInterval(() => {
+      const secs = (performance.now() - startTimeRef.current) / 1000;
+      setElapsed(secs);
+      if (secs * 1000 >= maxDurationMs) stop();
+    }, 100);
+  }, [state, canvasRef, cameraVideoRef, engineRef, cleanup, stop, maxDurationMs, watermark, format, getChordLabel]);
+
+  const download = useCallback(() => {
+    const blob = blobRef.current;
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileNameRef.current;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, []);
+
+  const fileForShare = useCallback((): File | null => {
+    const blob = blobRef.current;
+    return blob ? new File([blob], fileNameRef.current, { type: 'video/webm' }) : null;
+  }, []);
+
+  const reset = useCallback(() => {
+    // Backstop against stale timers (e.g. the share-fallback "saved" flash in
+    // VideoRecordButton): only a 'done' state may be reset back to idle, so
+    // a late callback can't clobber a recording the user has since started.
+    if (state !== 'done') return;
+    blobRef.current = null;
+    setState('idle');
+    setElapsed(0);
+  }, [state]);
+
+  return { state, elapsed, start, stop, download, fileForShare, reset };
 }

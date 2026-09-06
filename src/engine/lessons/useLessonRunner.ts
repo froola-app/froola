@@ -6,7 +6,7 @@ import { sampleEndTimes, sampleIndexAt, signalsAt } from '../recording/replayPla
 import { chordSpans, scoreChords, type ChordSpan, type LiveFrame } from './scorer';
 import type { Lesson, LessonPhase, StepResult } from './types';
 import type { AudioEngine, SongBackingTrack, MelodyNote } from '../audio';
-import { backingSequence } from '../audio';
+import { backingSequence, beatsPerBar } from '../audio';
 import { buildCommand } from '../music';
 
 export type LessonRunnerAPI = {
@@ -370,7 +370,6 @@ export function useLessonRunner(
   const startCountdown = useCallback((stepIdx: number) => {
     clearTimers();
     setPhase('countdown');
-    setCountdown(COUNTDOWN_SECS);
 
     // Show ghost frozen on first frame during countdown
     const step = lesson.steps[stepIdx];
@@ -380,7 +379,19 @@ export function useLessonRunner(
     const h = canvas?.height ?? window.innerHeight;
     ghostSignalsRef.current = signalsAt(step.targetRecording, ends, 0, w, h);
 
-    let remaining = COUNTDOWN_SECS;
+    // Song lessons (bpm set) count in audibly: one bar of metronome clicks at
+    // the song's tempo, countdown ticking per beat, so the user has heard the
+    // beat they're about to play to. Untimed drills keep the silent 3-2-1.
+    const engine = engineRef.current;
+    const bpm = lesson.bpm;
+    const isCountIn = !!bpm && !!engine;
+    if (isCountIn) backingRef.current ??= engine.createBackingTrack();
+    const beats = isCountIn ? beatsPerBar(lesson.backing) : COUNTDOWN_SECS;
+    const tickMs = isCountIn ? 60000 / bpm : 1000;
+    if (isCountIn) backingRef.current!.countIn(bpm, beats);
+    setCountdown(beats);
+
+    let remaining = beats;
     timerRef.current = setInterval(() => {
       remaining -= 1;
       setCountdown(remaining);
@@ -388,8 +399,8 @@ export function useLessonRunner(
         clearTimers();
         startAttempt(stepIdx);
       }
-    }, 1000);
-  }, [lesson, canvasRef, ghostSignalsRef, clearTimers, startAttempt]);
+    }, tickMs);
+  }, [lesson, engineRef, canvasRef, ghostSignalsRef, clearTimers, startAttempt]);
 
   // ── Preview phase (+ practice, via module-level impls above) ────────────────
   const startPreview = useCallback((stepIdx: number) => {

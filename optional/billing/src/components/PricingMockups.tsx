@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../pricingTiers';
+import { PRICING_TIERS, TRIAL_DAYS, type BillingInterval } from '../../pricingTiers';
 
 // Scratch page for comparing pricing-page layout ideas. Not linked from the
 // app; visit /pricing-mockups directly. Safe to delete once a direction is

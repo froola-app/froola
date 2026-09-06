@@ -1,25 +1,34 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import BeginnerTutorial from './BeginnerTutorial';
 import type { GestureSignal } from '../engine/types';
-import type { DialSelection } from '../engine/renderer';
+import { wheelGeometry } from '../engine/renderer/geometry';
 
 // jsdom has no real layout so wheelGeometry returns zeroes — mock it
 vi.mock('../engine/renderer/geometry', () => ({
-  wheelGeometry: () => ({ outerR: 100, innerR: 36, leftCx: 150, rightCx: 850, cy: 468 }),
+  wheelGeometry: () => ({ outerR: 100, innerR: 36, leftCx: 150, rightCx: 850, leftCy: 468, rightCy: 468, cy: 468 }),
 }));
 
 function makeSignalRef(signals: GestureSignal[] = []) {
   const ref = { current: signals };
   return ref as React.RefObject<GestureSignal[]>;
 }
-function makeSelectedRef(noteIdx = 0) {
-  return { current: { noteIdx, qualIdx: 0 } } as React.RefObject<DialSelection>;
+
+function leftHandOnWheel(): GestureSignal {
+  const g = wheelGeometry(window.innerWidth, window.innerHeight);
+  const r = (g.innerR + g.outerR) / 2;
+  return {
+    handId: 'left',
+    present: true,
+    x: (g.leftCx + r) / window.innerWidth,
+    y: g.leftCy / window.innerHeight,
+  };
 }
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.clearAllMocks();
   localStorage.clear();
+  vi.useFakeTimers();
 });
 
 afterEach(() => {
@@ -27,51 +36,36 @@ afterEach(() => {
 });
 
 describe('BeginnerTutorial', () => {
-  it('shows step 1 headline on first render', () => {
-    render(
-      <BeginnerTutorial
-        signalRef={makeSignalRef()}
-        selectedRef={makeSelectedRef()}
-      />
-    );
-    expect(screen.getByText('Hold your hands up')).toBeDefined();
+  it('shows the single prompt', () => {
+    render(<BeginnerTutorial signalRef={makeSignalRef()} />);
+    expect(screen.getByText('Hold your hands up')).toBeInTheDocument();
+    expect(screen.queryByText(/1\s*\/\s*4/)).toBeNull();
   });
 
-  it('advances from step 1 when a hand signal is present', async () => {
-    const signalRef = makeSignalRef([]);
-    render(
-      <BeginnerTutorial
-        signalRef={signalRef}
-        selectedRef={makeSelectedRef()}
-      />
-    );
-    expect(screen.getByText('Hold your hands up')).toBeDefined();
-
-    // Trigger detection: the 100ms interval fires and sees a hand signal.
-    signalRef.current = [{ x: 0.5, y: 0.5, present: true, handId: 'left' }];
-
-    // Advance to t=150ms so the 100ms interval fires and sees the hand.
-    // This registers a 800ms flash-timeout (fires at t=900ms) and sets flashComplete.
-    await act(async () => { vi.advanceTimersByTime(150); });
-    expect(screen.getByText('✓')).toBeDefined();
-
-    // Advance to t=910ms: fires the 800ms timeout (t=900ms) but stops before
-    // the next interval tick (t=1000ms) so the stale-closure can't re-detect.
-    // act() flushes React updates so the new step renders before we assert.
-    await act(async () => { vi.advanceTimersByTime(760); });
-
-    expect(screen.getByText('Touch the left circle')).toBeDefined();
-  });
-
-  it('sets localStorage flag and unmounts when skip is clicked', async () => {
-    render(
-      <BeginnerTutorial
-        signalRef={makeSignalRef()}
-        selectedRef={makeSelectedRef()}
-      />
-    );
-    screen.getByText('Skip tutorial').click();
+  it('dissolves and fires onDone once the first chord condition holds', () => {
+    const onDone = vi.fn();
+    const signalRef = makeSignalRef([leftHandOnWheel()]);
+    render(<BeginnerTutorial signalRef={signalRef} onDone={onDone} />);
+    act(() => { vi.advanceTimersByTime(100 + 300 + 100); }); // ticks + hold
+    act(() => { vi.advanceTimersByTime(800); });             // flash
+    expect(onDone).toHaveBeenCalledTimes(1);
     expect(localStorage.getItem('froola.tutorialSeen')).toBe('true');
     expect(screen.queryByText('Hold your hands up')).toBeNull();
+  });
+
+  it('does not dissolve while hands are absent', () => {
+    const onDone = vi.fn();
+    render(<BeginnerTutorial signalRef={makeSignalRef()} onDone={onDone} />);
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(onDone).not.toHaveBeenCalled();
+    expect(screen.getByText('Hold your hands up')).toBeInTheDocument();
+  });
+
+  it('skip persists the seen flag and fires onDone', () => {
+    const onDone = vi.fn();
+    render(<BeginnerTutorial signalRef={makeSignalRef()} onDone={onDone} />);
+    fireEvent.click(screen.getByRole('button', { name: /skip/i }));
+    expect(localStorage.getItem('froola.tutorialSeen')).toBe('true');
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 });

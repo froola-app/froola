@@ -12,7 +12,7 @@ export type ArpState = {
 
 export type ArpDeps = {
   createClock: (cb: StepCallback, opts?: TempoClockOptions) => TempoClock
-  playNoteAt: (midi: number, when: number) => void
+  playNoteAt: (midi: number, when: number, duration?: number) => void
   silence: () => void
   onChange?: (state: ArpState) => void
 }
@@ -70,7 +70,9 @@ export class Arpeggiator {
   private onStep(e: ClockStep): void {
     if (this.voicing.length === 0) return
     const idx = this.stepIdx % this.voicing.length
-    this.deps.playNoteAt(this.voicing[idx], e.time)
+    // Step duration lets the audio layer pluck each note (decay within the step).
+    const stepSec = 60 / (this.bpm * STEPS_PER_BEAT)
+    this.deps.playNoteAt(this.voicing[idx], e.time, stepSec)
     this.stepIdx += 1
     this.emit()
   }
