@@ -12,9 +12,21 @@ import path from 'node:path';
 import { OneEuroPoint } from '../oneEuro';
 import { sineTrace } from './traces';
 
-// Served by the deployed site, not out of the repo. GitHub renders
-// repo-hosted SVGs with a `sandbox` CSP that freezes SMIL, so an animated
-// README image has to come from a third-party origin to be camo-proxied.
+// Written into public/ so the deployed site serves them, and the READMEs point
+// at https://froolamusic.com/readme/*.svg rather than at repo-relative paths.
+//
+// Why the indirection: GitHub serves repo-hosted SVGs (github.com/raw and
+// raw.githubusercontent.com alike) with `Content-Security-Policy: ... sandbox`,
+// and repo-hosted SVGs are widely reported not to animate in READMEs. An
+// absolute third-party URL is proxied through camo instead, which serves the
+// file byte-identical and *without* the sandbox directive — that is the path
+// every animated SVG on GitHub takes.
+//
+// Worth stating plainly, because it is easy to "verify" this wrongly: Chrome
+// pauses SMIL timelines in backgrounded tabs, so an automated browser will
+// report any of these as frozen no matter where they are served from. The way
+// to check the SVG itself is `svg.setCurrentTime(t)` and read back the animated
+// value; the way to check the delivery path is to open it in a real window.
 const OUT = path.join(process.cwd(), 'public/readme');
 
 // froola's dark palette. The panels are dark in both GitHub themes on purpose:
