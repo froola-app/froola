@@ -12,7 +12,10 @@ import path from 'node:path';
 import { OneEuroPoint } from '../oneEuro';
 import { sineTrace } from './traces';
 
-const OUT = path.join(process.cwd(), '.github/assets');
+// Served by the deployed site, not out of the repo. GitHub renders
+// repo-hosted SVGs with a `sandbox` CSP that freezes SMIL, so an animated
+// README image has to come from a third-party origin to be camo-proxied.
+const OUT = path.join(process.cwd(), 'public/readme');
 
 // froola's dark palette. The panels are dark in both GitHub themes on purpose:
 // one artwork that always looks deliberate beats two that drift apart.
